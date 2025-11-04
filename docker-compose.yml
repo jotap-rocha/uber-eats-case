@@ -1,0 +1,105 @@
+services:
+  # --- 1. INFRAESTRUTURA DE DADOS ---
+  postgres-ubereats:
+    image: postgres:15
+    container_name: postgres-ubereats
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=usrUberEats
+      - POSTGRES_PASSWORD=supersecret
+      - POSTGRES_DB=ubereats_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Monta nossos scripts SQL para dentro da pasta de inicialização do Postgres
+      # Ele vai rodar CADA .sql nessa pasta AUTOMATICAMENTE na 1ª vez que o volume for criado.
+      - ./sql:/docker-entrypoint-initdb.d
+    command: >
+      postgres
+      -c wal_level=logical
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U usrUberEats -d ubereats_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio-ubereats:
+    image: minio/minio:latest
+    container_name: minio-ubereats
+    ports:
+      - "9000:9000" # API
+      - "9001:9001" # Console
+    environment:
+      - MINIO_ROOT_USER=usrUberEats
+      - MINIO_ROOT_PASSWORD=supersecret
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # --- 2. SERVIÇO DE SETUP (Cria o bucket automaticamente) ---
+  minio-setup:
+    image: minio/mc
+    container_name: minio-setup
+    # Espera o MinIO ficar "saudável"
+    depends_on:
+      minio-ubereats:
+        condition: service_healthy
+    # Comandos para criar o bucket "uber-eats"
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set local http://minio-ubereats:9000 usrUberEats supersecret;
+      /usr/bin/mc mb local/uber-eats --ignore-existing;
+      /usr/bin/mc policy set public local/uber-eats;
+      "
+  
+  # --- 3. GERADORES DE DADOS ---
+  gen-drivers:
+    image: shadowtraffic/shadowtraffic:latest
+    container_name: gen-drivers
+    # Espera o Postgres ficar 100% "saudável" (e com as tabelas)
+    depends_on:
+      postgres-ubereats:
+        condition: service_healthy
+    volumes:
+      - ./gen/postgres/drivers.json:/home/config.json:ro
+    env_file: ./gen/.env
+    command: --config /home/config.json
+  
+  gen-users:
+    image: shadowtraffic/shadowtraffic:latest
+    container_name: gen-users
+    # Espera o Postgres ficar 100% "saudável" (e com as tabelas)
+    depends_on:
+      postgres-ubereats:
+        condition: service_healthy
+    volumes:
+      # O caminho que corrigimos antes
+      - ./gen/postgres/users.json:/home/config.json:ro
+    env_file: ./gen/.env
+    command: --config /home/config.json
+  
+  gen-minio:
+    image: shadowtraffic/shadowtraffic:latest
+    container_name: gen-minio
+    # Espera o BUCKET ser criado pelo minio-setup
+    depends_on:
+      minio-setup:
+        condition: service_completed_successfully
+    volumes:
+      - ./gen/minio/uber-eats.json:/home/config.json:ro
+    env_file: ./gen/.env
+    environment:
+      - AWS_REGION=us-east-1
+      - AWS_S3_FORCE_PATH_STYLE=true
+      - AWS_ACCESS_KEY_ID=usrUberEats
+      - AWS_SECRET_ACCESS_KEY=supersecret
+    command: --config /home/config.json
+
+volumes:
+  postgres_data:
+  minio_data:

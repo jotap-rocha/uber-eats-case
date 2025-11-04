@@ -1,0 +1,1513 @@
+{
+    "generators": [
+        {
+            "bucket": "uber-eats",
+            "bucketConfigs": {
+                "keyPrefix": "mssql/users/",
+                "format": "jsonl"
+            },
+            "data": {
+                "user_id": {
+                    "_gen": "sequentialInteger",
+                    "startingFrom": 1
+                },
+                "uuid": { "_gen": "uuid" },
+                "first_name": {
+                    "_gen": "string",
+                    "expr": "#{Name.firstName}",
+                    "locale": ["pt", "BR"]
+                },
+                "last_name": {
+                    "_gen": "string",
+                    "expr": "#{Name.lastName}",
+                    "locale": ["pt", "BR"]
+                },
+                "cpf": {
+                    "_gen": "string",
+                    "expr": "#{numerify '###.###.###-##'}",
+                    "locale": ["pt", "BR"]
+                },
+                "birthday": {
+                  "_gen": "formatDateTime",
+                  "ms": {
+                    "_gen": "uniformDistribution",
+                    "bounds": [-1893456000000, -441763200000]
+                  },
+                  "format": "yyyy-MM-dd"
+                },
+                "company_name": {
+                    "_gen": "string",
+                    "expr": "#{Company.name}",
+                    "locale": ["pt", "BR"]
+                },
+                "job": {
+                    "_gen": "string",
+                    "expr": "#{Job.title}",
+                    "locale": ["pt", "BR"]
+                },
+                "phone_number": {
+                    "_gen": "string",
+                    "expr": "#{PhoneNumber.phoneNumber}",
+                    "locale": ["pt", "BR"]
+                },
+                "country": {
+                    "_gen": "oneOf",
+                    "choices": ["BR"]
+                },
+                "dt_current_timestamp": {
+                    "_gen": "formatDateTime",
+                    "ms": { "_gen": "now" },
+                    "format": "yyyy-MM-dd HH:mm:ss.SSS"
+                }
+            }
+        },
+        {
+            "bucket": "uber-eats",
+            "bucketConfigs": {
+                "keyPrefix": "mongodb/users/",
+                "format": "jsonl"
+            },
+            "data": {
+                "user_id": { "_gen": "sequentialInteger", "startingFrom": 1 },
+                "uuid": { "_gen": "uuid" },
+                "cpf": {
+                    "_gen": "lookup",
+                    "bucket": "uber-eats",
+                    "keyPrefix": "mssql/users/",
+                    "path": ["data", "cpf"]
+                },
+                "email": { "_gen": "string", "expr": "#{Internet.emailAddress}", "locale": ["pt", "BR"]},
+                "phone_number": { "_gen": "string", "expr": "#{PhoneNumber.phoneNumber}", "locale": ["pt", "BR"]},
+                "delivery_address": { "_gen": "string", "expr": "#{Address.fullAddress}", "locale": ["pt", "BR"]},
+                "city": { "_gen": "string", "expr": "#{Address.city}", "locale": ["pt", "BR"]},
+                "country": {
+                    "_gen": "oneOf",
+                    "choices": ["BR"]
+                },
+                "dt_current_timestamp": {
+                    "_gen": "formatDateTime",
+                    "ms": { "_gen": "now" },
+                    "format": "yyyy-MM-dd HH:mm:ss.SSS"
+                }
+            }
+        },
+        {
+            "bucket": "uber-eats",
+            "bucketConfigs": {
+                "keyPrefix": "postgres/drivers/",
+                "format": "jsonl"
+            },
+            "data": {
+                "driver_id": { "_gen": "sequentialInteger", "startingFrom": 1 },
+                "uuid": { "_gen": "uuid" },
+                "first_name": {
+                    "_gen": "string",
+                    "expr": "#{Name.firstName}",
+                    "locale": ["pt", "BR"]
+                },
+                "last_name": {
+                    "_gen": "string",
+                    "expr": "#{Name.lastName}",
+                    "locale": ["pt", "BR"]
+                },
+                "date_birth": {
+                    "_gen": "formatDateTime",
+                    "ms": { "_gen": "uniformDistribution", "bounds": [-2524608000000, 7258118400000] },
+                    "format": "yyyy-MM-dd"
+                },
+                "city": {
+                    "_gen": "string",
+                    "expr": "#{Address.city}",
+                    "locale": ["pt", "BR"]
+                },
+                "country": {
+                    "_gen": "oneOf",
+                    "choices": ["BR"]
+                },
+                "phone_number": {
+                    "_gen": "string",
+                    "expr": "#{PhoneNumber.phoneNumber}",
+                    "locale": ["pt", "BR"]
+                },
+                "license_number": {
+                    "_gen": "string",
+                    "expr": "#{bothify '??#######'}"
+                },
+                "vehicle_type": {
+                    "_gen": "oneOf",
+                    "choices": ["Motorcycle", "Car", "Bicycle", "Scooter", "E-Bike", "Walk"]
+                },
+                "vehicle_make": {
+                    "_gen": "string",
+                    "expr": "#{Company.name}",
+                    "locale": ["pt", "BR"]
+                },
+                "vehicle_model": {
+                    "_gen": "string",
+                    "expr": "#{Commerce.productName}",
+                    "locale": ["pt", "BR"]
+                },
+                "vehicle_year": {
+                    "_gen": "uniformDistribution",
+                    "bounds": [1980, 2024],
+                    "decimals": 0
+                },
+                "dt_current_timestamp": {
+                    "_gen": "formatDateTime",
+                    "ms": { "_gen": "now" },
+                    "format": "yyyy-MM-dd HH:mm:ss.SSS"
+                }
+            }
+        },
+        {
+          "bucket": "uber-eats",
+          "bucketConfigs": {
+            "keyPrefix": "kafka/shift/",
+            "format": "jsonl"
+          },
+          "vars": {
+            "shift_start": {
+              "_gen": "uniformDistribution",
+              "bounds": [1609459200000, { "_gen": "now" }],
+              "decimals": 0
+            },
+            "shift_duration_ms": {
+              "_gen": "uniformDistribution",
+              "bounds": [3600000, 28800000],
+              "decimals": 0
+            },
+            "num_orders": {
+              "_gen": "uniformDistribution",
+              "bounds": [0, 15],
+              "decimals": 0
+            },
+            "payout_per_order": {
+              "_gen": "uniformDistribution",
+              "bounds": [5, 20],
+              "decimals": 2
+            }
+          },
+          "data": {
+            "shift_id": { "_gen": "uuid" },
+            "driver_id": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "postgres/drivers/",
+              "path": ["data", "driver_id"]
+            },
+            "start_time": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "var", "var": "shift_start" },
+              "format": "yyyy-MM-dd HH:mm:ss"
+            },
+            "end_time": {
+              "_gen": "formatDateTime",
+              "ms": {
+                "_gen": "math",
+                "expr": "shift_start + shift_duration_ms",
+                "names": {
+                  "shift_start": { "_gen": "var", "var": "shift_start" },
+                  "shift_duration_ms": { "_gen": "var", "var": "shift_duration_ms" }
+                }
+              },
+              "format": "yyyy-MM-dd HH:mm:ss"
+            },
+            "shift_duration_min": {
+              "_gen": "math",
+              "expr": "shift_duration_ms / 60000",
+              "format": "#.#####",
+              "names": {
+                "shift_duration_ms": { "_gen": "var", "var": "shift_duration_ms" }
+              }
+            },
+            "available": { "_gen": "boolean" },
+            "city": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "postgres/drivers/",
+              "path": ["data", "city"]
+            },
+            "region": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "postgres/drivers/",
+              "path": ["data", "country"]
+            },
+            "shift_type": {
+              "_gen": "oneOf",
+              "choices": ["Morning", "Afternoon", "Evening", "Overnight"]
+            },
+            "device_os": {
+              "_gen": "oneOf",
+              "choices": ["iOS", "Android"]
+            },
+            "login_method": {
+              "_gen": "oneOf",
+              "choices": ["App", "Web", "Partner Kiosk"]
+            },
+            "num_orders": { "_gen": "var", "var": "num_orders" },
+            "distance_covered_km": {
+              "_gen": "uniformDistribution",
+              "bounds": [0.0, 50.0],
+              "decimals": 2
+            },
+            "earnings_brl": {
+              "_gen": "math",
+              "expr": "num_orders * payout_per_order",
+              "format": "#.##",
+              "names": {
+                "num_orders": { "_gen": "var", "var": "num_orders" },
+                "payout_per_order": { "_gen": "var", "var": "payout_per_order" }
+              }
+            },
+            "shift_rating": {
+              "_gen": "uniformDistribution",
+              "bounds": [3.0, 5.0],
+              "decimals": 2
+            },
+            "issues_reported": {
+              "_gen": "oneOf",
+              "choices": ["None", "Late Start", "Low Battery", "App Crash", "Lost GPS", "Accident"]
+            },
+            "dt_current_timestamp": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss.SSS"
+            }
+          }
+        },
+        {
+          "bucket": "uber-eats",
+          "bucketConfigs": {
+            "keyPrefix": "postgres/inventory/",
+            "format": "jsonl"
+          },
+          "data": {
+            "stock_id": { "_gen": "uuid" },
+            "restaurant_id": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "mysql/restaurants/",
+              "path": ["data", "restaurant_id"]
+            },
+            "product_id": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "mysql/products/",
+              "path": ["data", "product_id"]
+            },
+            "quantity_available": {
+              "_gen": "uniformDistribution",
+              "bounds": [0, 200],
+              "decimals": 0
+            },
+            "last_updated": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss.SSS"
+            }
+          }
+        },
+        {
+          "bucket": "uber-eats",
+          "bucketConfigs": {
+            "keyPrefix": "mysql/products/",
+            "format": "jsonl"
+          },
+          "data": {
+            "product_id": {
+              "_gen": "string",
+              "expr": "#{bothify 'PRD-#####'}"
+            },
+            "restaurant_id": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "mysql/restaurants/",
+              "path": ["data", "restaurant_id"]
+            },
+            "name": {
+              "_gen": "string",
+              "expr": "#{Commerce.productName}",
+              "locale": ["pt", "BR"]
+            },
+            "product_type": {
+              "_gen": "oneOf",
+              "choices": ["Main", "Side", "Drink", "Dessert", "Combo", "Sauce"]
+            },
+            "cuisine_type": {
+              "_gen": "oneOf",
+              "choices": ["Italian", "Mexican", "Chinese", "Japanese", "Indian", "American", "Brazilian", "French"]
+            },
+            "is_vegetarian": { "_gen": "boolean" },
+            "is_gluten_free": { "_gen": "boolean" },
+            "unit_cost": {
+              "_gen": "uniformDistribution",
+              "bounds": [1.0, 15.0],
+              "decimals": 2
+            },
+            "price": {
+              "_gen": "uniformDistribution",
+              "bounds": [5.0, 50.0],
+              "decimals": 2
+            },
+            "flavor_profile": {
+              "_gen": "oneOf",
+              "choices": ["spicy", "sweet", "savory", "sour", "salty", "umami"]
+            },
+            "tags": {
+              "_gen": "oneOf",
+              "choices": ["classic", "new", "seasonal", "premium", "combo", "light"]
+            },
+            "prep_time_min": {
+              "_gen": "uniformDistribution",
+              "bounds": [5, 30],
+              "decimals": 0
+            },
+            "calories": {
+              "_gen": "uniformDistribution",
+              "bounds": [100, 1200],
+              "decimals": 0
+            },
+            "created_at": {
+              "_gen": "formatDateTime",
+              "ms": {
+                "_gen": "uniformDistribution",
+                "bounds": [1577836800000, { "_gen": "now" }]
+              },
+              "format": "yyyy-MM-dd HH:mm:ss"
+            },
+            "updated_at": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss"
+            },
+            "dt_current_timestamp": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss.SSS"
+            }
+          }
+        },
+        {
+          "bucket": "uber-eats",
+          "bucketConfigs": {
+            "keyPrefix": "mysql/menu/",
+            "format": "jsonl"
+          },
+          "data": {
+            "menu_section_id": { "_gen": "uuid" },
+            "restaurant_id": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "mysql/restaurants/",
+              "path": ["data", "restaurant_id"]
+            },
+            "name": {
+              "_gen": "oneOf",
+              "choices": ["Starters", "Main Dishes", "Sides", "Beverages", "Desserts", "Combos"]
+            },
+            "description": {
+              "_gen": "string",
+              "expr": "#{Lorem.sentence}",
+              "locale": ["pt", "BR"]
+            },
+            "active": { "_gen": "boolean" },
+            "dt_current_timestamp": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss.SSS"
+            }
+          }
+        },
+        {
+            "bucket": "uber-eats",
+            "bucketConfigs": {
+                "keyPrefix": "mysql/restaurants/",
+                "format": "jsonl"
+            },
+            "data": {
+                "restaurant_id": {
+                    "_gen": "sequentialInteger",
+                    "startingFrom": 1
+                },
+                "uuid": { "_gen": "uuid" },
+                "name": {
+                    "_gen": "string",
+                    "expr": "#{Company.name} Restaurante",
+                    "locale": ["pt", "BR"]
+                },
+                "address": {
+                    "_gen": "string",
+                    "expr": "#{Address.streetAddress}\n#{Address.city} - #{Address.stateAbbr}\n#{Address.zipCode}",
+                    "locale": ["pt", "BR"]
+                },
+                "city": {
+                    "_gen": "string",
+                    "expr": "#{Address.city}",
+                    "locale": ["pt", "BR"]
+                },
+                "country": {
+                    "_gen": "oneOf",
+                    "choices": ["BR"]
+                },
+                "phone_number": {
+                    "_gen": "string",
+                    "expr": "#{PhoneNumber.phoneNumber}",
+                    "locale": ["pt", "BR"]
+                },
+                "cuisine_type": {
+                    "_gen": "oneOf",
+                    "choices": ["Italian", "Chinese", "Japanese", "Mexican", "Indian", "American", "French"]
+                },
+                "opening_time": {
+                    "_gen": "oneOf",
+                    "choices": ["08:00 AM", "09:00 AM", "10:00 AM", "11:00 AM"]
+                },
+                "closing_time": {
+                    "_gen": "oneOf",
+                    "choices": ["06:00 PM", "08:00 PM", "10:00 PM", "11:00 PM"]
+                },
+                "average_rating": {
+                    "_gen": "uniformDistribution",
+                    "bounds": [0.0, 5.0],
+                    "decimals": 1
+                },
+                "num_reviews": {
+                    "_gen": "uniformDistribution",
+                    "bounds": [0, 10000],
+                    "decimals": 0
+                },
+                "dt_current_timestamp": {
+                    "_gen": "formatDateTime",
+                    "ms": { "_gen": "now" },
+                    "format": "yyyy-MM-dd HH:mm:ss.SSS"
+                },
+                "cnpj": {
+                    "_gen": "string",
+                    "expr": "#{numerify '##.###.###/####-##'}",
+                    "locale": ["pt", "BR"]
+                }
+            }
+        },
+        {
+            "bucket": "uber-eats",
+            "bucketConfigs": {
+                "keyPrefix": "mysql/ratings/",
+                "format": "jsonl"
+            },
+            "data": {
+                "rating_id": {
+                    "_gen": "sequentialInteger",
+                    "startingFrom": 1
+                },
+                "uuid": { "_gen": "uuid" },
+                "restaurant_identifier": {
+                    "_gen": "lookup",
+                    "bucket": "uber-eats",
+                    "keyPrefix": "mysql/restaurants/",
+                    "path": ["data", "cnpj"]
+                },
+                "rating": {
+                    "_gen": "uniformDistribution",
+                    "bounds": [1, 5],
+                    "decimals": 0
+                },
+                "timestamp": {
+                    "_gen": "formatDateTime",
+                    "ms": {
+                        "_gen": "uniformDistribution",
+                        "bounds": [1609459200000, { "_gen": "now" }]
+                    },
+                    "format": "yyyy-MM-dd HH:mm:ss"
+                },
+                "dt_current_timestamp": {
+                    "_gen": "formatDateTime",
+                    "ms": { "_gen": "now" },
+                    "format": "yyyy-MM-dd HH:mm:ss.SSS"
+                }
+            }
+        },
+        {
+          "bucket": "uber-eats",
+          "bucketConfigs": {
+            "keyPrefix": "kafka/payments/",
+            "format": "jsonl"
+          },
+          "vars": {
+            "amount": {
+              "_gen": "uniformDistribution",
+              "bounds": [5.0, 100.0],
+              "decimals": 2
+            },
+            "platform_fee": {
+              "_gen": "uniformDistribution",
+              "bounds": [0.3, 5.0],
+              "decimals": 2
+            },
+            "provider_fee": {
+              "_gen": "uniformDistribution",
+              "bounds": [0.5, 7.0],
+              "decimals": 2
+            },
+            "tax_amount": {
+              "_gen": "uniformDistribution",
+              "bounds": [0.0, 10.0],
+              "decimals": 2
+            }
+          },
+          "data": {
+            "payment_id": { "_gen": "uuid" },
+            "order_key": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "kafka/orders/",
+              "path": ["data", "order_id"]
+            },
+            "amount": { "_gen": "var", "var": "amount" },
+            "currency": {
+              "_gen": "oneOf",
+              "choices": ["BRL", "USD", "EUR"]
+            },
+            "method": {
+              "_gen": "oneOf",
+              "choices": ["Card", "Pix", "Boleto", "Wallet"]
+            },
+            "provider": {
+              "_gen": "oneOf",
+              "choices": ["Stripe", "PayPal", "Adyen"]
+            },
+            "card_brand": {
+              "_gen": "oneOf",
+              "choices": ["Visa", "MasterCard", "Amex", "Elo", "Hipercard"]
+            },
+            "card_last4": {
+              "_gen": "string",
+              "expr": "#{numerify '####'}"
+            },
+            "card_exp_month": {
+              "_gen": "uniformDistribution",
+              "bounds": [1, 12],
+              "decimals": 0
+            },
+            "card_exp_year": {
+              "_gen": "uniformDistribution",
+              "bounds": [2024, 2030],
+              "decimals": 0
+            },
+            "wallet_provider": {
+              "_gen": "oneOf",
+              "choices": ["Apple Pay", "Google Pay", "Samsung Pay", "None"]
+            },
+            "status": {
+              "_gen": "oneOf",
+              "choices": ["succeeded", "pending", "failed", "refunded"]
+            },
+            "failure_reason": {
+              "_gen": "oneOf",
+              "choices": ["", "card_declined", "insufficient_funds", "expired_card", "processing_error"]
+            },
+            "refunded": {
+              "_gen": "boolean"
+            },
+            "refund_amount": {
+              "_gen": "uniformDistribution",
+              "bounds": [0, 100],
+              "decimals": 2
+            },
+            "captured": {
+              "_gen": "boolean"
+            },
+            "capture_timestamp": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss.SSS"
+            },
+            "platform_fee": { "_gen": "var", "var": "platform_fee" },
+            "provider_fee": { "_gen": "var", "var": "provider_fee" },
+            "tax_amount": { "_gen": "var", "var": "tax_amount" },
+            "net_amount": {
+              "_gen": "math",
+              "expr": "amount - platform_fee - provider_fee - tax_amount",
+              "format": "#.##",
+              "names": {
+                "amount": { "_gen": "var", "var": "amount" },
+                "platform_fee": { "_gen": "var", "var": "platform_fee" },
+                "provider_fee": { "_gen": "var", "var": "provider_fee" },
+                "tax_amount": { "_gen": "var", "var": "tax_amount" }
+              }
+            },
+            "receipt_url": {
+              "_gen": "string",
+              "expr": "#{Internet.url}"
+            },
+            "invoice_id": {
+              "_gen": "string",
+              "expr": "#{bothify 'INV-#####'}"
+            },
+            "country": {
+              "_gen": "oneOf",
+              "choices": ["BR", "US", "DE"]
+            },
+            "ip_address": {
+              "_gen": "string",
+              "expr": "#{Internet.ipV4Address}"
+            },
+            "user_agent": {
+              "_gen": "string",
+              "expr": "#{Internet.userAgent}"
+            },
+            "timestamp": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss.SSS"
+            },
+            "dt_current_timestamp": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss.SSS"
+            }
+          }
+        },
+        {
+          "bucket": "uber-eats",
+          "bucketConfigs": {
+            "keyPrefix": "kafka/events/",
+            "format": "jsonl"
+          },
+          "fork": {
+            "key": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "kafka/payments/",
+              "path": ["data", "payment_id"]
+            }
+          },
+          "data": {
+            "event_id": { "_gen": "uuid" },
+            "payment_id": { "_gen": "var", "var": "forkKey" },
+            "event": {
+              "_gen": "stateMachine",
+              "initial": "created",
+              "transitions": {
+                "created": "authorized",
+                "authorized": "captured",
+                "captured": {
+                  "_gen": "weightedOneOf",
+                  "choices": [
+                    { "weight": 9, "value": "succeeded" },
+                    { "weight": 1, "value": "refunded" }
+                  ]
+                },
+                "succeeded": "settled",
+                "refunded": "closed",
+                "settled": "closed"
+              },
+              "states": {
+                "created": {
+                  "event_name": "created",
+                  "timestamp": {
+                    "_gen": "now",
+                    "format": "yyyy-MM-dd HH:mm:ss.SSS"
+                  }
+                },
+                "authorized": {
+                  "event_name": "authorized",
+                  "timestamp": {
+                    "_gen": "math",
+                    "expr": "previousTimestamp + delay",
+                    "format": "yyyy-MM-dd HH:mm:ss.SSS",
+                    "names": {
+                      "previousTimestamp": {
+                        "_gen": "previousEvent",
+                        "path": ["data", "event", "timestamp"]
+                      },
+                      "delay": {
+                        "_gen": "uniformDistribution",
+                        "bounds": [1000, 3000],
+                        "decimals": 0
+                      }
+                    }
+                  }
+                },
+                "captured": {
+                  "event_name": "captured",
+                  "timestamp": {
+                    "_gen": "math",
+                    "expr": "previousTimestamp + delay",
+                    "format": "yyyy-MM-dd HH:mm:ss.SSS",
+                    "names": {
+                      "previousTimestamp": {
+                        "_gen": "previousEvent",
+                        "path": ["data", "event", "timestamp"]
+                      },
+                      "delay": {
+                        "_gen": "uniformDistribution",
+                        "bounds": [1000, 2000],
+                        "decimals": 0
+                      }
+                    }
+                  }
+                },
+                "succeeded": {
+                  "event_name": "succeeded",
+                  "timestamp": {
+                    "_gen": "math",
+                    "expr": "previousTimestamp + delay",
+                    "format": "yyyy-MM-dd HH:mm:ss.SSS",
+                    "names": {
+                      "previousTimestamp": {
+                        "_gen": "previousEvent",
+                        "path": ["data", "event", "timestamp"]
+                      },
+                      "delay": {
+                        "_gen": "uniformDistribution",
+                        "bounds": [1000, 2000],
+                        "decimals": 0
+                      }
+                    }
+                  }
+                },
+                "refunded": {
+                  "event_name": "refunded",
+                  "timestamp": {
+                    "_gen": "math",
+                    "expr": "previousTimestamp + delay",
+                    "format": "yyyy-MM-dd HH:mm:ss.SSS",
+                    "names": {
+                      "previousTimestamp": {
+                        "_gen": "previousEvent",
+                        "path": ["data", "event", "timestamp"]
+                      },
+                      "delay": {
+                        "_gen": "uniformDistribution",
+                        "bounds": [5000, 10000],
+                        "decimals": 0
+                      }
+                    }
+                  }
+                },
+                "settled": {
+                  "event_name": "settled",
+                  "timestamp": {
+                    "_gen": "math",
+                    "expr": "previousTimestamp + delay",
+                    "format": "yyyy-MM-dd HH:mm:ss.SSS",
+                    "names": {
+                      "previousTimestamp": {
+                        "_gen": "previousEvent",
+                        "path": ["data", "event", "timestamp"]
+                      },
+                      "delay": {
+                        "_gen": "uniformDistribution",
+                        "bounds": [2000, 5000],
+                        "decimals": 0
+                      }
+                    }
+                  }
+                },
+                "closed": {
+                  "event_name": "closed",
+                  "timestamp": {
+                    "_gen": "math",
+                    "expr": "previousTimestamp + delay",
+                    "format": "yyyy-MM-dd HH:mm:ss.SSS",
+                    "names": {
+                      "previousTimestamp": {
+                        "_gen": "previousEvent",
+                        "path": ["data", "event", "timestamp"]
+                      },
+                      "delay": {
+                        "_gen": "uniformDistribution",
+                        "bounds": [1000, 2000],
+                        "decimals": 0
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "dt_current_timestamp": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss.SSS"
+            }
+          }
+        },
+        {
+          "bucket": "uber-eats",
+          "bucketConfigs": {
+            "keyPrefix": "mongodb/support/",
+            "format": "jsonl"
+          },
+          "data": {
+            "ticket_id": { "_gen": "uuid" },
+            "user_id": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "mssql/users/",
+              "path": ["data", "user_id"]
+            },
+            "order_id": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "kafka/orders/",
+              "path": ["data", "order_id"]
+            },
+            "category": {
+              "_gen": "oneOf",
+              "choices": ["Late Delivery", "Wrong Item", "Missing Item", "Payment Issue", "Other"]
+            },
+            "description": {
+              "_gen": "string",
+              "expr": "#{Lorem.paragraph}",
+              "locale": ["pt", "BR"]
+            },
+            "status": {
+              "_gen": "oneOf",
+              "choices": ["Open", "In Progress", "Resolved", "Closed"]
+            },
+            "opened_at": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss"
+            },
+            "dt_current_timestamp": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss.SSS"
+            }
+          }
+        },
+        {
+          "bucket": "uber-eats",
+          "bucketConfigs": {
+            "keyPrefix": "mongodb/items/",
+            "format": "jsonl"
+          },
+          "fork": {
+            "key": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "kafka/orders/",
+              "path": ["data", "order_id"]
+            },
+            "maxForks": 10000
+          },
+          "vars": {
+            "quantity": {
+              "_gen": "uniformDistribution",
+              "bounds": [1, 5],
+              "decimals": 0
+            },
+            "unit_price": {
+              "_gen": "uniformDistribution",
+              "bounds": [5.0, 40.0],
+              "decimals": 2
+            },
+            "discount_applied": {
+              "_gen": "uniformDistribution",
+              "bounds": [0.0, 10.0],
+              "decimals": 2
+            }
+          },
+          "data": {
+            "order_item_id": { "_gen": "uuid" },
+            "order_id": { "_gen": "var", "var": "forkKey" },
+            "restaurant_id": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "mysql/restaurants/",
+              "path": ["data", "restaurant_id"]
+            },
+            "product_id": {
+              "_gen": "string",
+              "expr": "#{bothify 'PRD-####'}"
+            },
+            "product_name": {
+              "_gen": "string",
+              "expr": "#{Commerce.productName}",
+              "locale": ["pt", "BR"]
+            },
+            "product_type": {
+              "_gen": "oneOf",
+              "choices": ["Main", "Side", "Drink", "Dessert"]
+            },
+            "cuisine_type": {
+              "_gen": "oneOf",
+              "choices": ["Italian", "Chinese", "Japanese", "Mexican", "Indian", "American", "French"]
+            },
+            "is_vegetarian": {
+              "_gen": "boolean"
+            },
+            "is_combo": {
+              "_gen": "boolean"
+            },
+            "modifiers": {
+              "_gen": "oneOf",
+              "choices": [
+                "no onions", "extra cheese", "add bacon", "spicy", "no ice", "gluten-free", ""
+              ]
+            },
+            "quantity": { "_gen": "var", "var": "quantity" },
+            "unit_price": { "_gen": "var", "var": "unit_price" },
+            "discount_applied": { "_gen": "var", "var": "discount_applied" },
+            "subtotal": {
+              "_gen": "math",
+              "expr": "(quantity * unit_price) - discount_applied",
+              "format": "#.##",
+              "names": {
+                "quantity": { "_gen": "var", "var": "quantity" },
+                "unit_price": { "_gen": "var", "var": "unit_price" },
+                "discount_applied": { "_gen": "var", "var": "discount_applied" }
+              }
+            },
+            "dt_current_timestamp": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss.SSS"
+            }
+          }
+        },
+        {
+          "bucket": "uber-eats",
+          "bucketConfigs": {
+            "keyPrefix": "mongodb/recommendations/",
+            "format": "jsonl"
+          },
+          "data": {
+            "event_id": { "_gen": "uuid" },
+            "user_id": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "mssql/users/",
+              "path": ["data", "user_id"]
+            },
+            "event_type": {
+              "_gen": "oneOf",
+              "choices": ["view", "click", "add_to_cart", "recommendation_served"]
+            },
+            "product_id": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "mysql/products/",
+              "path": ["data", "product_id"]
+            },
+            "timestamp": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss.SSS"
+            },
+            "dt_current_timestamp": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss.SSS"
+            }
+          }
+        },
+        {
+          "bucket": "uber-eats",
+          "bucketConfigs": {
+            "keyPrefix": "kafka/search/",
+            "format": "jsonl"
+          },
+          "data": {
+            "search_id": { "_gen": "uuid" },
+            "user_id": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "mssql/users/",
+              "path": ["data", "user_id"]
+            },
+            "query_text": {
+              "_gen": "string",
+              "expr": "#{Lorem.sentence}",
+              "locale": ["pt", "BR"]
+            },
+            "filters": {
+              "_gen": "oneOf",
+              "choices": ["Vegetarian", "Fast Delivery", "Top Rated", "Open Now", "Deals"]
+            },
+            "result_count": {
+              "_gen": "uniformDistribution",
+              "bounds": [0, 50],
+              "decimals": 0
+            },
+            "clicked_product_id": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "mysql/products/",
+              "path": ["data", "product_id"]
+            },
+            "timestamp": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss.SSS"
+            }
+          }
+        },
+        {
+          "bucket": "uber-eats",
+          "bucketConfigs": {
+            "keyPrefix": "kafka/route/",
+            "format": "jsonl"
+          },
+          "vars": {
+            "start_ts_ms": {
+              "_gen": "uniformDistribution",
+              "bounds": [1609459200000, { "_gen": "now" }],
+              "decimals": 0
+            },
+            "travel_time_ms": {
+              "_gen": "uniformDistribution",
+              "bounds": [300000, 2700000],
+              "decimals": 0
+            }
+          },
+          "data": {
+            "route_id": { "_gen": "uuid" },
+            "order_id": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "kafka/orders/",
+              "path": ["data", "order_id"]
+            },
+            "driver_id": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "postgres/drivers/",
+              "path": ["data", "driver_id"]
+            },
+            "start_lat": {
+              "_gen": "uniformDistribution",
+              "bounds": [-23.60, -23.55],
+              "decimals": 6
+            },
+            "start_lon": {
+              "_gen": "uniformDistribution",
+              "bounds": [-46.65, -46.60],
+              "decimals": 6
+            },
+            "end_lat": {
+              "_gen": "uniformDistribution",
+              "bounds": [-23.60, -23.55],
+              "decimals": 6
+            },
+            "end_lon": {
+              "_gen": "uniformDistribution",
+              "bounds": [-46.65, -46.60],
+              "decimals": 6
+            },
+            "distance_km": {
+              "_gen": "uniformDistribution",
+              "bounds": [0.5, 10.0],
+              "decimals": 2
+            },
+            "estimated_duration_min": {
+              "_gen": "uniformDistribution",
+              "bounds": [5, 45],
+              "decimals": 0
+            },
+            "start_time": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "var", "var": "start_ts_ms" },
+              "format": "yyyy-MM-dd HH:mm:ss"
+            },
+            "end_time": {
+              "_gen": "formatDateTime",
+              "ms": {
+                "_gen": "math",
+                "expr": "start_ts_ms + travel_time_ms",
+                "names": {
+                  "start_ts_ms": { "_gen": "var", "var": "start_ts_ms" },
+                  "travel_time_ms": { "_gen": "var", "var": "travel_time_ms" }
+                }
+              },
+              "format": "yyyy-MM-dd HH:mm:ss"
+            },
+            "dt_current_timestamp": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss.SSS"
+            }
+          }
+        },
+        {
+          "bucket": "uber-eats",
+          "bucketConfigs": {
+            "keyPrefix": "kafka/gps/",
+            "format": "jsonl"
+          },
+          "fork": {
+            "key": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "kafka/route/",
+              "path": ["data", "order_id"]
+            },
+            "maxForks": 20
+          },
+          "vars": {
+            "gps_point": {
+              "_gen": "geoWander",
+              "boundingBox": [
+                [-23.6, -46.7],
+                [-23.5, -46.6]
+              ],
+              "speed": 15,
+              "scale": 0.02
+            }
+          },
+          "data": {
+            "gps_id": { "_gen": "uuid" },
+            "order_id": { "_gen": "var", "var": "forkKey" },
+            "lat": {
+              "_gen": "var",
+              "var": "gps_point",
+              "path": ["latitude"]
+            },
+            "lon": {
+              "_gen": "var",
+              "var": "gps_point",
+              "path": ["longitude"]
+            },
+            "speed_kph": 15,
+            "direction_deg": {
+              "_gen": "var",
+              "var": "gps_point",
+              "path": ["heading"]
+            },
+            "duration_ms": {
+              "_gen": "var",
+              "var": "gps_point",
+              "path": ["duration"]
+            },
+            "accuracy_m": {
+              "_gen": "uniformDistribution",
+              "bounds": [5, 50],
+              "decimals": 1
+            },
+            "altitude": {
+              "_gen": "uniformDistribution",
+              "bounds": [700, 780],
+              "decimals": 1
+            },
+            "timestamp": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss.SSS"
+            },
+            "dt_current_timestamp": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss.SSS"
+            }
+          }
+        },
+        {
+            "bucket": "uber-eats",
+            "bucketConfigs": {
+                "keyPrefix": "kafka/orders/",
+                "format": "jsonl"
+            },
+            "vars": {
+              "item_count": {
+                "_gen": "uniformDistribution",
+                "bounds": [1, 5],
+                "decimals": 0
+              },
+              "avg_price": {
+                "_gen": "uniformDistribution",
+                "bounds": [10.0, 35.0],
+                "decimals": 2
+              }
+            },
+            "data": {
+                "order_id": { "_gen": "uuid" },
+                "user_key": {
+                    "_gen": "lookup",
+                    "bucket": "uber-eats",
+                    "keyPrefix": "mssql/users/",
+                    "path": ["data", "cpf"]
+                },
+                "restaurant_key": {
+                    "_gen": "lookup",
+                    "bucket": "uber-eats",
+                    "keyPrefix": "mysql/restaurants/",
+                    "path": ["data", "cnpj"]
+                },
+                "rating_key": {
+                    "_gen": "lookup",
+                    "bucket": "uber-eats",
+                    "keyPrefix": "mysql/ratings/",
+                    "path": ["data", "uuid"]
+                },
+                "driver_key": {
+                    "_gen": "lookup",
+                    "bucket": "uber-eats",
+                    "keyPrefix": "postgres/drivers/",
+                    "path": ["data", "license_number"]
+                },
+                "order_date": {
+                    "_gen": "formatDateTime",
+                    "ms": { "_gen": "uniformDistribution", "bounds": [1609459200000, { "_gen": "now" }] },
+                    "format": "yyyy-MM-dd HH:mm:ss.SSSSSS"
+                },
+                "total_amount": {
+                    "_gen": "math",
+                    "expr": "item_count * avg_price",
+                    "format": "#.##",
+                    "names": {
+                      "item_count": { "_gen": "var", "var": "item_count" },
+                      "avg_price": { "_gen": "var", "var": "avg_price" }
+                    }
+                },
+                "payment_key": { "_gen": "uuid" },
+                "dt_current_timestamp": {
+                    "_gen": "formatDateTime",
+                    "ms": { "_gen": "now" },
+                    "format": "yyyy-MM-dd HH:mm:ss.SSS"
+                }
+            }
+        },
+        {
+          "bucket": "uber-eats",
+          "bucketConfigs": {
+            "keyPrefix": "kafka/receipts/",
+            "format": "jsonl"
+          },
+          "data": {
+            "receipt_id": { "_gen": "uuid" },
+            "order_id": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "kafka/orders/",
+              "path": ["data", "order_id"]
+            },
+            "payment_id": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "kafka/payments/",
+              "path": ["data", "payment_id"]
+            },
+            "total_amount": {
+              "_gen": "lookup",
+              "bucket": "uber-eats",
+              "keyPrefix": "kafka/orders/",
+              "path": ["data", "total_amount"]
+            },
+            "item_count": {
+              "_gen": "uniformDistribution",
+              "bounds": [1, 5],
+              "decimals": 0
+            },
+            "receipt_generated_at": {
+              "_gen": "formatDateTime",
+              "ms": { "_gen": "now" },
+              "format": "yyyy-MM-dd HH:mm:ss.SSS"
+            }
+          }
+        },
+        {
+            "bucket": "uber-eats",
+            "bucketConfigs": {
+                "keyPrefix": "kafka/status/",
+                "format": "jsonl"
+            },
+            "fork": {
+                "key": {
+                    "_gen": "uuid"
+                }
+            },
+            "data": {
+                "status_id": {
+                    "_gen": "sequentialInteger",
+                    "startingFrom": 1
+                },
+                "order_identifier": {
+                    "_gen": "lookup",
+                    "bucket": "uber-eats",
+                    "keyPrefix": "kafka/orders/",
+                    "path": ["data", "order_id"]
+                },
+                "status": {
+                    "_gen": "stateMachine",
+                    "initial": "Order Placed",
+                    "transitions": {
+                        "Order Placed": "In Analysis",
+                        "In Analysis": "Accepted",
+                        "Accepted": "Preparing",
+                        "Preparing": "Ready for Pickup",
+                        "Ready for Pickup": "Picked Up",
+                        "Picked Up": "Out for Delivery",
+                        "Out for Delivery": "Delivered",
+                        "Delivered": "Completed"
+                    },
+                    "states": {
+                        "Order Placed": {
+                            "status_name": "Order Placed",
+                            "timestamp": { "_gen": "now" , "format": "yyyy-MM-dd HH:mm:ss.SSS"}
+                        },
+                        "In Analysis": {
+                            "status_name": "In Analysis",
+                            "timestamp": {
+                                "_gen": "math",
+                                "expr": "previousTimestamp + duration",
+                                "format": "yyyy-MM-dd HH:mm:ss.SSS",
+                                "names": {
+                                    "previousTimestamp": { "_gen": "previousEvent", "path": ["data", "status", "timestamp"] },
+                                    "duration": {
+                                        "_gen": "weightedOneOf",
+                                        "choices": [
+                                            {"weight": 8, "value": {"_gen": "uniformDistribution", "bounds": [300000, 900000], "decimals": 0}},
+                                            {"weight": 2, "value": 0}
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "Accepted": {
+                            "status_name": "Accepted",
+                            "timestamp": {
+                                "_gen": "math",
+                                "expr": "previousTimestamp + duration",
+                                "format": "yyyy-MM-dd HH:mm:ss.SSS",
+                                "names": {
+                                    "previousTimestamp": { "_gen": "previousEvent", "path": ["data", "status", "timestamp"] },
+                                    "duration": {
+                                        "_gen": "weightedOneOf",
+                                        "choices": [
+                                            {"weight": 7, "value": {"_gen": "uniformDistribution", "bounds": [300000, 900000], "decimals": 0}},
+                                            {"weight": 2, "value": 0}
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "Preparing": {
+                            "status_name": "Preparing",
+                            "timestamp": {
+                                "_gen": "math",
+                                "expr": "previousTimestamp + duration",
+                                "format": "yyyy-MM-dd HH:mm:ss.SSS",
+                                "names": {
+                                    "previousTimestamp": { "_gen": "previousEvent", "path": ["data", "status", "timestamp"] },
+                                    "duration": {
+                                        "_gen": "weightedOneOf",
+                                        "choices": [
+                                            {"weight": 6, "value": {"_gen": "uniformDistribution", "bounds": [600000, 1800000], "decimals": 0}},
+                                            {"weight": 4, "value": 0}
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "Ready for Pickup": {
+                            "status_name": "Ready for Pickup",
+                            "timestamp": {
+                                "_gen": "math",
+                                "expr": "previousTimestamp + duration",
+                                "format": "yyyy-MM-dd HH:mm:ss.SSS",
+                                "names": {
+                                    "previousTimestamp": { "_gen": "previousEvent", "path": ["data", "status", "timestamp"] },
+                                    "duration": {
+                                        "_gen": "weightedOneOf",
+                                        "choices": [
+                                            {"weight": 6, "value": {"_gen": "uniformDistribution", "bounds": [300000, 600000], "decimals": 0}},
+                                            {"weight": 4, "value": 0}
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "Picked Up": {
+                            "status_name": "Picked Up",
+                            "timestamp": {
+                                "_gen": "math",
+                                "expr": "previousTimestamp + duration",
+                                "format": "yyyy-MM-dd HH:mm:ss.SSS",
+                                "names": {
+                                    "previousTimestamp": { "_gen": "previousEvent", "path": ["data", "status", "timestamp"] },
+                                    "duration": {
+                                        "_gen": "weightedOneOf",
+                                        "choices": [
+                                            {"weight": 6, "value": {"_gen": "uniformDistribution", "bounds": [300000, 600000], "decimals": 0}},
+                                            {"weight": 4, "value": 0}
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "Out for Delivery": {
+                            "status_name": "Out for Delivery",
+                            "timestamp": {
+                                "_gen": "math",
+                                "expr": "previousTimestamp + duration",
+                                "format": "yyyy-MM-dd HH:mm:ss.SSS",
+                                "names": {
+                                    "previousTimestamp": { "_gen": "previousEvent", "path": ["data", "status", "timestamp"] },
+                                    "duration": {
+                                        "_gen": "weightedOneOf",
+                                        "choices": [
+                                            {"weight": 6, "value": {"_gen": "uniformDistribution", "bounds": [600000, 1800000], "decimals": 0}},
+                                            {"weight": 4, "value": 0}
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "Delivered": {
+                            "status_name": "Delivered",
+                            "timestamp": {
+                                "_gen": "math",
+                                "expr": "previousTimestamp + duration",
+                                "format": "yyyy-MM-dd HH:mm:ss.SSS",
+                                "names": {
+                                    "previousTimestamp": { "_gen": "previousEvent", "path": ["data", "status", "timestamp"] },
+                                    "duration": {
+                                        "_gen": "weightedOneOf",
+                                        "choices": [
+                                            {"weight": 6, "value": {"_gen": "uniformDistribution", "bounds": [300000, 600000], "decimals": 0}},
+                                            {"weight": 4, "value": 0}
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "Completed": {
+                            "status_name": "Completed",
+                            "timestamp": {
+                                "_gen": "math",
+                                "expr": "previousTimestamp + duration",
+                                "format": "yyyy-MM-dd HH:mm:ss.SSS",
+                                "names": {
+                                    "previousTimestamp": { "_gen": "previousEvent", "path": ["data", "status", "timestamp"] },
+                                    "duration": {
+                                        "_gen": "weightedOneOf",
+                                        "choices": [
+                                            {"weight": 6, "value": {"_gen": "uniformDistribution", "bounds": [300000, 600000], "decimals": 0}},
+                                            {"weight": 4, "value": 0}
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "dt_current_timestamp": {
+                    "_gen": "formatDateTime",
+                    "ms": { "_gen": "now" },
+                    "format": "yyyy-MM-dd HH:mm:ss.SSS"
+                }
+            }
+        }
+    ],
+  "connections": {
+      "minio": {
+          "kind": "s3",
+          "connectionConfigs": {
+              "endpoint": "http://minio-ubereats:9000",
+              "pathStyleAccess": true
+          }
+      }
+  }
+}
