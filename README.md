@@ -101,6 +101,16 @@ Dicas:
 
 As tabelas `drivers` e `users` são criadas automaticamente a partir de `sql/create_*_table.sql` quando o volume do Postgres é criado pela primeira vez.
 
+## Visualizar dados no DBeaver (PostgreSQL)
+- Cliente sugerido: DBeaver (Community Edition).
+- Conexão (Driver PostgreSQL):
+	- Host: `localhost`
+	- Port: `5432`
+	- Database: `ubereats_db`
+	- User: `usrUberEats`
+	- Password: `supersecret`
+- Dica: após conectar, atualize o esquema público para visualizar as tabelas `drivers` e `users`.
+
 ## Parar e Resetar
 - Parar e manter os dados (volumes preservados):
 ```
