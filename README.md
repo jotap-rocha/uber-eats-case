@@ -15,7 +15,7 @@ Este projeto é a primeira etapa de uma arquitetura de dados completa, construí
 ## Escopo deste repositório
 - Implementa a Etapa 1: simulação local das fontes (PostgreSQL + MinIO) e orquestração dos geradores ShadowTraffic.
 - Fornece scripts para start/stop/reset e criação automática de tabelas/bucket.
-- As etapas de ingestão (Airbyte), processamento/transformação (Databricks) e consumo são parte da visão do projeto, mas não estão automatizadas aqui.
+- As etapas de ingestão (Airbyte), processamento/transformação (Databricks) e consumo são parte da visão do projeto, mas não foram construídas ainda.
 
 ## Visão Geral (infra local desta etapa)
 - PostgreSQL: dados de `drivers` e `users` (tabelas criadas automaticamente por `sql/*.sql`).
@@ -87,10 +87,11 @@ powershell -ExecutionPolicy Bypass -File .\start-all.ps1
 ```
 O script:
 - Injeta segredos/variáveis de `gen/.env` nos templates de Postgres (`drivers.json` e `users.json`).
-- Sobe toda a infraestrutura via `docker-compose up`.
+- Sobe toda a infraestrutura via `docker-compose up -d` (em background).
 
 Dicas:
-- Por padrão, os logs aparecem no terminal (modo interativo). Para executar em background, você pode rodar manualmente `docker-compose up -d`.
+- O ambiente sobe em background (detached). Veja logs com: `docker-compose logs -f`
+- Para acompanhar um serviço específico: `docker-compose logs -f postgres-ubereats`
 - A primeira execução pode levar ~1-2 minutos (download de imagens e inicialização do Postgres/MinIO).
 
 ## Acessos Rápidos
