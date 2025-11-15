@@ -1,246 +1,123 @@
-# 🚀 Pipeline de Dados Uber Eats - Infraestrutura Local# Projeto Pipeline de Dados Uber Eats (Infra Local)
+# Uber Eats Data Pipeline (Infra Local)
 
-
-
-Simulação completa de infraestrutura de dados para o ecossistema Uber Eats, utilizando Docker para orquestração e **ShadowTraffic** para geração de dados sintéticos realistas.Este projeto simula a infraestrutura de dados local completa para a ingestão de dados do Uber Eats, usando Docker para orquestrar as fontes de dados e os geradores de dados do Shadow Traffic.
-
-
-
-## 📋 Pré-requisitos## 🚀 Infraestrutura (Tudo no Docker)
-
-O `docker-compose.yml` gerencia:
-
-Antes de iniciar, certifique-se de ter instalado em sua máquina:* **`postgres-ubereats`**: Banco de dados PostgreSQL (Porta: 5432) para dados de `drivers` e `users`.
-
-* **`minio-ubereats`**: Data Lake S3-compatível (API: 9000, Console: 9001) para dados de eventos (`uber-eats`).
-
-- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** (v20.10 ou superior)* **`gen-drivers`**: Gerador do Shadow Traffic para a tabela `drivers`.
-
-- **PowerShell** (já incluso no Windows)* **`gen-users`**: Gerador do Shadow Traffic para a tabela `users`.
-
-- **Licença ShadowTraffic** (necessária para os geradores de dados)* **`gen-minio`**: Gerador do Shadow Traffic para o bucket `uber-eats`.
-
-
-
-## 🏗️ Arquitetura da Solução## ⚙️ Painel de Controle (PowerShell)
-
-
-
-O projeto simula um ambiente de produção com múltiplas camadas de armazenamento:Toda a automação é feita via scripts PowerShell na raiz do projeto.
-
-
-
-### Componentes da Infraestrutura### 1. Para Ligar a Fábrica de Dados
-
-(Roda a infra e os geradores em background)
-
-| Componente | Tecnologia | Porta | Descrição |```powershell
-
-|------------|------------|-------|-----------|.\start-all.ps1
-
-| **PostgreSQL** | `postgres:15` | 5432 | Banco relacional com tabelas `drivers` e `users` |
-| **MinIO** | `minio/minio` | 9000 (API)<br>9001 (Console) | Data Lake S3-compatível para eventos |
-| **ShadowTraffic Generators** | `shadowtraffic/shadowtraffic` | - | 3 geradores de dados sintéticos |
-
-### Fluxo de Dados
-
-```
-ShadowTraffic Generators
-    ├─► PostgreSQL (drivers, users)
-    └─► MinIO S3 (orders, payments, GPS, events...)
-```
-
-## ⚙️ Configuração Inicial
-
-### 1️⃣ Configure as Credenciais
-
-Crie o arquivo de ambiente com suas credenciais:
-
-```powershell
-# Navegue até a pasta gen/
-cd gen
-
-# Copie o template
-copy .env.template .env
-```
-
-### 2️⃣ Preencha o arquivo `.env`
-
-Edite o arquivo `gen/.env` com suas credenciais:
-
-```bash
-# ShadowTraffic License (obrigatório)
-LICENSE_ID=your-license-id
-LICENSE_EMAIL=your-email@example.com
-LICENSE_ORGANIZATION=your-org
-LICENSE_EDITION=your-edition
-LICENSE_EXPIRATION=yyyy-mm-dd
-LICENSE_SIGNATURE=your-signature
-
-# PostgreSQL (preenchido automaticamente)
-POSTGRES_HOST=postgres-ubereats
-POSTGRES_PORT=5432
-POSTGRES_DB=ubereats_db
-POSTGRES_USERNAME=usrUberEats
-POSTGRES_PASSWORD=supersecret
-
-# MinIO (preenchido automaticamente)
-AWS_REGION=us-east-1
-AWS_S3_FORCE_PATH_STYLE=true
-AWS_ACCESS_KEY_ID=usrUberEats
-AWS_SECRET_ACCESS_KEY=supersecret
-```
-
-> ⚠️ **Importante**: Apenas os campos de licença do ShadowTraffic precisam ser preenchidos manualmente. As credenciais de PostgreSQL e MinIO já estão configuradas para o ambiente local.
-
-### 3️⃣ Retorne para a raiz do projeto
-
-```powershell
-cd ..
-```
-
-## 🚀 Executando o Ambiente
-
-### Iniciar o Ambiente Completo
-
-Execute o script que configura e inicia toda a infraestrutura:
-
-```powershell
-.\start-all.ps1
-```
-
-Este comando irá:
-1. ✅ Injetar as credenciais do `.env` nos arquivos de configuração JSON
-2. ✅ Iniciar PostgreSQL com tabelas criadas automaticamente
-3. ✅ Iniciar MinIO com bucket `uber-eats` criado automaticamente
-4. ✅ Iniciar os 3 geradores ShadowTraffic em paralelo
-
-### Parar o Ambiente (Preservar Dados)
-
-```powershell
-.\stop-all.ps1
-```
-
-Os volumes Docker (`postgres_data`, `minio_data`) serão preservados.
-
-### Resetar o Ambiente (Destruir Dados)
-
-```powershell
-.\reset-all.ps1
-```
-
-> ⚠️ **ATENÇÃO**: Este comando remove **TODOS** os volumes e dados gerados.
-
-## 🔍 Acessando os Serviços
-
-### PostgreSQL
-
-```bash
-Host: localhost
-Port: 5432
-Database: ubereats_db
-Username: usrUberEats
-Password: supersecret
-```
-
-**Tabelas disponíveis:**
-- `public.drivers` - Dados dos motoristas
-- `public.users` - Dados dos usuários
-
-### MinIO Console (Interface Web)
-
-Acesse: **http://localhost:9001**
-
-```
-Username: usrUberEats
-Password: supersecret
-```
-
-**Bucket:** `uber-eats`
-
-**Prefixos de dados:**
-- `mssql/users/` - Dados de usuários (MSSQL)
-- `mongodb/users/` - Dados complementares de usuários
-- `postgres/drivers/` - Dados de motoristas
-- `kafka/orders/` - Pedidos
-- `kafka/payments/` - Pagamentos
-- `kafka/status/` - Estados dos pedidos
-- `kafka/gps/` - Rastreamento GPS
-- `mysql/restaurants/` - Restaurantes
-- `mysql/products/` - Produtos
-- E muito mais...
-
-## 📊 Estrutura do Projeto
-
-```
-uber-eats-case/
-├── gen/                          # Configurações dos geradores
-│   ├── .env                      # Credenciais (NÃO VERSIONAR)
-│   ├── .env.template             # Template de credenciais
-│   ├── setup-configs.ps1         # Script de injeção de segredos
-│   ├── postgres/                 # Geradores PostgreSQL
-│   │   ├── drivers.json.template
-│   │   └── users.json.template
-│   └── minio/                    # Geradores MinIO/S3
-│       └── uber-eats.json.template
-├── sql/                          # Scripts SQL
-│   ├── create_drivers_table.sql
-│   ├── create_users_table.sql
-│   └── database-cdc-config.sql
-├── docker-compose.yml            # Orquestração completa
-├── start-all.ps1                 # Inicia tudo
-├── stop-all.ps1                  # Para os containers
-└── reset-all.ps1                 # Reseta o ambiente
-```
-
-## 🛠️ Geradores de Dados ShadowTraffic
-
-### Características dos Dados Sintéticos
-
-- **Localização**: Dados brasileiros (CPF, CNPJ, endereços, telefones)
-- **Relacionamentos**: Lookups entre datasets (pedidos → usuários → pagamentos)
-- **State Machines**: Ciclo de vida de pedidos realista
-- **GPS Tracking**: Simulação de rotas de entrega com coordenadas
-- **Event Streams**: Eventos de pagamento com fork de estados
-
-### Configurações
-
-Os geradores usam templates JSON que são processados pelo `setup-configs.ps1`:
-- **Templates** (`.json.template`): Contêm placeholders para credenciais
-- **Configs gerados** (`.json`): Arquivos finais com credenciais injetadas (git-ignored)
-
-## 📝 Padrões de Commit
-
-Este projeto utiliza commits semânticos:
-
-| Tipo | Descrição | Exemplo |
-|------|-----------|---------|
-| `feat` | Nova funcionalidade | `feat: added order tracking generator` |
-| `fix` | Correção de bug | `fix: adjusted timestamp format in orders` |
-| `config` | Alteração de configuração | `config: updated MinIO credentials` |
-| `docs` | Documentação | `docs: updated setup instructions` |
-| `delete` | Remoção de código | `delete: removed deprecated tables` |
-
-## 🆘 Troubleshooting
-
-### Erro: "Docker not found"
-- Verifique se o Docker Desktop está instalado e em execução
-
-### Erro: "License validation failed"
-- Confirme se as credenciais do ShadowTraffic no `.env` estão corretas
-
-### Erro: "Port already in use"
-- Verifique se as portas 5432, 9000 e 9001 estão livres
-- Use `docker ps` para verificar containers em execução
-
-### Dados não estão sendo gerados
-- Execute `docker-compose logs gen-drivers` para verificar logs
-- Confirme se o arquivo `gen/.env` foi criado corretamente
-
-## 📄 Licença
-
-Este projeto está sob a licença especificada no arquivo [LICENSE](./LICENSE).
+> Simulação local de uma infraestrutura de dados do Uber Eats usando Docker e geradores ShadowTraffic, com PostgreSQL (dados estruturados) e MinIO (data lake S3-compatível).
 
 ---
 
-**Desenvolvido para simulação de ambientes de Data Engineering** 🚀
+## Visão Geral
+- PostgreSQL: dados de `drivers` e `users` (tabelas criadas automaticamente por `sql/*.sql`).
+- MinIO: bucket `uber-eats` para eventos JSON (console em `http://localhost:9001`).
+- ShadowTraffic: geradores sintéticos para popular Postgres e MinIO.
+- Scripts PowerShell automatizam setup e orquestração (`start-all.ps1`, `stop-all.ps1`, `reset-all.ps1`).
+
+## Pré-requisitos
+- Windows 10/11 com Docker Desktop instalado e em execução.
+- PowerShell 5.1+ (padrão do Windows) ou PowerShell 7+ (`pwsh`).
+- Acesso à internet para baixar imagens Docker.
+
+## Estrutura do Projeto
+```
+.
+├─ docker-compose.yml
+├─ start-all.ps1
+├─ stop-all.ps1
+├─ reset-all.ps1
+├─ gen/
+│  ├─ .env.template        # Modelo para credenciais e variáveis
+│  ├─ setup-configs.ps1    # Injeta variáveis do .env nos JSONs de geradores
+│  ├─ minio/
+│  │  └─ uber-eats.json    # Config do gerador para MinIO
+│  └─ postgres/
+│     ├─ drivers.json.template
+│     └─ users.json.template
+└─ sql/
+	 ├─ create_drivers_table.sql
+	 ├─ create_users_table.sql
+	 └─ cdc configure/
+			└─ database-cdc-config.sql
+```
+
+## Configuração (apenas uma vez)
+1) Crie o arquivo `.env` a partir do template:
+```
+copy gen\.env.template gen\.env
+```
+2) Edite `gen/.env` e preencha as variáveis conforme seu ambiente/licença do ShadowTraffic. Para um ambiente local padrão, use:
+- Postgres
+	- `POSTGRES_HOST=localhost`
+	- `POSTGRES_PORT=5432`
+	- `POSTGRES_DB=ubereats_db`
+	- `POSTGRES_USERNAME=usrUberEats`
+	- `POSTGRES_PASSWORD=supersecret`
+- MinIO
+	- `AWS_REGION=us-east-1`
+	- `AWS_S3_FORCE_PATH_STYLE=true`
+	- `AWS_ACCESS_KEY_ID=usrUberEats`
+	- `AWS_SECRET_ACCESS_KEY=supersecret`
+- Licença ShadowTraffic: preencha os campos `LICENSE_*` conforme sua licença.
+
+3) (Opcional) Gerar os JSONs de configuração para os geradores de Postgres manualmente:
+```
+powershell -ExecutionPolicy Bypass -File .\gen\setup-configs.ps1
+```
+Observação: o `start-all.ps1` executa esse passo automaticamente antes de subir os containers.
+
+## Como Executar
+1) Certifique-se de que o Docker Desktop está em execução.
+2) No terminal (cmd.exe), execute o script de inicialização:
+```
+powershell -ExecutionPolicy Bypass -File .\start-all.ps1
+```
+O script:
+- Injeta segredos/variáveis de `gen/.env` nos templates de Postgres (`drivers.json` e `users.json`).
+- Sobe toda a infraestrutura via `docker-compose up`.
+
+Dicas:
+- Por padrão, os logs aparecem no terminal (modo interativo). Para executar em background, você pode rodar manualmente `docker-compose up -d`.
+- A primeira execução pode levar ~1-2 minutos (download de imagens e inicialização do Postgres/MinIO).
+
+## Acessos Rápidos
+- Postgres: `localhost:5432` | DB: `ubereats_db` | Usuário: `usrUberEats` | Senha: `supersecret`
+- MinIO Console: `http://localhost:9001` | Usuário: `usrUberEats` | Senha: `supersecret`
+- Bucket MinIO: `uber-eats` (criado automaticamente pelo serviço `minio-setup`).
+
+As tabelas `drivers` e `users` são criadas automaticamente a partir de `sql/create_*_table.sql` quando o volume do Postgres é criado pela primeira vez.
+
+## Parar e Resetar
+- Parar e manter os dados (volumes preservados):
+```
+powershell -ExecutionPolicy Bypass -File .\stop-all.ps1
+```
+- Reset total (DESTRUTIVO: remove volumes/dados):
+```
+powershell -ExecutionPolicy Bypass -File .\reset-all.ps1
+```
+
+## Solução de Problemas
+- `.env` ausente: o `setup-configs.ps1` falhará. Crie `gen/.env` a partir de `gen/.env.template` e preencha as variáveis.
+- Portas em uso: verifique se as portas `5432`, `9000`, `9001` não estão ocupadas por outros serviços.
+- Docker não iniciado: garanta que o Docker Desktop esteja rodando antes de executar os scripts.
+- Execução de scripts bloqueada: use `-ExecutionPolicy Bypass` como mostrado nos comandos acima.
+- Verificar logs específicos:
+```
+docker-compose logs postgres-ubereats
+docker-compose logs minio-ubereats
+docker-compose logs gen-drivers
+docker-compose logs gen-users
+docker-compose logs gen-minio
+```
+
+## O que está sendo executado (docker-compose)
+- `postgres-ubereats`: Postgres 15 com `wal_level=logical`, expõe `5432`.
+- `minio-ubereats`: MinIO com API `9000` e console `9001`.
+- `minio-setup`: cria o bucket `uber-eats` automaticamente.
+- `gen-drivers` e `gen-users`: geradores ShadowTraffic para Postgres (usam `gen/postgres/*.json`).
+- `gen-minio`: gerador ShadowTraffic para MinIO (usa `gen/minio/uber-eats.json`).
+
+## Licenças e Credenciais
+- Nunca commite arquivos `.env` ou configs geradas (`.json`) com credenciais.
+- Os templates `.json.template` usam placeholders e são seguros para versionamento.
+
+---
+
+Pronto! Com isso você tem uma fábrica de dados local para testes de pipelines, CDC e integrações, com dados sintéticos realistas.
