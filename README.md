@@ -1,19 +1,36 @@
-# Uber Eats Data Pipeline (Infra Local)
+# Pipeline de Dados Uber Eats — Portfólio (End-to-End)
 
-> Simulação local de uma infraestrutura de dados do Uber Eats usando Docker e geradores ShadowTraffic, com PostgreSQL (dados estruturados) e MinIO (data lake S3-compatível).
+Este projeto é a primeira etapa de uma arquitetura de dados completa, construída como parte do desafio Semana Databricks 2.0. Automatizei um ambiente local (com Docker Compose + PowerShell) que simula fontes reais: PostgreSQL (OLTP) e MinIO (S3) alimentados em tempo real pelo ShadowTraffic. A arquitetura end-to-end prevista inclui ingestão com Airbyte, processamento no Databricks Lakehouse, transformações na Arquitetura Medalhão e governança com Unity Catalog, preparando consumo em Power BI e Databricks AI/BI Genie.
 
 ---
 
-## Visão Geral
+## Arquitetura (alto nível)
+- Fontes: PostgreSQL (OLTP) e MinIO (Data Lake).
+- Ingestão: Airbyte para extrair e carregar os dados.
+- Processamento: Databricks Lakehouse como plataforma central.
+- Transformação: Arquitetura Medalhão (Bronze → Silver → Gold).
+- Governança: Unity Catalog (qualidade, linhagem e segurança).
+- Consumo: Power BI e Databricks AI/BI Genie.
+
+## Escopo deste repositório
+- Implementa a Etapa 1: simulação local das fontes (PostgreSQL + MinIO) e orquestração dos geradores ShadowTraffic.
+- Fornece scripts para start/stop/reset e criação automática de tabelas/bucket.
+- As etapas de ingestão (Airbyte), processamento/transformação (Databricks) e consumo são parte da visão do projeto, mas não estão automatizadas aqui.
+
+## Visão Geral (infra local desta etapa)
 - PostgreSQL: dados de `drivers` e `users` (tabelas criadas automaticamente por `sql/*.sql`).
 - MinIO: bucket `uber-eats` para eventos JSON (console em `http://localhost:9001`).
 - ShadowTraffic: geradores sintéticos para popular Postgres e MinIO.
 - Scripts PowerShell automatizam setup e orquestração (`start-all.ps1`, `stop-all.ps1`, `reset-all.ps1`).
 
 ## Pré-requisitos
-- Windows 10/11 com Docker Desktop instalado e em execução.
-- PowerShell 5.1+ (padrão do Windows) ou PowerShell 7+ (`pwsh`).
-- Acesso à internet para baixar imagens Docker.
+- Para esta etapa (infra local):
+	- Windows 10/11 com Docker Desktop instalado e em execução.
+	- PowerShell 5.1+ (padrão do Windows) ou PowerShell 7+ (`pwsh`).
+	- Acesso à internet para baixar imagens Docker.
+- Para próximas etapas (opcional):
+	- Workspace Databricks com Unity Catalog habilitado.
+	- Airbyte (self-hosted via Docker) para ingestão a partir das fontes locais.
 
 ## Estrutura do Projeto
 ```
