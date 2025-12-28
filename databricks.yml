@@ -1,0 +1,19 @@
+# This is a Databricks asset bundle definition for uber-eats-case.
+# The Databricks extension requires databricks.yml configuration file.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+
+bundle:
+  name: uber-eats-case
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://dbc-029603a1-3b9b.cloud.databricks.com
+
+  ## Optionally, there could be 'staging' or 'prod' targets here.
+  #
+  # prod:
+  #   workspace:
+  #     host: https://dbc-029603a1-3b9b.cloud.databricks.com

@@ -36,9 +36,14 @@ Este projeto é a primeira etapa de uma arquitetura de dados completa, construí
 ```
 .
 ├─ docker-compose.yml
-├─ start-all.ps1
-├─ stop-all.ps1
-├─ reset-all.ps1
+├─ scripts/                 # Scripts de automação (PowerShell)
+│  ├─ start-all.ps1        # Sobe infra + geradores (tudo)
+│  ├─ start-infra.ps1      # Sobe APENAS Postgres + MinIO
+│  ├─ start-generators.ps1 # Sobe APENAS ShadowTraffic
+│  ├─ stop-all.ps1         # Para tudo
+│  ├─ stop-infra.ps1       # Para APENAS infra
+│  ├─ stop-generators.ps1  # Para APENAS geradores
+│  └─ reset-all.ps1        # Reset completo (DESTRUTIVO)
 ├─ gen/
 │  ├─ .env.template        # Modelo para credenciais e variáveis
 │  ├─ setup-configs.ps1    # Injeta variáveis do .env nos JSONs de geradores
@@ -77,22 +82,88 @@ copy gen\.env.template gen\.env
 ```
 powershell -ExecutionPolicy Bypass -File .\gen\setup-configs.ps1
 ```
-Observação: o `start-all.ps1` executa esse passo automaticamente antes de subir os containers.
+Observação: o `scripts\start-all.ps1` e `scripts\start-generators.ps1` executam esse passo automaticamente.
 
 ## Como Executar
-1) Certifique-se de que o Docker Desktop está em execução.
-2) No terminal (cmd.exe), execute o script de inicialização:
-```
-powershell -ExecutionPolicy Bypass -File .\start-all.ps1
-```
-O script:
-- Injeta segredos/variáveis de `gen/.env` nos templates de Postgres (`drivers.json` e `users.json`).
-- Sobe toda a infraestrutura via `docker-compose up -d` (em background).
 
-Dicas:
+### Opção 1: Subir Tudo de Uma Vez (Recomendado para Primeira Execução)
+Certifique-se de que o Docker Desktop está em execução e execute:
+```
+powershell -ExecutionPolicy Bypass -File .\scripts\start-all.ps1
+```
+Este script:
+- Injeta segredos/variáveis de `gen/.env` nos templates de configuração.
+- Sobe infraestrutura (Postgres + MinIO) + Geradores ShadowTraffic.
+- A primeira execução pode levar ~1-2 minutos (download de imagens).
+
+### Opção 2: Subir Apenas a Infraestrutura (Sem Geradores)
+Para desenvolvimento local ou quando não precisa gerar dados continuamente:
+```
+powershell -ExecutionPolicy Bypass -File .\scripts\start-infra.ps1
+```
+Sobe apenas Postgres e MinIO. Útil para:
+- Economizar licença ShadowTraffic
+- Desenvolvimento de queries/pipelines
+- Testes com dados já existentes
+
+### Opção 3: Adicionar Geradores Depois
+Se já subiu apenas a infra e quer popular dados agora:
+```
+powershell -ExecutionPolicy Bypass -File .\scripts\start-generators.ps1
+```
+
+### Dicas:
 - O ambiente sobe em background (detached). Veja logs com: `docker-compose logs -f`
 - Para acompanhar um serviço específico: `docker-compose logs -f postgres-ubereats`
-- A primeira execução pode levar ~1-2 minutos (download de imagens e inicialização do Postgres/MinIO).
+- Verificar status: `docker-compose ps`
+
+## Fluxos de Uso Comuns
+
+### 🎯 Cenário 1: Desenvolvimento Local (Sem Gerar Dados Continuamente)
+```powershell
+# 1. Sobe apenas a infra
+.\scripts\start-infra.ps1
+
+# 2. Trabalha com queries, pipelines, etc.
+# ...
+
+# 3. Quando precisar de mais dados:
+.\scripts\start-generators.ps1
+
+# 4. Espera popular... depois para os geradores
+.\scripts\stop-generators.ps1
+
+# 5. Para tudo quando terminar
+.\scripts\stop-all.ps1
+```
+
+### 🎬 Cenário 2: Demo/Apresentação (Precisa de Dados Imediatos)
+```powershell
+# Sobe tudo de uma vez
+.\scripts\start-all.ps1
+
+# Monitora logs para ver dados sendo gerados
+docker-compose logs -f gen-drivers gen-users gen-minio
+```
+
+### 🧪 Cenário 3: Reset Para Testes (Começar do Zero)
+```powershell
+# Reset completo (apaga tudo)
+.\scripts\reset-all.ps1
+
+# Sobe tudo novamente
+.\scripts\start-all.ps1
+```
+
+### 💰 Cenário 4: Economizar Licença ShadowTraffic
+```powershell
+# Para apenas os geradores (infra continua rodando)
+.\scripts\stop-generators.ps1
+
+# Infra permanece disponível para consultas/desenvolvimento
+# Quando precisar gerar mais dados:
+.\scripts\start-generators.ps1
+```
 
 ## Acessos Rápidos
 - Postgres: `localhost:5432` | DB: `ubereats_db` | Usuário: `usrUberEats` | Senha: `supersecret`
@@ -112,14 +183,25 @@ As tabelas `drivers` e `users` são criadas automaticamente a partir de `sql/cre
 - Dica: após conectar, atualize o esquema público para visualizar as tabelas `drivers` e `users`.
 
 ## Parar e Resetar
-- Parar e manter os dados (volumes preservados):
+
+### Parar Geradores (Mantém Infra Rodando)
+Útil para economizar licença ShadowTraffic sem derrubar o banco:
 ```
-powershell -ExecutionPolicy Bypass -File .\stop-all.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\stop-generators.ps1
 ```
-- Reset total (DESTRUTIVO: remove volumes/dados):
+
+### Parar Tudo (Mantém Dados)
+Para e manter os dados (volumes preservados):
 ```
-powershell -ExecutionPolicy Bypass -File .\reset-all.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\stop-all.ps1
 ```
+
+### Reset Total (DESTRUTIVO)
+Remove volumes/dados permanentemente:
+```
+powershell -ExecutionPolicy Bypass -File .\scripts\reset-all.ps1
+```
+⚠️ **ATENÇÃO**: Este comando apaga TODOS os dados do Postgres e MinIO!
 
 ## Solução de Problemas
 - `.env` ausente: o `setup-configs.ps1` falhará. Crie `gen/.env` a partir de `gen/.env.template` e preencha as variáveis.
