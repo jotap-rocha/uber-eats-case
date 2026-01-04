@@ -6,12 +6,14 @@ PostgreSQL 15 com dados transacionais (drivers e users).
 
 ## Credenciais
 
+As credenciais são definidas no arquivo `gen/.env`. Consulte o README principal para configuração.
+
 ```
 Host: localhost
-Port: 5432
-Database: ubereats_db
-User: usrUberEats
-Password: supersecret
+Port: 5432 (padrão)
+Database: Conforme seu .env
+User: Conforme seu .env
+Password: Conforme seu .env
 ```
 
 ---
@@ -63,11 +65,11 @@ CREATE TABLE users (
 ### CLI (psql)
 
 ```powershell
-# Query direta
-docker exec postgres-ubereats psql -U usrUberEats -d ubereats_db -c "SELECT COUNT(*) FROM drivers;"
+# Query direta (use suas credenciais do .env)
+docker exec postgres-ubereats psql -U <seu_usuario> -d <seu_database> -c "SELECT COUNT(*) FROM drivers;"
 
 # Modo interativo
-docker exec -it postgres-ubereats psql -U usrUberEats -d ubereats_db
+docker exec -it postgres-ubereats psql -U <seu_usuario> -d <seu_database>
 ```
 
 ---
@@ -103,7 +105,7 @@ netstat -ano | findstr "5432"
 ### Conexao recusada
 
 ```powershell
-docker exec postgres-ubereats pg_isready -U usrUberEats
+docker exec postgres-ubereats pg_isready -U <seu_usuario>
 ```
 
 ---

@@ -41,22 +41,22 @@ Abra: `http://localhost:8000`
 ### PostgreSQL
 
 1. Sources > + New source > Postgres
-2. Preencha:
+2. Preencha com as credenciais do seu `gen/.env`:
    - **Host**: `host.docker.internal`
    - **Port**: `5432`
-   - **Database**: `ubereats_db`
-   - **User**: `usrUberEats`
-   - **Password**: `supersecret`
+   - **Database**: `<seu_database>`
+   - **User**: `<seu_usuario>`
+   - **Password**: `<sua_senha>`
    - **SSL**: `disable`
 3. Test connection > Set up
 
 ### MinIO/S3
 
 1. Sources > + New source > S3
-2. Preencha:
+2. Preencha com as credenciais do seu `gen/.env`:
    - **Bucket**: `uber-eats`
-   - **Access Key**: `usrUberEats`
-   - **Secret Key**: `supersecret`
+   - **Access Key**: `<seu_usuario>`
+   - **Secret Key**: `<sua_senha>`
    - **Endpoint**: `http://host.docker.internal:9000`
    - **Format**: `JSONL`
 3. Test connection > Set up

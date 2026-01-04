@@ -6,12 +6,14 @@ Data Lake local para eventos JSON (~20 streams).
 
 ## Credenciais
 
+As credenciais são definidas no arquivo `gen/.env`. Consulte o README principal para configuração.
+
 ```
 Console: http://localhost:9001
 API: http://localhost:9000
-User: usrUberEats
-Password: supersecret
-Bucket: uber-eats
+User: Conforme seu .env
+Password: Conforme seu .env
+Bucket: uber-eats (padrão)
 ```
 
 ---
@@ -38,7 +40,7 @@ uber-eats/
 ### Console Web
 
 1. Abra: `http://localhost:9001`
-2. Login: `usrUberEats` / `supersecret`
+2. Login com as credenciais do seu arquivo `gen/.env`
 3. Navegue pelo bucket `uber-eats`
 
 ### MinIO Client (mc)

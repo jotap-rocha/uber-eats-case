@@ -19,27 +19,27 @@ copy gen\.env.template gen\.env
 notepad gen\.env
 ```
 
-Preencha:
+Preencha conforme as instruções no arquivo `.env.template`. As principais variáveis são:
 
 ```ini
 # PostgreSQL
 POSTGRES_HOST=postgres-ubereats
 POSTGRES_PORT=5432
-POSTGRES_DB=ubereats_db
-POSTGRES_USERNAME=usrUberEats
-POSTGRES_PASSWORD=supersecret
+POSTGRES_DB=<seu_database>
+POSTGRES_USERNAME=<seu_usuario>
+POSTGRES_PASSWORD=<sua_senha>
 
 # MinIO
 AWS_REGION=us-east-1
 AWS_S3_FORCE_PATH_STYLE=true
-AWS_ACCESS_KEY_ID=usrUberEats
-AWS_SECRET_ACCESS_KEY=supersecret
+AWS_ACCESS_KEY_ID=<seu_usuario>
+AWS_SECRET_ACCESS_KEY=<sua_senha>
 
-# ShadowTraffic License
-LICENSE_ID=seu-id
-LICENSE_KEY=sua-key
-LICENSE_EMAIL=seu@email.com
-LICENSE_OWNER=Seu Nome
+# ShadowTraffic License (obtenha em https://shadowtraffic.io)
+LICENSE_ID=<seu_license_id>
+LICENSE_KEY=<sua_license_key>
+LICENSE_EMAIL=<seu_email>
+LICENSE_OWNER=<seu_nome>
 ```
 
 ---
@@ -75,8 +75,8 @@ LICENSE_OWNER=Seu Nome
 # Logs
 docker-compose logs -f gen-drivers gen-users gen-minio
 
-# Contagem Postgres
-docker exec postgres-ubereats psql -U usrUberEats -d ubereats_db -c "SELECT COUNT(*) FROM drivers;"
+# Contagem Postgres (use suas credenciais do .env)
+docker exec postgres-ubereats psql -U <seu_usuario> -d <seu_database> -c "SELECT COUNT(*) FROM drivers;"
 
 # Arquivos MinIO
 docker exec minio-ubereats mc ls local/uber-eats/ --recursive
