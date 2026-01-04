@@ -38,11 +38,37 @@ Pipeline completo de engenharia de dados construido como portfolio profissional,
 
 ## Como Começar
 
-### Passo 1: Configurar Credenciais (Pasta `gen/`)
+### Passo 1: Configurar Credenciais
 
-Antes de provisionar o ambiente, você precisa configurar as credenciais e variáveis de ambiente:
+Antes de provisionar o ambiente, você precisa configurar as credenciais em dois arquivos:
 
-1. **Copie o template de configuração**:
+#### A) Credenciais do Docker Compose (raiz do projeto)
+
+1. **Copie o template**:
+```powershell
+copy .env.template .env
+```
+
+2. **Edite o arquivo `.env`** e preencha suas credenciais:
+```powershell
+notepad .env
+```
+
+**Variáveis principais**:
+```ini
+# PostgreSQL
+POSTGRES_USER=<seu_usuario>
+POSTGRES_PASSWORD=<sua_senha>
+POSTGRES_DB=ubereats_db
+
+# MinIO
+MINIO_ROOT_USER=<seu_usuario>
+MINIO_ROOT_PASSWORD=<sua_senha>
+```
+
+#### B) Credenciais do ShadowTraffic (pasta `gen/`)
+
+1. **Copie o template**:
 ```powershell
 copy gen\.env.template gen\.env
 ```

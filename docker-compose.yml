@@ -6,9 +6,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=usrUberEats
-      - POSTGRES_PASSWORD=supersecret
-      - POSTGRES_DB=ubereats_db
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # Monta nossos scripts SQL para dentro da pasta de inicialização do Postgres
@@ -18,7 +18,7 @@ services:
       postgres
       -c wal_level=logical
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U usrUberEats -d ubereats_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -30,8 +30,8 @@ services:
       - "9000:9000" # API
       - "9001:9001" # Console
     environment:
-      - MINIO_ROOT_USER=usrUberEats
-      - MINIO_ROOT_PASSWORD=supersecret
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
@@ -52,7 +52,7 @@ services:
     # Comandos para criar o bucket "uber-eats"
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set local http://minio-ubereats:9000 usrUberEats supersecret;
+      /usr/bin/mc alias set local http://minio-ubereats:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
       /usr/bin/mc mb local/uber-eats --ignore-existing;
       /usr/bin/mc policy set public local/uber-eats;
       "
@@ -96,8 +96,8 @@ services:
     environment:
       - AWS_REGION=us-east-1
       - AWS_S3_FORCE_PATH_STYLE=true
-      - AWS_ACCESS_KEY_ID=usrUberEats
-      - AWS_SECRET_ACCESS_KEY=supersecret
+      - AWS_ACCESS_KEY_ID=${MINIO_ROOT_USER}
+      - AWS_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD}
     command: --config /home/config.json
 
 volumes:

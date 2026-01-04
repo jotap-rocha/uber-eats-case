@@ -207,3 +207,6 @@ marimo/_lsp/
 __marimo__/
 
 .databricks
+gen/postgres/drivers.json
+gen/postgres/users.json
+abctl-v0.30.3-windows-amd64/
