@@ -69,8 +69,21 @@ function Start-DockerDesktop {
 # --- Inicia Docker Desktop ---
 Start-DockerDesktop
 
-# --- Passo 1: Injecao de Secrets ---
-Write-Host "[1/3] Injetando segredos do .env nos arquivos .json..." -ForegroundColor Cyan
+# --- Passo 1: Copiar .env para raiz (docker-compose precisa) ---
+Write-Host "[1/4] Preparando variaveis de ambiente..." -ForegroundColor Cyan
+if (Test-Path "gen\.env") {
+    Copy-Item -Path "gen\.env" -Destination ".env" -Force
+    Write-Host "   -> Arquivo .env copiado para raiz (temporario)" -ForegroundColor Gray
+} else {
+    Write-Host "[ERRO] Arquivo gen/.env nao encontrado!" -ForegroundColor Red
+    Write-Host "Execute: copy gen\.env.template gen\.env" -ForegroundColor Yellow
+    exit 1
+}
+
+Write-Host ""
+
+# --- Passo 2: Injecao de Secrets ---
+Write-Host "[2/4] Injetando segredos do .env nos arquivos .json..." -ForegroundColor Cyan
 & "$PSScriptRoot\..\gen\setup-configs.ps1"
 
 if ($LASTEXITCODE -ne 0) {
@@ -80,15 +93,15 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ""
 
-# --- Passo 2: Sobe Infraestrutura ---
-Write-Host "[2/3] Iniciando infraestrutura (Postgres + MinIO)..." -ForegroundColor Cyan
+# --- Passo 3: Sobe Infraestrutura ---
+Write-Host "[3/4] Iniciando infraestrutura (Postgres + MinIO)..." -ForegroundColor Cyan
 Write-Host "   (Isso pode levar um minuto... O Postgres e o MinIO estao se auto-configurando.)" -ForegroundColor Gray
 docker-compose up -d postgres-ubereats minio-ubereats minio-setup
 
 Write-Host ""
 
-# --- Passo 3: Sobe Geradores ---
-Write-Host "[3/3] Iniciando geradores ShadowTraffic..." -ForegroundColor Cyan
+# --- Passo 4: Sobe Geradores ---
+Write-Host "[4/4] Iniciando geradores ShadowTraffic..." -ForegroundColor Cyan
 docker-compose up -d gen-drivers gen-users gen-minio
 
 Write-Host ""

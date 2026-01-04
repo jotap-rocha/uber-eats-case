@@ -69,6 +69,19 @@ function Start-DockerDesktop {
 # --- Inicia Docker Desktop ---
 Start-DockerDesktop
 
+# --- Copiar .env para raiz (docker-compose precisa) ---
+Write-Host "[SETUP] Preparando variaveis de ambiente..." -ForegroundColor Cyan
+if (Test-Path "gen\.env") {
+    Copy-Item -Path "gen\.env" -Destination ".env" -Force
+    Write-Host "   -> Arquivo .env copiado para raiz (temporario)" -ForegroundColor Gray
+} else {
+    Write-Host "[ERRO] Arquivo gen/.env nao encontrado!" -ForegroundColor Red
+    Write-Host "Execute: copy gen\.env.template gen\.env" -ForegroundColor Yellow
+    exit 1
+}
+
+Write-Host ""
+
 # --- Sobe Infraestrutura ---
 Write-Host "[INFRA] Iniciando Postgres + MinIO..." -ForegroundColor Cyan
 Write-Host "   (Isso pode levar um minuto... aguardando health checks.)" -ForegroundColor Gray
