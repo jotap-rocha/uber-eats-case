@@ -1,37 +1,37 @@
-# Scripts de Automação — Uber Eats Data Pipeline
+# Scripts de Automacao - Uber Eats Data Pipeline
 
-Esta pasta contém todos os scripts PowerShell para orquestração da infraestrutura local (Docker).
+Esta pasta contem todos os scripts PowerShell para orquestracao da infraestrutura local (Docker).
 
 ---
 
-## 📋 Índice de Scripts
+## Indice de Scripts
 
-### 🚀 Scripts de Inicialização
+### Scripts de Inicializacao
 
-| Script | Descrição | Usa Licença? |
+| Script | Descricao | Usa Licenca? |
 |--------|-----------|--------------|
-| `start-all.ps1` | Sobe **tudo** (Infra + Geradores) | ✅ Sim |
-| `start-infra.ps1` | Sobe **apenas** Postgres + MinIO | ❌ Não |
-| `start-generators.ps1` | Sobe **apenas** ShadowTraffic | ✅ Sim |
+| `start-infra.ps1` | Sobe **apenas** Postgres + MinIO | Nao |
+| `start-generators.ps1` | Sobe **apenas** ShadowTraffic | Sim |
+| `start-all.ps1` | Sobe **tudo** (Infra + Geradores) | Sim |
 
-### 🛑 Scripts de Parada
+### Scripts de Parada
 
-| Script | Descrição | Remove Dados? |
+| Script | Descricao | Remove Dados? |
 |--------|-----------|---------------|
-| `stop-all.ps1` | Para **todos** os serviços | ❌ Não |
-| `stop-infra.ps1` | Para **apenas** infra | ❌ Não |
-| `stop-generators.ps1` | Para **apenas** geradores | ❌ Não |
-| `reset-all.ps1` | **DESTRUTIVO**: Para tudo + deleta volumes | ✅ **SIM** |
+| `stop-infra.ps1` | Para **apenas** infra | Nao |
+| `stop-generators.ps1` | Para **apenas** geradores | Nao |
+| `stop-all.ps1` | Para **todos** os servicos | Nao |
+| `reset-all.ps1` | **DESTRUTIVO**: Para tudo + deleta volumes | **SIM** |
 
 ---
 
-## 🎯 Quando Usar Cada Script
+## Quando Usar Cada Script
 
-### `start-all.ps1` — Setup Completo
+### `start-all.ps1` - Setup Completo
 **Use quando:**
-- Primeira execução do projeto
+- Primeira execucao do projeto
 - Precisa de dados sendo gerados continuamente
-- Vai fazer uma demo/apresentação
+- Vai fazer uma demo/apresentacao
 
 **Exemplo:**
 ```powershell
@@ -40,30 +40,22 @@ Esta pasta contém todos os scripts PowerShell para orquestração da infraestru
 
 ---
 
-### `start-infra.ps1` — Apenas Infraestrutura
+### `start-infra.ps1` - Apenas Infraestrutura
 **Use quando:**
-- Quer economizar licença ShadowTraffic
+- Quer economizar licenca ShadowTraffic
 - Desenvolvimento local (queries, pipelines)
-- Já tem dados suficientes para testes
+- Ja tem dados suficientes para testes
 
 **Exemplo:**
 ```powershell
 .\scripts\start-infra.ps1
 ```
 
-**O que sobe:**
-- ✅ PostgreSQL (porta 5432)
-- ✅ MinIO (API: 9000 | Console: 9001)
-- ✅ Bucket `uber-eats` criado automaticamente
-
-**O que NÃO sobe:**
-- ❌ Geradores ShadowTraffic
-
 ---
 
-### `start-generators.ps1` — Apenas Geradores
+### `start-generators.ps1` - Apenas Geradores
 **Use quando:**
-- A infra **já está rodando** (`start-infra.ps1`)
+- A infra **ja esta rodando** (`start-infra.ps1`)
 - Precisa popular mais dados
 - Quer ligar/desligar geradores sob demanda
 
@@ -76,19 +68,12 @@ Esta pasta contém todos os scripts PowerShell para orquestração da infraestru
 .\scripts\start-generators.ps1
 ```
 
-**Pré-requisito:** Postgres e MinIO devem estar rodando.
-
-**O que sobe:**
-- ✅ `gen-drivers` → Popula tabela `drivers`
-- ✅ `gen-users` → Popula tabela `users`
-- ✅ `gen-minio` → Gera eventos JSON no bucket `uber-eats`
-
 ---
 
-### `stop-generators.ps1` — Economizar Licença
+### `stop-generators.ps1` - Economizar Licenca
 **Use quando:**
-- Quer parar de gastar licença ShadowTraffic
-- Dados já suficientes para testes
+- Quer parar de gastar licenca ShadowTraffic
+- Dados ja suficientes para testes
 - Infra deve continuar rodando
 
 **Exemplo:**
@@ -96,36 +81,24 @@ Esta pasta contém todos os scripts PowerShell para orquestração da infraestru
 .\scripts\stop-generators.ps1
 ```
 
-**O que para:**
-- ❌ Geradores ShadowTraffic
-
-**O que permanece ativo:**
-- ✅ PostgreSQL
-- ✅ MinIO
-
 ---
 
-### `stop-all.ps1` — Parar Tudo (Mantém Dados)
+### `stop-all.ps1` - Parar Tudo (Mantem Dados)
 **Use quando:**
 - Terminou o trabalho do dia
 - Quer liberar recursos do Docker
-- **NÃO quer apagar dados**
+- **NAO quer apagar dados**
 
 **Exemplo:**
 ```powershell
 .\scripts\stop-all.ps1
 ```
 
-**O que acontece:**
-- Para todos os containers
-- **Preserva volumes** (postgres_data, minio_data)
-- Dados permanecem intactos
-
 ---
 
-### `reset-all.ps1` — Reset Completo (DESTRUTIVO)
+### `reset-all.ps1` - Reset Completo (DESTRUTIVO)
 **Use quando:**
-- Quer começar do zero
+- Quer comecar do zero
 - Testes exigem ambiente limpo
 - Algo deu errado e precisa formatar
 
@@ -134,30 +107,30 @@ Esta pasta contém todos os scripts PowerShell para orquestração da infraestru
 .\scripts\reset-all.ps1
 ```
 
-**⚠️ ATENÇÃO:**
+**ATENCAO:**
 - Para todos os containers
 - **DELETA VOLUMES** permanentemente
 - **APAGA TODOS OS DADOS** do Postgres e MinIO
 - Remove arquivos `.json` gerados (secrets)
 
-**Não tem volta!** Use com cuidado.
+**Nao tem volta!** Use com cuidado.
 
 ---
 
-## 📊 Matriz de Decisão Rápida
+## Matriz de Decisao Rapida
 
-| Situação | Script Recomendado |
+| Situacao | Script Recomendado |
 |----------|-------------------|
 | Primeira vez executando | `start-all.ps1` |
 | Desenvolvimento local sem geradores | `start-infra.ps1` |
 | Preciso de mais dados | `start-generators.ps1` |
-| Economizar licença | `stop-generators.ps1` |
+| Economizar licenca | `stop-generators.ps1` |
 | Terminar o dia | `stop-all.ps1` |
-| Algo deu errado | `reset-all.ps1` → `start-all.ps1` |
+| Algo deu errado | `reset-all.ps1` -> `start-all.ps1` |
 
 ---
 
-## 🔧 Requisitos
+## Requisitos
 
 - Windows 10/11
 - Docker Desktop rodando
@@ -166,36 +139,36 @@ Esta pasta contém todos os scripts PowerShell para orquestração da infraestru
 
 ---
 
-## 💡 Dicas
+## Dicas
 
 1. **Sempre verifique o status dos containers:**
    ```powershell
    docker-compose ps
    ```
 
-2. **Monitore logs de um serviço específico:**
+2. **Monitore logs de um servico especifico:**
    ```powershell
    docker-compose logs -f postgres-ubereats
    docker-compose logs -f gen-drivers
    ```
 
-3. **Verificar se geradores estão ativos:**
+3. **Verificar se geradores estao ativos:**
    ```powershell
    docker-compose logs --tail=20 gen-drivers gen-users gen-minio
    ```
 
-4. **Licença ShadowTraffic expirada?**
+4. **Licenca ShadowTraffic expirada?**
    - Renove em [shadowtraffic.io](https://shadowtraffic.io)
    - Atualize `gen/.env` com novas credenciais
-   - Execute `.\scripts\reset-all.ps1` → `.\scripts\start-all.ps1`
+   - Execute `.\scripts\reset-all.ps1` -> `.\scripts\start-all.ps1`
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Erro: "License expired"
 ```powershell
-# 1. Renove a licença
+# 1. Renove a licenca
 # 2. Atualize gen/.env
 # 3. Reinicie os geradores
 .\scripts\stop-generators.ps1
@@ -204,7 +177,7 @@ Esta pasta contém todos os scripts PowerShell para orquestração da infraestru
 
 ### Erro: "Port already in use"
 ```powershell
-# Verifique se há containers rodando
+# Verifique se ha containers rodando
 docker ps
 
 # Para tudo e tente novamente
@@ -212,13 +185,14 @@ docker ps
 .\scripts\start-all.ps1
 ```
 
-### Containers "zumbis" (não param)
+### Containers "zumbis" (nao param)
 ```powershell
-# Reset forçado resolve isso
+# Reset forcado resolve isso
 .\scripts\reset-all.ps1
 ```
 
 ---
 
-**Dúvidas?** Consulte o `README.md` principal na raiz do projeto.
+**Duvidas?** Consulte o `README.md` principal na raiz do projeto.
+
 

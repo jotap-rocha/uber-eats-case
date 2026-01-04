@@ -3,8 +3,8 @@
         {
             "table": "users",
             "localConfigs": {
-                "maxEvents": 5000,
-                "throttleMs": 50
+                "maxEvents": 80000,
+                "throttleMs": 20
             },
             "row": {
                 "user_id": { "_gen": "uuid" },

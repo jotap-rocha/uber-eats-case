@@ -1,6 +1,7 @@
-# Pipeline de Dados Uber Eats — Portfólio (End-to-End)
+# Pipeline de Dados Uber Eats — Portfolio
 
-Este projeto é a primeira etapa de uma arquitetura de dados completa, construída como parte do desafio Semana Databricks 2.0. Automatizei um ambiente local (com Docker Compose + PowerShell) que simula fontes reais: PostgreSQL (OLTP) e MinIO (S3) alimentados em tempo real pelo ShadowTraffic. A arquitetura end-to-end prevista inclui ingestão com Airbyte, processamento no Databricks Lakehouse, transformações na Arquitetura Medalhão e governança com Unity Catalog, preparando consumo em Power BI e Databricks AI/BI Genie.
+Pipeline completo de engenharia de dados construido como portfolio profissional, simulando um ambiente de producao de um aplicativo de delivery (Uber Eats). O projeto implementa as melhores praticas de Data Engineering Moderna: arquitetura local automatizada (Docker + PowerShell), ingestao com Airbyte, processamento no Databricks Lakehouse com Delta Live Tables, Arquitetura Medalhao (Bronze → Silver → Gold), governanca com Unity Catalog e consumo em Power BI / Databricks AI/BI Genie.
+
 
 ---
 
@@ -12,38 +13,48 @@ Este projeto é a primeira etapa de uma arquitetura de dados completa, construí
 - Governança: Unity Catalog (qualidade, linhagem e segurança).
 - Consumo: Power BI e Databricks AI/BI Genie.
 
-## Escopo deste repositório
-- Implementa a Etapa 1: simulação local das fontes (PostgreSQL + MinIO) e orquestração dos geradores ShadowTraffic.
-- Fornece scripts para start/stop/reset e criação automática de tabelas/bucket.
-- As etapas de ingestão (Airbyte), processamento/transformação (Databricks) e consumo são parte da visão do projeto, mas não foram construídas ainda.
-
 ## Visão Geral (infra local desta etapa)
 - PostgreSQL: dados de `drivers` e `users` (tabelas criadas automaticamente por `sql/*.sql`).
 - MinIO: bucket `uber-eats` para eventos JSON (console em `http://localhost:9001`).
 - ShadowTraffic: geradores sintéticos para popular Postgres e MinIO.
 - Scripts PowerShell automatizam setup e orquestração (`start-all.ps1`, `stop-all.ps1`, `reset-all.ps1`).
 
-## Pré-requisitos
-- Para esta etapa (infra local):
-	- Windows 10/11 com Docker Desktop instalado e em execução.
-	- PowerShell 5.1+ (padrão do Windows) ou PowerShell 7+ (`pwsh`).
-	- Acesso à internet para baixar imagens Docker.
-- Para próximas etapas (opcional):
-	- Workspace Databricks com Unity Catalog habilitado.
-	- Airbyte (self-hosted via Docker) para ingestão a partir das fontes locais.
+## Requisitos de Hardware
+
+### Minimos Recomendados
+- **CPU**: Intel Core i5 8ª geracao ou equivalente (4 cores)
+- **RAM**: 16 GB (20 GB recomendado)
+- **Armazenamento**: 50 GB livres (SSD preferencial)
+- **Sistema Operacional**: Windows 10/11
+
+
+## Pre-requisitos de Software
+- Windows 10/11 com Docker Desktop instalado e em execucao
+- PowerShell 5.1+ (padrao do Windows) ou PowerShell 7+ (`pwsh`)
+- Acesso a internet para baixar imagens Docker
+- Workspace Databricks com Unity Catalog (opcional, para proximas etapas)
+- Licenca ShadowTraffic Free Trial (https://shadowtraffic.io)
+
+## Documentacao Completa
+
+📚 **Toda a documentacao tecnica esta em `docs/`**:
+
+| Componente | Documentacao | Descricao |
+|------------|--------------|-----------|
+| **Visao Geral** | [docs/README.md](docs/README.md) | Indice completo e guia de provisionamento |
+| **PostgreSQL** | [docs/postgres/README.md](docs/postgres/README.md) | Banco OLTP (drivers, users) |
+| **MinIO** | [docs/minio/README.md](docs/minio/README.md) | Data Lake S3 (eventos JSON) |
+| **ShadowTraffic** | [docs/shadowtraffic/README.md](docs/shadowtraffic/README.md) | Gerador de dados sinteticos |
+| **Airbyte** | [docs/airbyte/README.md](docs/airbyte/README.md) | Ferramenta de ingestao |
+| **Automacao** | [docs/automacao/README.md](docs/automacao/README.md) | Scripts PowerShell e Docker Compose |
 
 ## Estrutura do Projeto
 ```
 .
 ├─ docker-compose.yml
-├─ scripts/                 # Scripts de automação (PowerShell)
-│  ├─ start-all.ps1        # Sobe infra + geradores (tudo)
-│  ├─ start-infra.ps1      # Sobe APENAS Postgres + MinIO
-│  ├─ start-generators.ps1 # Sobe APENAS ShadowTraffic
-│  ├─ stop-all.ps1         # Para tudo
-│  ├─ stop-infra.ps1       # Para APENAS infra
-│  ├─ stop-generators.ps1  # Para APENAS geradores
-│  └─ reset-all.ps1        # Reset completo (DESTRUTIVO)
+├─ start-all.ps1
+├─ stop-all.ps1
+├─ reset-all.ps1
 ├─ gen/
 │  ├─ .env.template        # Modelo para credenciais e variáveis
 │  ├─ setup-configs.ps1    # Injeta variáveis do .env nos JSONs de geradores
@@ -82,88 +93,22 @@ copy gen\.env.template gen\.env
 ```
 powershell -ExecutionPolicy Bypass -File .\gen\setup-configs.ps1
 ```
-Observação: o `scripts\start-all.ps1` e `scripts\start-generators.ps1` executam esse passo automaticamente.
+Observação: o `start-all.ps1` executa esse passo automaticamente antes de subir os containers.
 
 ## Como Executar
+1) Certifique-se de que o Docker Desktop está em execução.
+2) No terminal (cmd.exe), execute o script de inicialização:
+```
+powershell -ExecutionPolicy Bypass -File .\start-all.ps1
+```
+O script:
+- Injeta segredos/variáveis de `gen/.env` nos templates de Postgres (`drivers.json` e `users.json`).
+- Sobe toda a infraestrutura via `docker-compose up -d` (em background).
 
-### Opção 1: Subir Tudo de Uma Vez (Recomendado para Primeira Execução)
-Certifique-se de que o Docker Desktop está em execução e execute:
-```
-powershell -ExecutionPolicy Bypass -File .\scripts\start-all.ps1
-```
-Este script:
-- Injeta segredos/variáveis de `gen/.env` nos templates de configuração.
-- Sobe infraestrutura (Postgres + MinIO) + Geradores ShadowTraffic.
-- A primeira execução pode levar ~1-2 minutos (download de imagens).
-
-### Opção 2: Subir Apenas a Infraestrutura (Sem Geradores)
-Para desenvolvimento local ou quando não precisa gerar dados continuamente:
-```
-powershell -ExecutionPolicy Bypass -File .\scripts\start-infra.ps1
-```
-Sobe apenas Postgres e MinIO. Útil para:
-- Economizar licença ShadowTraffic
-- Desenvolvimento de queries/pipelines
-- Testes com dados já existentes
-
-### Opção 3: Adicionar Geradores Depois
-Se já subiu apenas a infra e quer popular dados agora:
-```
-powershell -ExecutionPolicy Bypass -File .\scripts\start-generators.ps1
-```
-
-### Dicas:
+Dicas:
 - O ambiente sobe em background (detached). Veja logs com: `docker-compose logs -f`
 - Para acompanhar um serviço específico: `docker-compose logs -f postgres-ubereats`
-- Verificar status: `docker-compose ps`
-
-## Fluxos de Uso Comuns
-
-### 🎯 Cenário 1: Desenvolvimento Local (Sem Gerar Dados Continuamente)
-```powershell
-# 1. Sobe apenas a infra
-.\scripts\start-infra.ps1
-
-# 2. Trabalha com queries, pipelines, etc.
-# ...
-
-# 3. Quando precisar de mais dados:
-.\scripts\start-generators.ps1
-
-# 4. Espera popular... depois para os geradores
-.\scripts\stop-generators.ps1
-
-# 5. Para tudo quando terminar
-.\scripts\stop-all.ps1
-```
-
-### 🎬 Cenário 2: Demo/Apresentação (Precisa de Dados Imediatos)
-```powershell
-# Sobe tudo de uma vez
-.\scripts\start-all.ps1
-
-# Monitora logs para ver dados sendo gerados
-docker-compose logs -f gen-drivers gen-users gen-minio
-```
-
-### 🧪 Cenário 3: Reset Para Testes (Começar do Zero)
-```powershell
-# Reset completo (apaga tudo)
-.\scripts\reset-all.ps1
-
-# Sobe tudo novamente
-.\scripts\start-all.ps1
-```
-
-### 💰 Cenário 4: Economizar Licença ShadowTraffic
-```powershell
-# Para apenas os geradores (infra continua rodando)
-.\scripts\stop-generators.ps1
-
-# Infra permanece disponível para consultas/desenvolvimento
-# Quando precisar gerar mais dados:
-.\scripts\start-generators.ps1
-```
+- A primeira execução pode levar ~1-2 minutos (download de imagens e inicialização do Postgres/MinIO).
 
 ## Acessos Rápidos
 - Postgres: `localhost:5432` | DB: `ubereats_db` | Usuário: `usrUberEats` | Senha: `supersecret`
@@ -183,25 +128,14 @@ As tabelas `drivers` e `users` são criadas automaticamente a partir de `sql/cre
 - Dica: após conectar, atualize o esquema público para visualizar as tabelas `drivers` e `users`.
 
 ## Parar e Resetar
-
-### Parar Geradores (Mantém Infra Rodando)
-Útil para economizar licença ShadowTraffic sem derrubar o banco:
+- Parar e manter os dados (volumes preservados):
 ```
-powershell -ExecutionPolicy Bypass -File .\scripts\stop-generators.ps1
+powershell -ExecutionPolicy Bypass -File .\stop-all.ps1
 ```
-
-### Parar Tudo (Mantém Dados)
-Para e manter os dados (volumes preservados):
+- Reset total (DESTRUTIVO: remove volumes/dados):
 ```
-powershell -ExecutionPolicy Bypass -File .\scripts\stop-all.ps1
+powershell -ExecutionPolicy Bypass -File .\reset-all.ps1
 ```
-
-### Reset Total (DESTRUTIVO)
-Remove volumes/dados permanentemente:
-```
-powershell -ExecutionPolicy Bypass -File .\scripts\reset-all.ps1
-```
-⚠️ **ATENÇÃO**: Este comando apaga TODOS os dados do Postgres e MinIO!
 
 ## Solução de Problemas
 - `.env` ausente: o `setup-configs.ps1` falhará. Crie `gen/.env` a partir de `gen/.env.template` e preencha as variáveis.
@@ -230,4 +164,33 @@ docker-compose logs gen-minio
 
 ---
 
-Pronto! Com isso você tem uma fábrica de dados local para testes de pipelines, CDC e integrações, com dados sintéticos realistas.
+## Dados Gerados
+
+O ambiente atual possui:
+- **111.348 registros** na tabela `drivers`
+- **111.155 registros** na tabela `users`
+- **20+ streams de eventos JSON** no bucket MinIO `uber-eats` (orders, gps, payments, etc.)
+
+---
+
+## Proximos Passos
+
+1. **Ingestao (Airbyte)**: Configurar conectores Postgres → Databricks e MinIO → Databricks
+2. **Databricks (Bronze Layer)**: Criar pipelines DLT com Auto Loader para ingestao incremental
+3. **Databricks (Silver Layer)**: Limpeza, tipagem, expectations e flattening de JSONs
+4. **Databricks (Gold Layer)**: Agregacoes e metricas de negocio (analytics-ready)
+5. **Consumo**: Power BI e Databricks AI/BI Genie
+
+Consulte [docs/README.md](docs/README.md) para guias detalhados de cada etapa.
+
+---
+
+## Suporte e Contribuicoes
+
+- **Documentacao Completa**: Veja a pasta `docs/` para detalhes tecnicos de cada componente
+- **Issues**: Relate problemas via [GitHub Issues](https://github.com/jotap-rocha/uber-eats-case/issues)
+- **Duvidas**: Consulte primeiro a secao "Troubleshooting" de cada componente
+
+---
+
+Pronto! Com isso voce tem uma fabrica de dados local completa para testes de pipelines, CDC e integracoes, com dados sinteticos realistas.

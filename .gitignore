@@ -144,13 +144,6 @@ ENV/
 env.bak/
 venv.bak/
 
-# ShadowTraffic - Arquivos gerados com secrets (hardcoded credentials)
-gen/postgres/drivers.json
-gen/postgres/users.json
-
-# Airbyte CLI binário (não versionar executáveis)
-abctl-*
-
 # Spyder project settings
 .spyderproject
 .spyproject

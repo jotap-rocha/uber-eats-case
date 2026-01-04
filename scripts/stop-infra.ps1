@@ -1,19 +1,20 @@
 # ==============================================================================
 # Script: stop-infra.ps1
-# Descrição: Para APENAS a infraestrutura (Postgres + MinIO)
+# Descricao: Para APENAS a infraestrutura (Postgres + MinIO)
 # Autor: Uber Eats Data Pipeline Project
 # ==============================================================================
 
-Write-Host "🛑 Parando APENAS a infraestrutura..."
+Write-Host "[INFO] Parando APENAS a infraestrutura..."
 
-# Para apenas os serviços de infraestrutura
+# Para apenas os servicos de infraestrutura
 docker-compose stop postgres-ubereats minio-ubereats
 
 Write-Host ""
-Write-Host "✅ Infraestrutura parada."
-Write-Host "   -> Os volumes (dados) estão preservados."
+Write-Host "[OK] Infraestrutura parada."
+Write-Host "   -> Os volumes (dados) estao preservados."
 Write-Host "   -> Para iniciar novamente: .\scripts\start-infra.ps1"
 Write-Host ""
-Write-Host "⚠️  IMPORTANTE: Os geradores ShadowTraffic (se estiverem rodando) podem falhar."
-Write-Host "   -> Para parar os geradores também: .\scripts\stop-generators.ps1"
+Write-Host "[AVISO] Os geradores ShadowTraffic (se estiverem rodando) podem falhar."
+Write-Host "   -> Para parar os geradores tambem: .\scripts\stop-generators.ps1"
+
 

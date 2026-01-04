@@ -1,12 +1,12 @@
 # ==============================================================================
 # Script: start-generators.ps1
-# Descrição: Sobe APENAS os geradores ShadowTraffic (requer infra ativa)
+# Descricao: Sobe APENAS os geradores ShadowTraffic (requer infra ativa)
 # Autor: Uber Eats Data Pipeline Project
 # ==============================================================================
 
 Write-Host "[INFO] Verificando se a infraestrutura esta ativa..."
 
-# Verifica se o Postgres está rodando
+# Verifica se o Postgres esta rodando
 $postgresRunning = docker ps --filter "name=postgres-ubereats" --filter "status=running" --format "{{.Names}}"
 $minioRunning = docker ps --filter "name=minio-ubereats" --filter "status=running" --format "{{.Names}}"
 
@@ -39,4 +39,5 @@ Write-Host ""
 Write-Host "Monitoramento:"
 Write-Host "   -> Ver logs: docker-compose logs -f gen-drivers gen-users gen-minio"
 Write-Host "   -> Parar geradores: .\scripts\stop-generators.ps1"
+
 
