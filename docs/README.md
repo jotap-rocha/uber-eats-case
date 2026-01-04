@@ -1,30 +1,18 @@
-# Documentacao Completa - Uber Eats Data Pipeline
+# Documentacao Tecnica - Uber Eats Data Pipeline
 
-Este diretorio contem toda a documentacao tecnica e guias de provisionamento do projeto **Uber Eats Data Pipeline**.
-
----
-
-## Indice de Documentacao
-
-### Componentes da Infraestrutura
-
-| Componente | Descricao | Documentacao |
-|------------|-----------|--------------|
-| **PostgreSQL** | Banco OLTP para dados transacionais | [postgres/README.md](postgres/README.md) |
-| **MinIO** | Data Lake S3-compatible para eventos | [minio/README.md](minio/README.md) |
-| **ShadowTraffic** | Gerador de dados sinteticos | [shadowtraffic/README.md](shadowtraffic/README.md) |
-| **Airbyte** | Ferramenta de ingestao de dados | [airbyte/README.md](airbyte/README.md) |
-| **Automacao** | Scripts PowerShell e Docker Compose | [automacao/README.md](automacao/README.md) |
+Documentacao completa para provisionar o ambiente local.
 
 ---
 
-## Ordem de Leitura
+## Componentes
 
-1. **[automacao/README.md](automacao/README.md)** - Scripts e Docker Compose
-2. **[postgres/README.md](postgres/README.md)** - PostgreSQL
-3. **[minio/README.md](minio/README.md)** - MinIO (Data Lake)
-4. **[shadowtraffic/README.md](shadowtraffic/README.md)** - Geradores de dados
-5. **[airbyte/README.md](airbyte/README.md)** - Ingestao de dados
+| Componente | Documentacao | Descricao |
+|------------|--------------|-----------|
+| **Automacao** | [automacao/README.md](automacao/README.md) | Scripts PowerShell e Docker Compose |
+| **PostgreSQL** | [postgres/README.md](postgres/README.md) | Banco OLTP (drivers, users) |
+| **MinIO** | [minio/README.md](minio/README.md) | Data Lake S3 (eventos JSON) |
+| **ShadowTraffic** | [shadowtraffic/README.md](shadowtraffic/README.md) | Gerador de dados sinteticos |
+| **Airbyte** | [airbyte/README.md](airbyte/README.md) | Ferramenta de ingestao |
 
 ---
 
@@ -48,6 +36,16 @@ docker-compose ps
 
 ---
 
+## Ordem de Leitura
+
+1. [automacao/README.md](automacao/README.md) - Scripts e comandos basicos
+2. [postgres/README.md](postgres/README.md) - Configurar PostgreSQL
+3. [minio/README.md](minio/README.md) - Configurar MinIO
+4. [shadowtraffic/README.md](shadowtraffic/README.md) - Gerar dados sinteticos
+5. [airbyte/README.md](airbyte/README.md) - Configurar ingestao
+
+---
+
 ## Links
 
 - Repositorio: https://github.com/jotap-rocha/uber-eats-case
@@ -55,4 +53,3 @@ docker-compose ps
 - Airbyte: https://airbyte.com
 - Databricks: https://community.cloud.databricks.com
 - MinIO: https://min.io/docs
-
