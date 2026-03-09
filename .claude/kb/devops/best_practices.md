@@ -38,11 +38,3 @@ O objetivo é falhar rápido e entregar valor de forma consistente.
 * **Segurança (DevSecOps):** Implemente ferramentas de varredura de vulnerabilidades em dependências (como Snyk ou Dependabot) dentro do pipeline.
 
 ---
-
-### Informações Ausentes
-
-Para prosseguirmos com uma instrução de nível "especialista sênior", preciso saber:
-* **Qual o ambiente de execução principal do seu projeto atual?**
-* **Existe alguma restrição de ferramentas (ex: "só podemos usar ferramentas Open Source")?**
-
-**Deseja que eu elabore um exemplo prático de um arquivo de configuração de pipeline (YAML) baseado em uma dessas tecnologias?**
