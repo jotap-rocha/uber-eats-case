@@ -1,6 +1,8 @@
 # PostgreSQL - Banco OLTP
 
-PostgreSQL 15 com dados transacionais (drivers e users).
+PostgreSQL 15 com dados transacionais (drivers e users), executado no container Docker `postgres-ubereats` (imagem `postgres:15` via `docker-compose`).
+
+**Cliente recomendado:** [DBeaver](https://dbeaver.io/download/) — interface gráfica para consultas e exploração, no mesmo espírito do SSMS para SQL Server. Não é necessário instalar o Postgres no Windows.
 
 ---
 
@@ -57,10 +59,13 @@ CREATE TABLE users (
 
 ## Como Acessar
 
-### DBeaver (recomendado)
+### DBeaver (recomendado — equivalente ao SSMS)
 
-1. Baixe: https://dbeaver.io/download/
-2. Crie conexao PostgreSQL com as credenciais acima
+1. Instale: https://dbeaver.io/download/
+2. Nova conexão → **PostgreSQL**
+3. Host `localhost`, porta `5432`, database/usuário/senha conforme `gen/.env`
+4. Test connection → Finish
+5. Navegue até `drivers` e `users` no Database Navigator
 
 ### CLI (psql)
 

@@ -7,7 +7,7 @@ Motor: ShadowTraffic rodando em containers Docker.
 
 Fluxo A (Relacional): Dados transacionais (drivers, users) são injetados diretamente no banco PostgreSQL.
 
-Fluxo B (Eventos/NoSQL): Dados de eventos (pedidos, gps, pagamentos) são gerados como arquivos JSON e salvos no MinIO (S3-Compatible).
+Fluxo B (Eventos/NoSQL): Dados de eventos (pedidos, gps, pagamentos) e de outras fontes lógicas (MySQL, MongoDB, Kafka) são gerados como arquivos JSON e salvos no MinIO (S3-Compatible). **Não há containers Docker separados para MySQL, MongoDB ou Kafka** — o ShadowTraffic grava tudo no bucket `uber-eats` usando prefixos de pasta que simulam cada sistema (`kafka/orders/`, `mysql/restaurants/`, `mongodb/items/`, etc.). Os scripts Silver em `pipeline/silver/` usam nomes como `ingestion_kafka_*` ou `ingestion_mysql_*` para refletir a **origem lógica** dos dados, não serviços adicionais na máquina local.
 
 3. Camada de Ingestão & Landing (Raw Zone)
 Ferramenta: Airbyte OSS (Self-hosted).
@@ -20,9 +20,9 @@ O dado "aterrisa" em uma Landing Zone (External Volume no MinIO) ou diretamente 
 
 Estratégia para MinIO:
 
-Não há movimentação via Airbyte. O Databricks acessa os arquivos diretamente via External Location e External Volume.
+Não há movimentação via Airbyte para todos os casos; o Databricks pode acessar os arquivos diretamente via External Location e External Volume.
 
-O MinIO físico funciona como a Raw Zone lógica para eventos.
+O MinIO físico funciona como a Raw Zone lógica para eventos e para dados que, em produção, viriam de Kafka, MySQL ou MongoDB — aqui todos embarcados no mesmo bucket, organizados por prefixo S3.
 
 4. Camada de Processamento (Databricks Lakehouse)
 Governança: Unity Catalog (Namespace de 3 níveis: main.uber_eats.tabela).

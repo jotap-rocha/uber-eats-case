@@ -2,6 +2,10 @@
 
 Scripts PowerShell para gerenciar a infraestrutura local.
 
+**Pré-requisito:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado e em execução. O Compose baixa e sobe as imagens **PostgreSQL 15** e **MinIO** automaticamente — não instale esses serviços diretamente no Windows.
+
+Para consultar o Postgres após subir o ambiente, use o [DBeaver](https://dbeaver.io/download/) (veja [postgres/README.md](../postgres/README.md)).
+
 ---
 
 ## Scripts Disponiveis

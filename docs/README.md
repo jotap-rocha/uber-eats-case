@@ -16,6 +16,14 @@ Documentacao completa para provisionar o ambiente local.
 
 ---
 
+## Pre-requisitos (antes do clone)
+
+1. **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** — instalado e em execução. O Compose sobe automaticamente os containers **PostgreSQL 15** e **MinIO** (não é necessário instalar esses serviços no Windows).
+2. **[DBeaver](https://dbeaver.io/download/)** — para consultar o Postgres local (equivalente ao SSMS para SQL Server). Detalhes em [postgres/README.md](postgres/README.md).
+3. Licença **[ShadowTraffic](https://shadowtraffic.io)** e, para a etapa Databricks, um workspace com Unity Catalog.
+
+---
+
 ## Inicio Rapido
 
 ```powershell
@@ -27,11 +35,13 @@ cd uber-eats-case
 copy gen\.env.template gen\.env
 notepad gen\.env
 
-# 3. Inicie a infraestrutura
+# 3. Inicie a infraestrutura (baixa imagens Postgres + MinIO no 1º run)
 .\scripts\start-all.ps1
 
 # 4. Verifique o status
 docker-compose ps
+
+# 5. Conecte no Postgres via DBeaver (localhost:5432, credenciais do gen/.env)
 ```
 
 ---

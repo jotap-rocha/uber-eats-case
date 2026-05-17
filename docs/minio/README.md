@@ -2,6 +2,8 @@
 
 Data Lake local para eventos JSON (~20 streams).
 
+> **Nota sobre “fontes” no pipeline:** MySQL, MongoDB e Kafka **não rodam como containers** neste projeto. O ShadowTraffic simula todas essas origens gravando JSONL no bucket `uber-eats`, organizado por prefixos (`mysql/`, `mongodb/`, `kafka/`). Os scripts DLT em `pipeline/silver/` usam esses nomes apenas para indicar a **origem lógica** dos dados — tudo já está embarcado no MinIO após `.\scripts\start-all.ps1`.
+
 ---
 
 ## Credenciais

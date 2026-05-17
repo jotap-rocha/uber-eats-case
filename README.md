@@ -28,15 +28,28 @@ Pipeline completo de engenharia de dados construido como portfolio profissional,
 
 ## Pre-requisitos de Software
 
-- Windows 10/11 com Docker Desktop instalado e em execucao
-- PowerShell 5.1+ (padrao do Windows) ou PowerShell 7+ (`pwsh`)
-- Acesso a internet para baixar imagens Docker
-- Workspace Databricks com Unity Catalog (opcional, para proximas etapas)
-- Licenca ShadowTraffic Free Trial (https://shadowtraffic.io)
+Instale e configure **antes** de rodar o projeto:
+
+| Ferramenta | Para que serve |
+|------------|----------------|
+| **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** | Orquestra os containers do projeto. Deve estar **instalado e em execução** antes de qualquer script. |
+| **Imagens Postgres + MinIO** | Não é preciso instalar Postgres ou MinIO no Windows. O `docker-compose.yml` baixa e sobe automaticamente `postgres:15` e `minio/minio` na primeira execução de `.\scripts\start-all.ps1`. |
+| **[DBeaver](https://dbeaver.io/download/)** | Cliente gráfico para consultar o PostgreSQL local — equivalente ao SSMS no ecossistema SQL Server. Veja [docs/postgres/README.md](docs/postgres/README.md). |
+| **PowerShell** 5.1+ ou 7+ (`pwsh`) | Executa os scripts de automação em `scripts/`. |
+| **Licença ShadowTraffic** | [Free Trial](https://shadowtraffic.io) para gerar dados sintéticos. |
+| **Workspace Databricks** | Opcional nesta fase; necessário para Lakeflow/DLT (camadas Bronze → Gold). |
+
+Requisitos adicionais: Windows 10/11, acesso à internet (download de imagens Docker) e ~16 GB de RAM.
 
 ---
 
 ## Como Começar
+
+### Passo 0: Instalar Docker Desktop e DBeaver
+
+1. **Docker Desktop**: instale, abra o aplicativo e aguarde o ícone indicar que o engine está rodando.
+2. **DBeaver**: instale para inspecionar tabelas `drivers` e `users` após subir o ambiente (host `localhost`, porta `5432`, credenciais do `gen/.env`).
+3. **Não instale** Postgres nem MinIO nativamente no SO — eles rodam **dentro do Docker** via `docker-compose`.
 
 ### Passo 1: Configurar Credenciais (Pasta `gen/`)
 
@@ -130,8 +143,8 @@ docker-compose ps
 │   ├── stop-all.ps1       # Para tudo
 │   └── reset-all.ps1      # Reset destrutivo
 ├── sql/                    # 📊 Scripts SQL (DDL, CDC)
-├── pipeline/               # 🔄 Scripts Databricks (Delta Live Tables)
-│   └── README.md          # Pipelines Lakeflow (em desenvolvimento)
+├── pipeline/               # 🔄 Scripts Databricks (Lakeflow / DLT)
+│   └── README.md          # Bronze, Silver, Gold + nota sobre fontes no MinIO
 ├── docker-compose.yml      # Orquestração Docker
 └── README.md              # Este arquivo
 ```
@@ -159,14 +172,12 @@ O ambiente atual possui:
 
 ### 🚧 Em Desenvolvimento
 
-- [ ] Pipelines Databricks (Delta Live Tables)
-  - Camada Bronze (Auto Loader + CDC)
-  - Camada Silver (Limpeza e transformação)
-  - Camada Gold (Agregações e métricas)
-- [ ] Governança (Unity Catalog)
+- [x] Scripts SQL em `pipeline/` (Bronze parcial, Silver, Gold inicial)
+- [ ] Deploy e validação do pipeline Lakeflow no Databricks
+- [ ] Governança completa (Unity Catalog em todos os ambientes)
 - [ ] Dashboards (Power BI / Databricks AI/BI Genie)
 
-**Próxima etapa**: Os scripts de processamento de dados no Databricks serão desenvolvidos e armazenados na pasta `pipeline/`. Esses scripts serão anexados ao **Lakeflow (Delta Live Tables)** para implementar a Arquitetura Medalhão.
+**Próxima etapa**: Anexar os scripts de `pipeline/` a um pipeline Lakeflow no workspace e validar Bronze → Silver → Gold. Veja [pipeline/README.md](pipeline/README.md) — inclui esclarecimento de que MySQL/Kafka/MongoDB estão **embarcados no MinIO**, não em containers extras.
 
 ---
 

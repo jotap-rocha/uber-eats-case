@@ -1,94 +1,72 @@
 # Pipeline Databricks - Delta Live Tables (Lakeflow)
 
-Scripts de processamento de dados para o Databricks Lakehouse utilizando Delta Live Tables (DLT) no Lakeflow.
+Scripts SQL de processamento para o Databricks Lakehouse utilizando **Lakeflow Spark Declarative Pipelines** (DLT).
 
 ---
 
-## Visao Geral
+## Visão Geral
 
-Esta pasta contém os scripts Python/SQL que implementam a **Arquitetura Medalhão** no Databricks:
+Esta pasta implementa a **Arquitetura Medalhão**:
 
 ```
 Bronze Layer → Silver Layer → Gold Layer
-(Raw)         (Cleaned)       (Aggregated)
+(Raw/ODS)      (Cleaned)       (Aggregated)
 ```
 
-Os scripts serão anexados ao **Lakeflow (Delta Live Tables)** para criar pipelines de transformação com:
-- **Auto Loader**: Ingestão incremental de dados
-- **CDC (Change Data Capture)**: Captura de mudanças do PostgreSQL
-- **Expectations**: Qualidade de dados
-- **Unity Catalog**: Governança e linhagem
+Recursos utilizados:
+- **Auto Loader** / streaming tables para ingestão incremental
+- **CDC** (`APPLY CHANGES`) para Postgres via Airbyte
+- **Expectations** para qualidade de dados
+- **Unity Catalog** para governança
 
 ---
 
-## Estrutura Planejada
+## Estrutura Atual
 
 ```
 pipeline/
-├── bronze/
-│   ├── bronze_drivers.py       # Ingestão de drivers (CDC)
-│   ├── bronze_users.py         # Ingestão de users (CDC)
-│   └── bronze_events.py        # Ingestão de eventos JSON (Auto Loader)
-├── silver/
-│   ├── silver_drivers.py       # Limpeza e transformação
-│   ├── silver_users.py         # Limpeza e transformação
-│   └── silver_orders.py        # Flatten de JSONs + enriquecimento
-└── gold/
-    ├── gold_kpis.py            # Métricas de negócio
-    ├── gold_driver_stats.py    # Estatísticas de motoristas
-    └── gold_user_behavior.py   # Comportamento de usuários
+├── bronze/          # ODS Postgres (CDC): users, drivers
+├── silver/          # Limpeza e tipagem (18 scripts)
+└── gold/            # Métricas de negócio (3 scripts)
 ```
 
 ---
 
-## Status
+## Fontes de dados: o que o Docker sobe vs. o que está no MinIO
 
-🚧 **Em desenvolvimento**
+| Tipo | Onde vive | Como acessar |
+|------|-----------|--------------|
+| **Postgres OLTP** | Container `postgres-ubereats` | DBeaver em `localhost:5432` ou Airbyte → Databricks `raw` |
+| **MySQL, MongoDB, Kafka (lógicos)** | **Embarcados no MinIO** | Bucket `uber-eats`, prefixos S3 (ex.: `kafka/orders/`, `mysql/restaurants/`, `mongodb/items/`) |
 
-Os scripts serão desenvolvidos seguindo a documentação em:
-- `.claude/kb/how_construct_dlt.md` - Tutorial DLT, CDC e Auto Loader
-- `.claude/kb/project_architecture.md` - Arquitetura end-to-end
+> **Importante:** Os scripts Silver com nomes `ingestion_kafka_*`, `ingestion_mysql_*` ou `ingestion_mongodb_*` **não exigem** instalar MySQL, MongoDB ou Kafka no Docker. Eles modelam a **origem lógica** dos JSONs que o ShadowTraffic já grava no MinIO (`gen/minio/uber-eats.json`). Em produção, esses dados viriam de sistemas reais; no projeto local, o MinIO concentra todas essas “fontes” simuladas.
+
+Lista de prefixos no bucket: veja [docs/minio/README.md](../docs/minio/README.md).
 
 ---
 
-## Como Usar (Futuro)
-
-### 1. Anexar Scripts no Lakeflow
+## Como Usar no Lakeflow
 
 1. Acesse o Databricks Workspace
-2. Navegue até **Lakeflow (Delta Live Tables)**
-3. Crie um novo pipeline
-4. Anexe os scripts desta pasta
-5. Configure:
-   - **Target**: `main.uber_eats`
-   - **Storage**: External Location no Unity Catalog
-   - **Cluster**: Serverless (recomendado)
-
-### 2. Executar Pipeline
-
-```python
-# Via Databricks CLI (futuro)
-databricks pipelines create --settings pipeline-config.json
-databricks pipelines start --pipeline-id <id>
-```
+2. **Workflows → Lakeflow / ETL Pipeline** → novo pipeline (SQL)
+3. Anexe os scripts nesta ordem: `bronze/` → `silver/` → `gold/`
+4. Configure o **target** (catalog/schema, ex.: `uber_eats`)
+5. Garanta que o Airbyte (ou ingestão equivalente) populou o schema `raw` antes de executar Bronze/Silver que leem `uber_eats.raw.*`
+6. Execute o pipeline
 
 ---
 
-## Referências
+## Referências no Repositório
 
-- Delta Live Tables: https://docs.databricks.com/delta-live-tables/
-- Auto Loader: https://docs.databricks.com/ingestion/auto-loader/
-- Unity Catalog: https://docs.databricks.com/data-governance/unity-catalog/
-- Arquitetura Medalhão: https://www.databricks.com/glossary/medallion-architecture
+- `.cursor/kb/how_construct_dlt.md` — tutorial DLT, CDC e Auto Loader
+- `.cursor/kb/project_architecture.md` — arquitetura end-to-end
+- `docs/airbyte/README.md` — ingestão Postgres e MinIO → Databricks
 
 ---
 
-## Proximos Passos
+## Links Externos
 
-1. Desenvolver scripts Bronze (ingestão)
-2. Desenvolver scripts Silver (transformação)
-3. Desenvolver scripts Gold (agregação)
-4. Criar configuração de pipeline (JSON)
-5. Testar no Databricks Community
-6. Documentar expectations e testes de qualidade
-
+- [Delta Live Tables](https://docs.databricks.com/delta-live-tables/)
+- [Auto Loader](https://docs.databricks.com/ingestion/auto-loader/)
+- [Unity Catalog](https://docs.databricks.com/data-governance/unity-catalog/)
+- [Arquitetura Medalhão](https://www.databricks.com/glossary/medallion-architecture)
