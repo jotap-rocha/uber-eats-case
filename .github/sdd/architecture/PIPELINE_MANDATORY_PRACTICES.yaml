@@ -1,0 +1,267 @@
+# Mandatos operacionais para pipelines de dados (Databricks / Spark)
+# Fonte canônica referenciada por SDD, Dev Loop e Data Pipeline Review.
+# Referência de implementação: databricks-varonis-dataflow-prd
+# Versão: 1.0 — 2026-06-09
+
+version: "1.0"
+name: pipeline_mandatory_practices
+
+description: >
+  Checklist obrigatório quando o projeto é um pipeline de ingestão/transformação
+  (medalhão, batch ou streaming). SDD Define/Design, Dev Loop requirements/design
+  e Pipeline Review devem verificar estes itens mesmo que o analista não os peça.
+
+applies_when:
+  signals:
+    - medalhão bronze silver gold
+    - dlt delta live tables lakeflow
+    - autoloader cloudfiles ingestão
+    - spark streaming batch etl
+    - unity catalog pipeline
+    - landing raw csv json parquet
+    - pyodbc sql server insert destino relacional
+  exclude_when:
+    - biblioteca sem runtime de pipeline
+    - app web sem camada de dados batch
+    - documentação pura
+
+injection_policy:
+  on_omission: inject_as_must
+  document_in: [DEFINE, DESIGN, DEVLOOP_requirements, DEVLOOP_design]
+  flag: "injected_by_pipeline_mandate"
+
+categories:
+
+  - id: data_contract
+    title: "Contrato de dados versionado"
+    sdd_phases: [define, design, ship]
+    dev_loop_phases: [requirements, design, craft]
+    review_lanes: [data_contracts]
+    mandatory:
+      - id: DC-M01
+        text: "Documento operacional de contrato (owner, SLA, frequência, evolução schema)"
+        artifacts: ["docs/data-contract-*.md"]
+      - id: DC-M02
+        text: "CHANGELOG versionado alinhado ao contrato (MAJOR/MINOR/PATCH)"
+        artifacts: ["docs/CHANGELOG-data-contract-*.md"]
+      - id: DC-M03
+        text: "Código espelha contrato (schemas, listas de colunas por camada, metadados UC)"
+        artifacts: ["**/schemas.py", "**/medallion_contract.py", "**/dlt_uc_metadata.py"]
+      - id: DC-M04
+        text: "Checklist adoptar coluna/schema drift documentado (runbook reprocessamento)"
+        kb: [".github/kb/data-engineering-practices/schema-drift-autoloader-rescue.md"]
+      - id: DC-M05
+        text: "Testes offline de contrato (contagens colunas, comentários G02)"
+        artifacts: ["tests/test_medallion_contract.py", "tests/test_dlt_uc_metadata*.py"]
+
+  - id: medallion_architecture
+    title: "Arquitetura medalhão e UC"
+    sdd_phases: [define, design]
+    dev_loop_phases: [requirements, design]
+    review_lanes: [architecture_medallion]
+    mandatory:
+      - id: MED-M01
+        text: "Bronze preserva ingestão + linhagem (_ingest_ts, _source_file, _run_id/_batch_id)"
+      - id: MED-M02
+        text: "Silver/Gold com projeção explícita de colunas (não select *)"
+      - id: MED-M03
+        text: "Metadados UC G02 (comentários coluna/tabela via schema DLT ou DDL documentado)"
+      - id: MED-M04
+        text: "Política idempotência/reprocessamento documentada (SK, append, MERGE/apply_changes)"
+        review_lanes: [idempotency_reprocessing]
+
+  - id: data_quality_quarantine
+    title: "Qualidade e quarentena"
+    sdd_phases: [define, design]
+    dev_loop_phases: [requirements, design, craft]
+    review_lanes: [data_quality]
+    mandatory:
+      - id: DQ-M01
+        text: "Expectations/regras DQ por camada (Bronze corrupt, Silver negócio)"
+      - id: DQ-M02
+        text: "Política explícita inválidos: quarentena UC (não drop silencioso)"
+        kb: [".github/kb/data-engineering-practices/dlt-quarantine-split-tables.md"]
+      - id: DQ-M03
+        text: "Colunas audit quarentena: _dq_violated_rules, _quarantined_at"
+      - id: DQ-M04
+        text: "Métricas agregadas de quarentena persistidas ou emitidas (DQ-003)"
+        kb: [".github/kb/data-engineering-practices/dq-quarantine-metrics-uc.md"]
+      - id: DQ-M05
+        text: "Runbook: o que fazer com linhas em quarentena após correção/reprocessamento"
+
+  - id: schema_drift
+    title: "Schema drift (Auto Loader / streaming)"
+    sdd_phases: [define, design]
+    dev_loop_phases: [requirements, design, craft]
+    review_lanes: [data_contracts, data_quality, orchestration_messaging]
+    mandatory:
+      - id: SD-M01
+        text: "Schema fixo na origem + modo rescue ou política equivalente documentada"
+        kb: [".github/kb/data-engineering-practices/schema-drift-autoloader-rescue.md"]
+      - id: SD-M02
+        text: "Colunas fora do contrato → quarentena ou rejeição rastreável"
+      - id: SD-M03
+        text: "Alerta operacional (Teams/email) quando drift detectado"
+      - id: SD-M04
+        text: "Runbook adoptar coluna: código + deploy + reprocessamento path novo"
+
+  - id: teams_notifications
+    title: "Microsoft Teams / alertas operacionais"
+    sdd_phases: [define, design]
+    dev_loop_phases: [requirements, design, craft]
+    review_lanes: [orchestration_messaging, error_handling_resilience]
+    mandatory:
+      - id: TM-M01
+        text: "Alerta Teams (ou canal equivalente) em falha de pipeline/job/DLT step"
+        kb: ["docs/DATABRICKS_TEAMS_PIPELINES.md"]
+      - id: TM-M02
+        text: "Webhooks separados DSV e PRD (.env.example documentado)"
+      - id: TM-M03
+        text: "Smoke test de notificação por ambiente antes de PRD"
+      - id: TM-M04
+        text: "Job max_retries=0; reprocessamento manual documentado"
+      - id: TM-M05
+        text: "Card inclui camada, processo, tabela, ficheiro/run_id acionável"
+      - id: TM-M06
+        text: "Cards Teams concisos (Tier A operacional + Tier B falha com resumo no topo) — todos os tipos"
+        kb:
+          - ".github/kb/data-engineering-practices/teams-card-format.md"
+          - ".github/kb/data-engineering-practices/teams-schema-drift-card-format.md"
+
+  - id: observability
+    title: "Observabilidade e freshness"
+    sdd_phases: [define, design]
+    dev_loop_phases: [requirements, design]
+    review_lanes: [observability_logging]
+    mandatory:
+      - id: OBS-M01
+        text: "Logs estruturados JSON (run_id, camada, outcome, correlação)"
+        kb: [".github/kb/data-engineering-practices/structured-pipeline-logging.md"]
+      - id: OBS-M02
+        text: "Sentinela ou job independente para freshness SLA (ex. max(_ingest_ts) Gold)"
+        kb: [".github/kb/data-engineering-practices/sentinela-freshness-teams.md"]
+      - id: OBS-M03
+        text: "Dashboards SQL ou métricas UC para quarentena e duração/custo"
+
+  - id: error_handling
+    title: "Erros e resiliência"
+    sdd_phases: [design]
+    dev_loop_phases: [design, craft]
+    review_lanes: [error_handling_resilience]
+    mandatory:
+      - id: ERR-M01
+        text: "Fail-fast em path RAW inexistente ou config inválida"
+      - id: ERR-M02
+        text: "Distinção nos logs: schema drift vs corrupt vs DQ negócio vs infra"
+
+  - id: security_governance
+    title: "Segurança e governança"
+    sdd_phases: [define, design]
+    review_lanes: [security_governance]
+    mandatory:
+      - id: GOV-M01
+        text: "Secrets só em .env / secret scope — nunca em código versionado"
+      - id: GOV-M02
+        text: "Checklist grants UC (G03) quando pipeline escreve em catálogo"
+
+  - id: testing_ci
+    title: "Testes e validação"
+    sdd_phases: [design, build]
+    dev_loop_phases: [craft, execute, reflect]
+    review_lanes: [code_quality_solid, data_contracts]
+    mandatory:
+      - id: TEST-M01
+        text: "Testes unitários offline para contrato, DQ, notify"
+      - id: TEST-M02
+        text: "Pipeline review (/pipeline-review-init) antes de PRD ou release major"
+
+  - id: pyodbc_sqlserver
+    title: "PyODBC — escrita SQL Server (APPEND / Overwrite / TRUNCATE)"
+    sdd_phases: [define, design]
+    dev_loop_phases: [requirements, design, craft]
+    review_lanes: [idempotency_reprocessing, data_contracts]
+    human_gate: true
+    kb: [".github/kb/data-engineering-practices/pyodbc-sqlserver-write-mode.md"]
+    gate_template: ".github/sdd/templates/PYODBC_WRITE_MODE_GATE.md"
+    mandatory:
+      - id: PYODBC-M01
+        text: "Gate humano: APPEND ou Overwrite — utilizador decide; implicações documentadas"
+      - id: PYODBC-M02
+        text: "Se Overwrite: gate humano truncate=true vs false — default recomendado false"
+      - id: PYODBC-M03
+        text: "truncate=false preserva DDL/tipos; truncate=true risco drop+recreate com STRING"
+      - id: PYODBC-M04
+        text: "Decisão registada em DEFINE/DESIGN/Dev Loop (secção PyODBC ou PYODBC_WRITE_MODE_GATE)"
+      - id: PYODBC-M05
+        text: "Overwrite+truncate=true em PRD exige excepção documentada e aprovação DBA"
+
+pyodbc_human_gate:
+  trigger_signals:
+    - pyodbc
+    - sql server destino
+    - insert sql server
+    - jdbc odbc escrita relacional
+  questions:
+    - id: write_mode
+      prompt_pt: "A carga PyODBC no SQL Server será APPEND ou Overwrite?"
+      options:
+        - id: append
+          label: "APPEND — acrescenta linhas (dados antigos permanecem)"
+        - id: overwrite
+          label: "Overwrite — substitui conteúdo lógico da tabela"
+      require_ask_user_question: true
+    - id: truncate
+      prompt_pt: "Se Overwrite: truncate=true ou truncate=false?"
+      when: "write_mode == overwrite"
+      options:
+        - id: truncate_false
+          label: "truncate=false (Recomendado) — delete dados, mantém definição/tipos da tabela"
+        - id: truncate_true
+          label: "truncate=true (Risco) — pode dropar e recriar tabela como STRING"
+      require_ask_user_question: true
+      recommended: truncate_false
+
+sdd_define_injection:
+  section_title: "Requisitos operacionais de pipeline (mandato)"
+  intro_pt: >
+    Estes itens são obrigatórios para pipelines Databricks/Spark mesmo que o analista
+    não os tenha listado. Marque cada um como MUST/SHOULD/N/A com justificativa se N/A.
+  checklist_source: categories
+
+sdd_design_injection:
+  section_title: "Design operacional — componentes mandatórios"
+  file_manifest_hints:
+    - "docs/data-contract-{dataset}.md"
+    - "docs/CHANGELOG-data-contract-{dataset}.md"
+    - "docs/guia-schema-drift-{projeto}.md (se Auto Loader)"
+    - "docs/guia-teams-{plataforma}.md"
+    - "src/{package}/teams_notify.py"
+    - "src/{package}/schema_drift_rescue.py (se rescue)"
+    - "src/{package}/dlt_*_expectations.py"
+    - "src/{package}/sentinela/ (freshness)"
+    - "notebooks/smoke_test_teams_*.py"
+    - "tests/test_medallion_contract.py"
+
+dev_loop_injection:
+  requirements_addendum: ".github/sdd/templates/PIPELINE_OPS_REQUIREMENTS_APPENDIX.md"
+  design_addendum: ".github/sdd/templates/PIPELINE_OPS_DESIGN_APPENDIX.md"
+  craft_prompt_tasks:
+    - "Implementar ou validar contrato versionado + testes"
+    - "Implementar quarentena split + métricas DQ"
+    - "Implementar Teams falha + smoke DSV/PRD"
+    - "Implementar schema drift rescue + alerta (se ingestão schema variável)"
+    - "Implementar sentinela freshness (se SLA de dados)"
+    - "Documentar runbook reprocessamento e quarentena"
+    - "Gate PyODBC: APPEND/Overwrite + truncate (PYODBC_WRITE_MODE_GATE.md) se SQL Server"
+
+pipeline_review_injection:
+  note: >
+    Cada lane deve cruzar shallow_checks com os mandatory ids desta categoria.
+    Finding prefix adicional opcional: MAND-{category_id}-{item_id}
+
+reference_implementation:
+  repository: databricks-varonis-dataflow-prd
+  docs:
+    - docs/guia-schema-drift-varonis.md
+    - docs/guia-teams-databricks.md
+    - docs/data-contract-varonis-tb_dados_sensiveis.md

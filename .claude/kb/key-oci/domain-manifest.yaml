@@ -1,0 +1,24 @@
+domain: key-oci
+name: Key OCI
+description: Base de conhecimento do módulo Python key_oci para consumo de segredos no Oracle OCI Vault
+owner: data-engineering-sql-capacity
+entry_points:
+  index: index.md
+  quick_reference: quick-reference.md
+sections:
+  concepts:
+    - concepts/key-oci-module.md
+    - concepts/authentication-and-resolution.md
+  patterns:
+    - patterns/using-return-secret.md
+    - patterns/mcp-integration.md
+    - patterns/troubleshooting.md
+  references:
+    - references/config-keys.md
+sources_of_truth:
+  - src/utils/key_oci.py
+  - src/jobs/
+  - mcp/capacity-database/scripts/resolve_oci_mcp.py
+  - mcp/capacity-database/src/config.js
+  - notebooks/eda_sql_server_destino.ipynb
+last_updated: "2026-04-28"

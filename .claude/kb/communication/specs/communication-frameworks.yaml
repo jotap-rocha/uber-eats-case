@@ -1,0 +1,231 @@
+schema_version: "1.0"
+domain: communication
+file_type: frameworks
+last_validated: "2026-02-17"
+source: "MCP-validated: Web research on communication frameworks, progressive disclosure (NN/g, IxDF), IDA meeting framework, audience adaptation (University of Pittsburgh)"
+
+# Communication Frameworks Specification
+# Machine-readable definitions for agent consumption
+
+audience_levels:
+  executive:
+    description: "C-suite, VP, Director -- strategic decision-makers"
+    vocabulary: "business outcomes, ROI, risk, timeline"
+    max_jargon: 0
+    lead_with: "impact and recommendation"
+    max_length: "3-5 bullet points"
+    time_budget: "< 30 seconds"
+    goal: "decide"
+
+  manager:
+    description: "Team leads, project managers, product managers"
+    vocabulary: "process terms, metrics, status"
+    max_jargon: "minimal, defined on first use"
+    lead_with: "status, blockers, action items"
+    max_length: "1 page"
+    time_budget: "1-3 minutes"
+    goal: "act"
+
+  technical:
+    description: "Engineers, architects, data scientists"
+    vocabulary: "domain-specific, implementation details"
+    max_jargon: "full domain terminology"
+    lead_with: "architecture, trade-offs, code"
+    max_length: "unlimited"
+    time_budget: "5-10 minutes"
+    goal: "learn and implement"
+
+  novice:
+    description: "Non-technical stakeholders, new team members"
+    vocabulary: "everyday language, no assumptions"
+    max_jargon: 0
+    lead_with: "analogy, then 'why it matters'"
+    max_length: "1-2 paragraphs with visuals"
+    time_budget: "varies"
+    goal: "understand"
+
+progressive_disclosure:
+  layers:
+    - name: "headline"
+      length: "1 sentence"
+      contains: "core outcome"
+      audience: "everyone"
+      stop_condition: "reader only needs the result"
+
+    - name: "summary"
+      length: "2-3 sentences"
+      contains: "what, why, impact"
+      audience: "decision-makers"
+      stop_condition: "reader can decide or act"
+
+    - name: "detail"
+      length: "1-2 paragraphs"
+      contains: "how, trade-offs, risks"
+      audience: "managers, senior technical"
+      stop_condition: "reader understands approach"
+
+    - name: "deep-dive"
+      length: "unlimited"
+      contains: "code, specs, edge cases, config"
+      audience: "implementers"
+      stop_condition: "reader needs to build it"
+
+  exceptions:
+    - situation: "emergency/incident"
+      reason: "need all info immediately"
+      alternative: "lead with severity + impact + action"
+    - situation: "compliance/legal"
+      reason: "must disclose everything"
+      alternative: "structured checklist, nothing hidden"
+
+meeting_extraction:
+  framework: "IDA (Information-Decision-Action)"
+  tag_format:
+    information: "[I-{NNN}]"
+    decision: "[D-{NNN}]"
+    action: "[A-{NNN}]"
+    risk: "[R-{NNN}]"
+    blocker: "[B-{NNN}]"
+
+  action_item_fields:
+    - field: "description"
+      required: true
+      format: "verb + object"
+      example: "Implement PDF chunking for large documents"
+    - field: "owner"
+      required: true
+      format: "@person"
+      example: "@carol"
+    - field: "due_date"
+      required: true
+      format: "due:YYYY-MM-DD"
+      example: "due:2026-02-22"
+    - field: "priority"
+      required: true
+      format: "P1|P2|P3"
+      example: "P1"
+    - field: "status"
+      required: false
+      format: "open|in-progress|done|blocked"
+      default: "open"
+
+  decision_fields:
+    - field: "statement"
+      required: true
+      example: "Use PDF chunking approach instead of increasing timeouts"
+    - field: "decided_by"
+      required: true
+      example: "Dave (VP Eng)"
+    - field: "rationale"
+      required: true
+      example: "Address root cause rather than masking with longer timeouts"
+
+  risk_fields:
+    - field: "description"
+      required: true
+    - field: "likelihood"
+      required: true
+      options: ["high", "medium", "low"]
+    - field: "impact"
+      required: true
+      options: ["high", "medium", "low"]
+    - field: "mitigation"
+      required: true
+
+stakeholder_report:
+  sections:
+    - name: "header"
+      required: true
+      fields: ["project", "period", "author", "distribution", "status"]
+    - name: "executive_summary"
+      required: true
+      max_bullets: 5
+      content: "outcomes, impact, attention items, next milestones"
+    - name: "key_metrics"
+      required: false
+      format: "table with previous, current, target, trend"
+    - name: "decisions_needed"
+      required: false
+      format: "table with options, recommendation, deadline"
+    - name: "risks_and_blockers"
+      required: false
+      format: "table with likelihood, impact, mitigation, owner"
+    - name: "detailed_progress"
+      required: false
+      note: "skippable for executives"
+
+  status_options:
+    - value: "on-track"
+      color: "green"
+      meaning: "proceeding as planned"
+    - value: "at-risk"
+      color: "yellow"
+      meaning: "may miss targets without intervention"
+    - value: "blocked"
+      color: "red"
+      meaning: "cannot proceed, requires external action"
+    - value: "complete"
+      color: "blue"
+      meaning: "all deliverables finished"
+
+analogy_construction:
+  steps:
+    - step: 1
+      name: "Identify core mechanism"
+      question: "What is the ONE essential behavior to explain?"
+    - step: 2
+      name: "Find familiar domain"
+      question: "What everyday system works the same way?"
+    - step: 3
+      name: "Map components"
+      question: "Which parts correspond to which?"
+      output: "table of technical_term -> analogy_term -> why_it_maps"
+    - step: 4
+      name: "State limits"
+      question: "Where does the analogy break down?"
+      required: true
+
+  quality_tests:
+    - test: "structural_match"
+      question: "Does the analogy share the same causal structure?"
+      must_pass: true
+    - test: "familiarity"
+      question: "Would a non-technical person know the source domain?"
+      must_pass: true
+    - test: "precision"
+      question: "Does it mislead on any key property?"
+      must_not_fail: true
+    - test: "memorability"
+      question: "Can someone repeat it after hearing it once?"
+      should_pass: true
+    - test: "limits_stated"
+      question: "Have you said where the analogy breaks down?"
+      must_pass: true
+
+adaptation_rules:
+  signals:
+    - signal: "What does X mean?"
+      current_level: "any"
+      action: "define X, drop one level"
+    - signal: "Tell me more"
+      current_level: "any"
+      action: "escalate one level deeper"
+    - signal: "What's the bottom line?"
+      current_level: "any"
+      action: "jump to headline layer"
+    - signal: "Show me the code"
+      current_level: "technical"
+      action: "provide code examples"
+    - signal: "What should I do?"
+      current_level: "any"
+      action: "switch to action-oriented, lead with steps"
+    - signal: "silence or disengagement"
+      current_level: "any"
+      action: "simplify, ask a question"
+
+agent_usage:
+  meeting-analyst:
+    primary_files:
+      - "patterns/meeting-extraction.md"
+      - "patterns/stakeholder-report.md"
+    use_case: "Extract structured insights and generate stakeholder-ready reports"

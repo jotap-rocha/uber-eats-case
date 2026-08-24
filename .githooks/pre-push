@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Hooks versionados — não executam checagem de espelhos (modelo de sync removido).
+# Ative: ./scripts/enable-git-hooks.sh
+set -euo pipefail
+exit 0

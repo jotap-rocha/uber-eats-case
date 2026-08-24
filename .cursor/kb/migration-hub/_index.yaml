@@ -1,0 +1,39 @@
+# Manifest do KB — árvore em .cursor/kb/migration-hub/
+# Convenção: domínios em kebab-case; paths relativos à raiz kb/
+
+version: 1
+updated: "2026-06-03"
+entrypoint: index.md
+
+domains:
+  migration:
+    path: migration/index.md
+    purpose: "Migração cluster legado → novo"
+    patterns:
+      - migration/patterns/sql-capacity-yarn-prd-piloto.md
+      - migration/patterns/java11-sqlserver-ssl-dual-cause.md
+      - migration/patterns/pyodbc-destino-ihmtzbdbi.md
+      - migration/patterns/pyodbc-destino-hibrido-pyspark.md
+      - migration/patterns/oracle-python-oracledb-vips-firewall.md
+  infra:
+    path: infra/STATUS-AMBIENTE.md
+    purpose: "Estado dos nós, Java, Python, SSH, observabilidade"
+  hadoop:
+    path: hadoop/02-hadoop-3.3.6.md
+    purpose: "HDFS + YARN"
+  spark:
+    path: spark/01-spark-3.5.2.md
+    purpose: "Spark on YARN, ADLS"
+  data-stack:
+    path: data-stack/airflow/README.md
+    purpose: "Airflow, dbt, datalake"
+  labs:
+    path: labs/LAB-WORDCOUNT-YARN.md
+    purpose: "Laboratórios"
+
+cross_cutting:
+  planning: planning.md
+  team: team.md
+  architecture: architecture.md
+  naming_conventions: naming_conventions.md
+  ssh_cluster: infra/ssh_configuration.md

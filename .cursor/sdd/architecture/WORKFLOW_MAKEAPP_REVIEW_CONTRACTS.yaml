@@ -1,0 +1,112 @@
+# Workflow MakeApp Review — contrato de lanes e KB (contexto controlado)
+# Comandos: .cursor/commands/workflow-makeapp-review/workflow-makeapp-review.md (entrada) + reviewer-*.md
+# Cada lane = uma invocação separada (/reviewer-lane) para não misturar assuntos no chat.
+# Ajustado para template agentic SDD.
+
+version: "1.0"
+name: workflow_makeapp_review_lean
+description: >
+  Revisão por lanes com estado em disco; init cria RUN; lane/processa uma lane por vez;
+  round revalida pendências; fixer aplica correções guiadas e atualiza manifest.
+
+paths:
+  reviews_root: ".cursor/sdd/reviews"
+  manifest_filename: "REVIEW_MANIFEST.yaml"
+  log_filename: "REVIEW_LOG.md"
+  lanes_subdir: "lanes"
+  summary_filename: "REVIEW_SUMMARY.md"
+
+lanes:
+  - id: backend
+    title: "Backend & API / pipelines"
+    kb_entry:
+      - ".cursor/kb/sql-capacity/00-index.md"
+      - ".cursor/kb/app_security/index.md"
+    checklist_spec: ".cursor/kb/app_security/specs/security-release-checklist.yaml"
+    scope_globs:
+      - "**/*.py"
+      - "**/src/**"
+      - "**/api/**"
+      - "**/server/**"
+    shallow_checks:
+      - "Segredos e credenciais fora do repositório; cofres / env em CI"
+      - "Validação e permissões em rotas ou jobs sensíveis"
+
+  - id: frontend
+    title: "Frontend (se existir)"
+    kb_entry:
+      - ".cursor/kb/frontend/index.md"
+      - ".cursor/kb/ui_ux/index.md"
+    checklist_spec: ".cursor/kb/app_security/concepts/frontend-seguro.md"
+    scope_globs:
+      - "src/**/*.tsx"
+      - "src/**/*.ts"
+      - "vite.config.*"
+    shallow_checks:
+      - "Sem secrets no bundle (grep VITE_, API_KEY)"
+      - "Sem dangerouslySetInnerHTML sem sanitização"
+
+  - id: security
+    title: "Segurança da informação"
+    kb_entry:
+      - ".cursor/kb/app_security/index.md"
+    checklist_spec: ".cursor/kb/app_security/specs/security-release-checklist.yaml"
+    scope_globs:
+      - "**/*.py"
+      - "**/*.tf"
+      - "**/*.yaml"
+      - "scripts/**"
+    shallow_checks:
+      - "Itens required do security-release-checklist"
+      - "IaC, pipelines e logs sem dados sensíveis"
+
+  - id: databricks
+    title: "Databricks / lakehouse"
+    kb_entry:
+      - ".cursor/kb/databricks/index.md"
+      - ".cursor/kb/spark/index.md"
+    checklist_spec: null
+    scope_globs:
+      - "**/databricks/**"
+      - "**/*databricks*"
+      - "**/*.ipynb"
+    shallow_checks:
+      - "SQL dinâmico com validação ou binds; sem concatenação de input cru"
+      - "Jobs e UC alinhados à política do projeto"
+
+  - id: performance
+    title: "Performance (Spark / pipelines)"
+    kb_entry:
+      - ".cursor/kb/spark/index.md"
+      - ".cursor/kb/sql-capacity/00-index.md"
+    checklist_spec: null
+    scope_globs:
+      - "**/*.py"
+      - "**/pipelines/**"
+      - "**/jobs/**"
+    shallow_checks:
+      - "Particionamento, shuffle e custo em jobs pesados"
+      - "Paginação ou limites em leituras grandes"
+
+  - id: ui_ux
+    title: "UI / UX"
+    kb_entry:
+      - ".cursor/kb/ui_ux/index.md"
+    checklist_spec: ".cursor/kb/ui_ux/specs/ui-checklist.yaml"
+    scope_globs:
+      - "src/pages/**"
+      - "src/components/**"
+    shallow_checks:
+      - "Checklist UI (loading, erro, vazio, consistência)"
+
+execution_order_recommended:
+  - security
+  - backend
+  - frontend
+  - databricks
+  - performance
+  - ui_ux
+
+notes: >
+  Não executar todas as lanes no mesmo chat: usar um comando /reviewer-lane por lane.
+  Detalhes longos ficam em lanes/<id>.md; REVIEW_MANIFEST.yaml mantém só status enxuto.

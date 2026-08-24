@@ -1,0 +1,99 @@
+# Checklist de release de tela (UI/UX) — formato máquina + humano
+# Uso: agentes de revisão, scripts, ou checklist manual. Domínio: .cursor/kb/ui_ux
+
+schema_version: "1.0"
+domain: ui_ux
+file_type: release_checklist
+last_validated: "2026-04-29"
+locale_default: pt-BR
+description: >
+  Itens alinhados a index.md e quick-reference.md; severity required =
+  bloqueador para considerar tela "pronta" em produção interna.
+
+categories:
+  - id: clarity_goal
+    name: Clareza e objetivo
+    items:
+      - id: screen_goal_clear
+        question: "O objetivo da tela está claro?"
+        severity: required
+      - id: primary_action_evident
+        question: "A ação principal está evidente?"
+        severity: required
+
+  - id: feedback_states
+    name: Feedback e estados
+    items:
+      - id: loading_feedback
+        question: "Existe feedback de loading?"
+        severity: required
+      - id: friendly_error
+        question: "Existe mensagem de erro amigável?"
+        severity: required
+      - id: empty_state
+        question: "Existe estado vazio bem tratado?"
+        severity: required
+      - id: post_click_clear
+        question: "O usuário sabe o que aconteceu após clicar?"
+        severity: required
+
+  - id: consistency_responsive
+    name: Consistência e layout
+    items:
+      - id: system_consistency
+        question: "A tela é consistente com o restante do sistema (botões, cores, tabelas, mensagens)?"
+        severity: required
+      - id: responsive_ok
+        question: "Funciona bem em diferentes resoluções?"
+        severity: required
+      - id: copy_clear
+        question: "Os textos são claros e alinhados ao tom de voz?"
+        severity: recommended
+
+  - id: data_tables
+    name: Tabelas e dados
+    items:
+      - id: table_features
+        question: "A tabela tem filtro, ordenação e paginação quando aplicável?"
+        severity: recommended
+      - id: null_export_counts
+        question: "Há tratamento para nulos, contagem de registros e exportação quando necessário?"
+        severity: recommended
+
+  - id: safety_observability
+    name: Segurança na UX e observabilidade
+    items:
+      - id: critical_confirm
+        question: "Ações críticas têm confirmação explícita?"
+        severity: required
+      - id: technical_details_available
+        question: "Logs e detalhes técnicos estão disponíveis quando necessário?"
+        severity: recommended
+
+  - id: accessibility
+    name: Acessibilidade
+    items:
+      - id: not_color_only_status
+        question: "Status não depende só de cor (há texto e/ou ícone)?"
+        severity: required
+      - id: reduced_motion
+        question: "Animações respeitam prefers-reduced-motion (motion-reduce / equivalente)?"
+        severity: recommended
+      - id: keyboard_labels
+        question: "Navegação por teclado e labels em formulários estão adequados?"
+        severity: recommended
+
+  - id: i18n_microcopy
+    name: Microcopy e i18n
+    items:
+      - id: pluralization
+        question: "Contagens e plurares estão corretos (evitar 'registro(s)' fixo quando possível)?"
+        severity: recommended
+      - id: strings_extractable
+        question: "Strings preparadas para futura extração (chaves), se o produto for multi-idioma?"
+        severity: optional
+
+severity_definitions:
+  required: "Deve passar antes de merge/release da feature."
+  recommended: "Fortemente desejável; documentar exceção se não aplicável."
+  optional: "Depende do roadmap (ex.: i18n ainda não iniciado)."

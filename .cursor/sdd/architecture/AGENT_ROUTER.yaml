@@ -1,0 +1,689 @@
+version: '1.0'
+name: agent_router
+description: Roteador de agentes para template agentic SDD. O bootstrap registra o agente expert do projeto destino.
+intake_contract:
+  language_default: pt-BR
+  mode: execute_and_synthesize
+  max_context_paths: 3
+  max_agents_parallel: 3
+  min_agents: 1
+  steps:
+  - id: read_user_intent
+    summary_pt: Ler a pergunta ou o objetivo do usuário (ou pedir uma frase se estiver vazio).
+  - id: classify_one_line
+    summary_pt: Classificar em uma linha (Spark, pipeline SQL, Databricks, GCP, CrewAI, revisão, KB, outro).
+  - id: select_agents
+    summary_pt: Escolher de min_agents a max_agents_parallel ids em agents[] cujos domínios ajudam na pergunta (via intake_hints,
+      router ou cruzamento claro de temas).
+  - id: list_context_paths
+    summary_pt: Unir context_paths das hints aplicáveis; no máximo max_context_paths paths únicos (sem blocos longos de KB).
+  - id: execute_agents_parallel
+    summary_pt: Executar cada agente selecionado (Task em paralelo quando disponível; senão leitura sequencial do .md do agente
+      + KB indicada) e registrar achados por @id.
+  - id: synthesize_response
+    summary_pt: Concatenar achados, resolver conflitos com synthesis.rules_pt e entregar resposta completa ao usuário na mesma
+      conversa.
+  - id: optional_follow_up
+    summary_pt: Só se restar trabalho estruturado (workflow com RUN_ID, PR, SDD); caso contrário omitir secção.
+  synthesis:
+    rules_pt:
+    - A resposta consolidada deve responder diretamente à pergunta do usuário, não apenas listar agentes.
+    - Em conflito entre achados, priorizar evidência (KB, contrato, código citado) sobre opinião genérica.
+    - Se houver agente expert do projeto (domain/*-expert), dar peso maior a regras de negócio e operação locais.
+    - Não inventar @id fora de agents[]; não citar agentes que não participaram da execução.
+    - Manter idioma pt-BR salvo pedido explícito em outro idioma.
+  parallel_execution:
+    prefer_task_tool: true
+    task_subagent_default: generalPurpose
+    fallback_sequential: true
+    note_pt: Dispare uma Task por agente no mesmo turno quando a ferramenta Task existir; aguarde todas antes da síntese.
+conventions:
+  mention_format: '@{id}'
+  id_equals_basename: true
+  note_pt: O campo id de cada agente coincide com o nome do ficheiro .md (sem extensão).
+roster_groups:
+  data_engineering_spark:
+    title_pt: Engenharia de dados — Spark / Lakeflow
+    title_en: Data engineering — Spark / Lakeflow
+  databricks_lakehouse:
+    title_pt: Databricks (lakehouse, SQL, ML, plataforma)
+    title_en: Databricks lakehouse
+  ai_ml:
+    title_pt: IA / ML / orquestração de agentes
+    title_en: AI / ML / agent orchestration
+  code_quality:
+    title_pt: Qualidade e código Python
+    title_en: Code quality
+  exploration:
+    title_pt: Exploração, KB e arquitectura de agentes
+    title_en: Exploration & KB
+  domain_platform:
+    title_pt: Domínio — pipelines, extração, OCI, deploy
+    title_en: Domain — pipelines, extraction, OCI
+  communication:
+    title_pt: Comunicação, slides, planeamento
+    title_en: Communication & slides
+  dev_experience:
+    title_pt: Dev loop e prompts
+    title_en: Developer experience
+  workflow_sdd:
+    title_pt: Workflow SDD (brainstorm → ship)
+    title_en: SDD workflow
+  workflow_makeapp_review:
+    title_pt: MakeApp Review por lanes
+    title_en: MakeApp Review workflow
+  workflow_data_pipeline_review:
+    title_pt: Data Pipeline Review por lanes
+    title_en: Data Pipeline Review workflow
+  workflow_dev_loop:
+    title_pt: Dev Loop — implementação L2 por fases
+    title_en: Dev Loop L2 phased implementation
+  platform_edge:
+    title_pt: Infra HTTP / borda (nginx, TLS)
+    title_en: Web edge
+agents:
+- id: ai-data-engineer
+  file: .cursor/agents/ai-ml/ai-data-engineer.md
+  roster_group: ai_ml
+  specialty_en: Test automation expert for Python and Spark. Generates pytest unit tests, integration tests, and fixtures.
+    Uses KB + MCP validation. Use PROACTIVELY after code is written or when explicitly asked to a
+- id: ai-prompt-specialist
+  file: .cursor/agents/ai-ml/ai-prompt-specialist.md
+  roster_group: ai_ml
+  specialty_en: Expert Prompt Engineer for LLMs and multi-modal AI systems. Specializes in extraction, optimization, and structured
+    output. Uses KB + MCP validation. Use PROACTIVELY when optimizing prompts, designing
+- id: crewai-builder
+  file: .cursor/agents/ai-ml/crewai-builder.md
+  roster_group: ai_ml
+  specialty_en: 'Especialista em implementar equipas (crews) com o framework **CrewAI** em Python: Agent, Task, Crew, Process,
+    tools e salvaguardas. Use PROATIVAMENTE quando o pedido for código ou desenho concreto com'
+- id: genai-architect
+  file: .cursor/agents/ai-ml/genai-architect.md
+  roster_group: ai_ml
+  specialty_en: 'Elite GenAI Systems Architect specializing in multi-agent orchestration, agentic workflows, and production
+    AI systems. Uses KB + MCP validation. Use PROACTIVELY when designing AI systems, multi-agent '
+- id: llm-specialist
+  file: .cursor/agents/ai-ml/llm-specialist.md
+  roster_group: ai_ml
+  specialty_en: Prompt engineering specialist and LLM expert. Masters structured prompting, chain-of-thought reasoning, and
+    AI-powered extraction. Uses KB + MCP validation for optimized, production-ready prompts. Use
+- id: code-cleaner
+  file: .cursor/agents/code-quality/code-cleaner.md
+  roster_group: code_quality
+  specialty_en: Python code cleaning specialist. Removes excessive comments, applies DRY principles, and modernizes code.
+    Uses KB + MCP validation. Use PROACTIVELY when users ask to clean, refactor, or modernize Pyth
+- id: code-documenter
+  file: .cursor/agents/code-quality/code-documenter.md
+  roster_group: code_quality
+  specialty_en: Documentation specialist for creating comprehensive, production-ready documentation. Uses KB + MCP validation.
+    Use PROACTIVELY when users ask for documentation, README, or API docs.
+- id: code-reviewer
+  file: .cursor/agents/code-quality/code-reviewer.md
+  roster_group: code_quality
+  specialty_en: Expert code review specialist ensuring quality, security, and maintainability. Uses KB + MCP validation. Use
+    PROACTIVELY after writing or modifying significant code.
+- id: code-simplifier
+  file: .cursor/agents/code-quality/code-simplifier.md
+  roster_group: code_quality
+  specialty_en: 'Simplifies and refines code for clarity, consistency, and maintainability while preserving all functionality.
+    Focuses on recently modified code unless instructed otherwise.
+
+    model: opus
+
+    ---
+
+
+    You are an'
+- id: dual-reviewer
+  file: .cursor/agents/code-quality/dual-reviewer.md
+  roster_group: code_quality
+  specialty_en: Dual AI code review specialist combining CodeRabbit + Cursor Code for maximum coverage. Uses CodeRabbit CLI
+    for static analysis and Cursor for deep architectural insights. Use PROACTIVELY before creat
+- id: python-developer
+  file: .cursor/agents/code-quality/python-developer.md
+  roster_group: code_quality
+  specialty_en: Python code architect for data engineering and file parsing systems. Expert in clean code patterns, dataclasses,
+    type hints, generators, and testing. Works alongside specialized agents to produce prod
+- id: test-generator
+  file: .cursor/agents/code-quality/test-generator.md
+  roster_group: code_quality
+  specialty_en: Test automation expert for Python and Spark. Generates pytest unit tests, integration tests, and fixtures.
+    Uses KB + MCP validation. Use PROACTIVELY after code is written or when explicitly asked to a
+- id: adaptive-explainer
+  file: .cursor/agents/communication/adaptive-explainer.md
+  roster_group: communication
+  specialty_en: Master communicator that adapts explanations for any audience. Uses analogies, progressive disclosure, visuals,
+    and code-to-English translation. Use PROACTIVELY when explaining technical concepts to m
+- id: aide-slide-builder
+  file: .cursor/agents/communication/aide-slide-builder.md
+  roster_group: communication
+  specialty_en: Builds complete HTML slide decks for the Formacao AI Data Engineer using the AIDE design system. Reads lesson
+    content from support docs or user-provided briefs, applies KB rules for screen filling, ty
+- id: aide-slide-fixer
+  file: .cursor/agents/communication/aide-slide-fixer.md
+  roster_group: communication
+  specialty_en: Surgical correction agent for AIDE slide decks. Reads review reports from aide-slide-reviewer and applies
+    targeted, minimum-diff fixes. Never regenerates — only edits what the report identifies.
+- id: aide-slide-planner
+  file: .cursor/agents/communication/aide-slide-planner.md
+  roster_group: communication
+  specialty_en: Content architecture agent for AIDE slide decks. Decomposes lesson content into a structured slide-map before
+    any HTML is written. Separates planning from rendering to reduce cognitive load.
+- id: aide-slide-reviewer
+  file: .cursor/agents/communication/aide-slide-reviewer.md
+  roster_group: communication
+  specialty_en: 'Independent quality reviewer for AIDE slide decks. READ-ONLY — validates HTML presentations against 8 rule
+    categories from the AIDE KB, produces severity-classified reports. Use PROACTIVELY after any '
+- id: icatu-slide-builder
+  file: .cursor/agents/communication/icatu-slide-builder.md
+  roster_group: communication
+  specialty_en: Constrói apresentações HTML em slides no padrão visual corporativo Icatu (paleta, tipografia Roboto, logo,
+    geometrias de fundo) usando exclusivamente a KB `.cursor/kb/icatu-slides` e os PDFs em `templ
+- id: icatu-slide-fixer
+  file: .cursor/agents/communication/icatu-slide-fixer.md
+  roster_group: communication
+  specialty_en: Agente de correção cirúrgica para decks HTML **marca Icatu**. Lê relatórios do icatu-slide-reviewer e aplica
+    edições mínimas (diff mínimo) alinhadas à KB `icatu-slides` — nunca regerar o deck inteiro.
+- id: icatu-slide-planner
+  file: .cursor/agents/communication/icatu-slide-planner.md
+  roster_group: communication
+  specialty_en: Agente de arquitetura de conteúdo para decks HTML **marca Icatu**. Decompõe briefings ou documentos num **slide-map**
+    estruturado (tipos `slide--icatu-*`, chunks, padrões visuais com paleta Icatu) **a
+- id: icatu-slide-reviewer
+  file: .cursor/agents/communication/icatu-slide-reviewer.md
+  roster_group: communication
+  specialty_en: Revisor de qualidade independente para decks HTML **marca Icatu**. Somente LEITURA — valida o HTML contra
+    a KB `icatu-slides` (paleta oficial, logo, barra institucional, tipografia Roboto/Arial) e con
+- id: metting-analyst
+  file: .cursor/agents/communication/metting-analyst.md
+  roster_group: communication
+  specialty_en: Master communication analyst that transforms meeting notes, Slack threads, emails, and any communication into
+    structured, actionable documentation. Uses a comprehensive 10-section extraction framework
+- id: the-planner
+  file: .cursor/agents/communication/the-planner.md
+  roster_group: communication
+  specialty_en: Strategic AI architect that creates comprehensive implementation plans using real-time MCP intelligence. Uses
+    KB + MCP validation. Use PROACTIVELY when planning complex tasks, system design, or archit
+- id: lakeflow-architect
+  file: .cursor/agents/data-engineering/lakeflow-architect.md
+  roster_group: data_engineering_spark
+  specialty_en: Databricks Lakeflow expert for building Medallion architecture pipelines. Creates Bronze/Silver/Gold layers
+    with DLT. Uses KB + MCP validation. Use PROACTIVELY when designing pipelines, creating strea
+- id: lakeflow-expert
+  file: .cursor/agents/data-engineering/lakeflow-expert.md
+  roster_group: data_engineering_spark
+  specialty_en: 'Databricks Lakeflow (DLT) SME for pipeline development, CDC, data quality, and production deployment. Uses
+    KB + MCP validation. Use PROACTIVELY when troubleshooting Lakeflow pipelines or working with '
+- id: lakeflow-pipeline-builder
+  file: .cursor/agents/data-engineering/lakeflow-pipeline-builder.md
+  roster_group: data_engineering_spark
+  specialty_en: 'Builds Databricks Lakeflow (DLT) pipelines for Medallion Architecture. Uses KB + MCP validation for production-ready
+    pipelines. Use PROACTIVELY when creating Bronze/Silver/Gold tables, DLT notebooks, '
+- id: medallion-architect
+  file: .cursor/agents/data-engineering/medallion-architect.md
+  roster_group: data_engineering_spark
+  specialty_en: Seasoned Medallion Architecture expert with 10+ years of lakehouse experience. Provides strategic guidance,
+    layer design, domain modeling, and best practices. Use PROACTIVELY when designing data archi
+- id: spark-expert-on-premises
+  file: .cursor/agents/data-engineering/spark-expert-on-premises.md
+  roster_group: data_engineering_spark
+  specialty_en: 'Especialista PySpark para **repositórios** que rodam Spark on-premises (ex.: Standalone ou YARN), com integração
+    típica a vault de secrets (ex.: Oracle OCI Vault), JDBC (SQL Server/Oracle) e scripts p'
+- id: spark-cluster-migration-expert
+  file: .cursor/agents/data-engineering/spark-cluster-migration-expert.md
+  roster_group: data_engineering_spark
+  specialty_en: Especialista na migração operacional de pipelines PySpark do cluster Standalone legado (islnx011) para YARN/Hadoop
+    (nós 311–314, ADLS Gen2, Airflow 314). Portação de jobs, spark-submit, validação de cluster, checklist job a job, SSL
+    Java 11 e pyodbc no destino. Use PROATIVAMENTE para migration-hub.
+- id: spark-expert
+  file: .cursor/agents/data-engineering/spark-expert.md
+  roster_group: data_engineering_spark
+  specialty_en: Apache Spark SME focado em SparkSQL e PySpark para desenvolvimento de aplicações distribuídas, processamento
+    de dados em lote e streaming, otimização de performance e deployment em produção. Use proat
+- id: spark-performance-analyzer
+  file: .cursor/agents/data-engineering/spark-performance-analyzer.md
+  roster_group: data_engineering_spark
+  specialty_en: Spark performance analysis specialist for profiling, bottleneck detection, and optimization. Uses KB + MCP
+    validation. Use PROACTIVELY when experiencing slow jobs, high resource usage, or need perform
+- id: spark-specialist
+  file: .cursor/agents/data-engineering/spark-specialist.md
+  roster_group: data_engineering_spark
+  specialty_en: Apache Spark SME for performance optimization, architecture design, and troubleshooting. Use PROACTIVELY when
+    working with Spark code, data pipelines, or encountering performance issues.
+- id: spark-streaming-architect
+  file: .cursor/agents/data-engineering/spark-streaming-architect.md
+  roster_group: data_engineering_spark
+  specialty_en: Spark Structured Streaming expert for real-time pipelines, Kafka integration, and stream processing. Uses
+    KB + MCP validation. Use PROACTIVELY when building streaming applications, event processing, o
+- id: spark-troubleshooter
+  file: .cursor/agents/data-engineering/spark-troubleshooter.md
+  roster_group: data_engineering_spark
+  specialty_en: 'Spark debugging and troubleshooting expert for resolving errors, failures, and production issues. Uses KB
+    + MCP validation. Use PROACTIVELY when encountering Spark errors, job failures, or unexpected '
+- id: databricks-data-engineer
+  file: .cursor/agents/databricks/databricks-data-engineer.md
+  roster_group: databricks_lakehouse
+  specialty_en: PySpark and Delta Lake specialist for batch ETL, medallion architecture, incremental loads, schema design,
+    and Spark performance optimization. Use PROACTIVELY when writing PySpark transformations, des
+- id: databricks-genie-specialist
+  file: .cursor/agents/databricks/databricks-genie-specialist.md
+  roster_group: databricks_lakehouse
+  specialty_en: 'Especialista em Databricks Genie Space (sala Genie): curadoria NL→SQL, knowledge store, instruções e exemplos
+    SQL, Trusted assets, limites de capacidade, permissões UC/SQL warehouse, Agent mode e gove'
+- id: databricks-ml-engineer
+  file: .cursor/agents/databricks/databricks-ml-engineer.md
+  roster_group: databricks_lakehouse
+  specialty_en: MLflow, Mosaic AI Feature Store, and MLOps specialist for experiment tracking, model registry, feature engineering,
+    model serving, and end-to-end ML pipelines. Use PROACTIVELY when working with MLflow
+- id: databricks-pipeline-architect
+  file: .cursor/agents/databricks/databricks-pipeline-architect.md
+  roster_group: databricks_lakehouse
+  specialty_en: 'Lakeflow (DLT), Structured Streaming, Auto Loader, and Databricks Jobs specialist for declarative pipelines,
+    event-driven architectures, and workflow orchestration. Use PROACTIVELY when designing DLT '
+- id: databricks-platform-engineer
+  file: .cursor/agents/databricks/databricks-platform-engineer.md
+  roster_group: databricks_lakehouse
+  specialty_en: Databricks platform specialist for Unity Catalog governance, cluster management, security configuration, Databricks
+    Asset Bundles (DABs), and CI/CD deployment. Use PROACTIVELY when configuring Unity C
+- id: databricks-sql-analyst
+  file: .cursor/agents/databricks/databricks-sql-analyst.md
+  roster_group: databricks_lakehouse
+  specialty_en: Databricks SQL specialist for SQL Warehouses, DBSQL dashboards, Delta SQL operations, query optimization,
+    Lakehouse Federation, and SQL-based analytics on Delta Lake. Use PROACTIVELY when writing Delt
+- id: dev-loop-executor
+  file: .cursor/agents/dev/dev-loop-executor.md
+  roster_group: dev_experience
+  specialty_en: Dev Loop executor for Agentic Development (Level 2). Processes PROMPT_*.md files with verification loops,
+    circuit breakers, priority-based execution, and on-demand agent invocation. Supports session r
+- id: prompt-crafter
+  file: .cursor/agents/dev/prompt-crafter.md
+  roster_group: dev_experience
+  specialty_en: Interactive PROMPT.md builder for Dev Loop (Agentic Development Level 2). Guides users through requirements
+    gathering with targeted questions, then generates a ready-to-execute PROMPT file. The "PRD-c
+- id: dataops-builder
+  file: .cursor/agents/domain/dataops-builder.md
+  roster_group: domain_platform
+  specialty_en: Autonomous DataOps specialist for building AI monitoring agents. Uses CrewAI for multi-agent orchestration,
+    LangFuse for observability, and GCP for log export. Builds self-monitoring pipeline systems.
+- id: extraction-specialist
+  file: .cursor/agents/domain/extraction-specialist.md
+  roster_group: domain_platform
+  specialty_en: 'LLM extraction expert for invoice document processing. Specializes in Gemini vision prompts, Pydantic output
+    validation, and LangFuse observability. Uses KB-validated patterns for reliable structured '
+- id: function-developer
+  file: .cursor/agents/domain/function-developer.md
+  roster_group: domain_platform
+  specialty_en: Cloud Run function developer for the invoice processing pipeline. Builds Python serverless functions for image
+    processing, classification, and data loading. Uses KB-validated patterns for robust, scal
+- id: infra-deployer
+  file: .cursor/agents/domain/infra-deployer.md
+  roster_group: domain_platform
+  specialty_en: Infrastructure deployment specialist for GCP serverless architectures. Uses Terraform modules and Terragrunt
+    for multi-environment management. Applies KB-validated IaC patterns for reliable, repeatabl
+- id: key-oci-expert
+  file: .cursor/agents/domain/key-oci-expert.md
+  roster_group: domain_platform
+  specialty_en: Especialista no módulo `src/utils/key_oci.py` e no consumo de segredos do Oracle OCI Vault neste projeto.
+    Use PROATIVAMENTE quando a solicitação envolver leitura de secrets, `.config`, OCID, autentica
+- id: pipeline-architect
+  file: .cursor/agents/domain/pipeline-architect.md
+  roster_group: domain_platform
+  specialty_en: Event-driven pipeline architect for GCP serverless data engineering. Designs Cloud Run functions, Pub/Sub
+    topics, and GCS bucket workflows. Uses KB-validated patterns for invoice processing pipelines.
+- id: sql-capacity-expert
+  file: .cursor/agents/domain/sql-capacity-expert.md
+  roster_group: domain_platform
+  specialty_en: Especialista no projeto **sql-capacity-prd** com foco em pipelines PySpark + SQL Server, execução em produção,
+    troubleshooting e fallback operacional. Use PROATIVAMENTE quando a solicitação envolver j
+- id: teams-notifications-expert
+  file: .cursor/agents/domain/teams-notifications-expert.md
+  roster_group: domain_platform
+  specialty_en: Especialista em orquestração de mensagens em pipelines de dados via Microsoft Teams (pymsteams, webhooks Sentinel/Trilha).
+    Use PROATIVAMENTE para alertas de falha, notificações por DataFrame, secrets URL_WEBHOOK_* e integração em jobs Databricks.
+- id: agent-architect
+  file: .cursor/agents/exploration/agent-architect.md
+  roster_group: exploration
+  specialty_en: Especialista em projetar e implementar novos arquivos de agente Cursor (Markdown em `.cursor/agents/`). Use
+    PROATIVAMENTE quando o usuário quiser criar, clonar ou refatorar um agente; registrar no rou
+- id: codebase-explorer
+  file: .cursor/agents/exploration/codebase-explorer.md
+  roster_group: exploration
+  specialty_en: Elite codebase analyst delivering Executive Summaries + Deep Dives. Use PROACTIVELY when exploring unfamiliar
+    repos, onboarding, or needing codebase health reports.
+- id: kb-architect
+  file: .cursor/agents/exploration/kb-architect.md
+  roster_group: exploration
+  specialty_en: Creates complete KB sections from scratch using MCP validation. EXECUTION-FOCUSED. Use PROACTIVELY when creating
+    KB domains, auditing KB health, or adding concepts/patterns.
+- id: web-edge-specialist
+  file: .cursor/agents/infra/web-edge-specialist.md
+  roster_group: platform_edge
+  specialty_en: 'Especialista na camada web na borda da aplicação — IIS (Windows), NGINX e Apache httpd (Linux): reverse proxy,
+    TLS na borda, cabeçalhos encaminhados, timeouts e hardening. Usa a KB `app_web_middleware'
+- id: makeapp-review-fixer
+  file: .cursor/agents/workflow-makeapp-review/makeapp-review-fixer.md
+  roster_group: workflow_makeapp_review
+  specialty_en: Executa correções GUIADAS pelo usuário para findings de uma lane; atualiza código e OBRIGATORIAMENTE REVIEW_MANIFEST.yaml
+    / lanes/<lane>.md / REVIEW_LOG.md para não repetir trabalho. Use PROACTIVELY w
+- id: makeapp-review-init
+  file: .cursor/agents/workflow-makeapp-review/makeapp-review-init.md
+  roster_group: workflow_makeapp_review
+  specialty_en: 'Inicia uma execução MakeApp Review: cria RUN_ID, REVIEW_MANIFEST.yaml e stubs lanes/ sob .cursor/sdd/reviews/{RUN_ID}/.
+    Não executa análise profunda — só estrutura + próximos passos. Use PROACTIVELY'
+- id: makeapp-review-lane
+  file: .cursor/agents/workflow-makeapp-review/makeapp-review-lane.md
+  roster_group: workflow_makeapp_review
+  specialty_en: 'Executa revisão de UMA lane por invocação (backend, frontend, security, databricks, performance, ui_ux):
+    lê só CONTRACTS+manifest+globs da lane e KB/checklist referenciados, atualiza lanes/<lane>.md e'
+- id: makeapp-review-round
+  file: .cursor/agents/workflow-makeapp-review/makeapp-review-round.md
+  roster_group: workflow_makeapp_review
+  specialty_en: 'Segunda passagem incremental: lê REVIEW_MANIFEST e pendências, reexecuta verificações rasas nas lanes não-pass
+    ou afetadas por mudanças; regista novos achados e incrementa round. Use PROACTIVELY when '
+- id: data-pipeline-review-fixer
+  file: .cursor/agents/workflow-data-pipeline-review/data-pipeline-review-fixer.md
+  roster_group: workflow_data_pipeline_review
+  specialty_en: Corrige findings GUIADOS de pipelines de dados e atualiza manifest, lanes e log do RUN. Use PROACTIVELY quando
+    o usuário executar /pipeline-review-fixer.
+- id: data-pipeline-review-init
+  file: .cursor/agents/workflow-data-pipeline-review/data-pipeline-review-init.md
+  roster_group: workflow_data_pipeline_review
+  specialty_en: Inicia uma execução Data Pipeline Review criando RUN_ID, manifest e stubs para 11 lanes de pipeline de dados.
+    Use PROACTIVELY com /pipeline-review-init.
+- id: data-pipeline-review-lane
+  file: .cursor/agents/workflow-data-pipeline-review/data-pipeline-review-lane.md
+  roster_group: workflow_data_pipeline_review
+  specialty_en: Revisa UMA lane de pipeline de dados por invocação, cobrindo contratos, medallion, qualidade, idempotência,
+    observabilidade, segurança, performance e IA/ML.
+- id: data-pipeline-review-round
+  file: .cursor/agents/workflow-data-pipeline-review/data-pipeline-review-round.md
+  roster_group: workflow_data_pipeline_review
+  specialty_en: Revalida pendências e regressões do Data Pipeline Review após lanes ou fixers, incrementando round e atualizando
+    o log.
+- id: devloop-fixer
+  file: .cursor/agents/workflow-dev-loop/devloop-fixer.md
+  roster_group: workflow_dev_loop
+  specialty_en: Correção guiada de tarefa do PROMPT Dev Loop; atualiza PROGRESS, manifest e log do RUN. Use com /devloop-fixer.
+- id: devloop-init
+  file: .cursor/agents/workflow-dev-loop/devloop-init.md
+  roster_group: workflow_dev_loop
+  specialty_en: Inicia RUN Dev Loop (L2) com manifest, phases/ e artifacts/ sob dev-loop-runs. Use PROACTIVELY com /devloop-init.
+- id: devloop-phase
+  file: .cursor/agents/workflow-dev-loop/devloop-phase.md
+  roster_group: workflow_dev_loop
+  specialty_en: Executa UMA fase Dev Loop (gate, requirements, design, craft, prompt_review, reflect) por invocação.
+- id: devloop-execute
+  file: .cursor/agents/workflow-dev-loop/devloop-execute.md
+  roster_group: workflow_dev_loop
+  specialty_en: Executa PROMPT do RUN via dev-loop-executor após prompt_review=pass. Use com /devloop-execute.
+- id: devloop-round
+  file: .cursor/agents/workflow-dev-loop/devloop-round.md
+  roster_group: workflow_dev_loop
+  specialty_en: Revalida tarefas falhas do PROMPT após execute ou fixers; incrementa round no manifest.
+- id: brainstorm-agent
+  file: .cursor/agents/workflow/brainstorm-agent.md
+  roster_group: workflow_sdd
+  specialty_en: Collaborative exploration specialist for Phase 0 of SDD workflow. Use when starting a new feature with vague
+    requirements, needing to explore approaches through dialogue, or when user wants to clarify
+- id: build-agent
+  file: .cursor/agents/workflow/build-agent.md
+  roster_group: workflow_sdd
+  specialty_en: Implementation executor for Phase 3 of SDD workflow. Use when executing implementation from a DESIGN document,
+    creating files from manifest, delegating to specialized agents, and generating build repo
+- id: define-agent
+  file: .cursor/agents/workflow/define-agent.md
+  roster_group: workflow_sdd
+  specialty_en: Requirements extraction and validation specialist for Phase 1 of SDD workflow. Use when transforming brainstorm
+    output, meeting notes, or raw requirements into structured DEFINE documents with clarity
+- id: design-agent
+  file: .cursor/agents/workflow/design-agent.md
+  roster_group: workflow_sdd
+  specialty_en: 'Architecture and technical specification specialist for Phase 2 of SDD workflow. Use when creating technical
+    designs from DEFINE documents, making architecture decisions, creating file manifests, and '
+- id: iterate-agent
+  file: .cursor/agents/workflow/iterate-agent.md
+  roster_group: workflow_sdd
+  specialty_en: Cross-phase document updater with cascade awareness. Use when changes are discovered during any SDD phase,
+    when requirements evolve, or when updates need to propagate across BRAINSTORM, DEFINE, and DE
+- id: ship-agent
+  file: .cursor/agents/workflow/ship-agent.md
+  roster_group: workflow_sdd
+  specialty_en: 'Feature archival and lessons learned specialist for Phase 4 of SDD workflow. Use when a feature build is
+    complete, to archive artifacts, capture lessons learned, and create SHIPPED documentation.
+
+    tool'
+- id: airflow-dag-builder
+  file: .cursor/agents/data-engineering/airflow-dag-builder.md
+  roster_group: data_engineering_spark
+  specialty_en: Especialista em gerar DAGs Apache Airflow (TaskFlow 2.11.x) a partir da estrutura do projeto e da KB airflow
+    — medalhão, dependências explícitas e tasks de controle. Use PROATIVAMENTE para criar ou redesenhar DAGs em workspace/prd
+    ou /DATALAKE/dags.
+- id: big-data-cluster-expert
+  file: .cursor/agents/data-engineering/big-data-cluster-expert.md
+  roster_group: data_engineering_spark
+  specialty_en: 'Especialista na stack big data on-prem DATALAKE (cluster 311–314): Hadoop/YARN, Spark, Airflow no 314, ADLS
+    Gen2, SSH e KB migration-hub. Use PROATIVAMENTE para topologia, migração legado→novo e operação em nós.'
+- id: big-data-orchestrator
+  file: .cursor/agents/dev/big-data-orchestrator.md
+  roster_group: dev_experience
+  specialty_en: 'Orquestrador big data on-prem DATALAKE: escolhe agentes Spark/cluster, aplica spark-submit + config/spark.conf
+    (YARN) e KBs migration-hub, spark e design-pipelines-patterns. Use PROATIVAMENTE para jobs PySpark em workspace/prd e
+    migração 311–314.'
+- id: python-project-architect
+  file: .cursor/agents/dev/python-project-architect.md
+  roster_group: dev_experience
+  specialty_en: Arquitecto de projetos Python no DATALAKE — classifica dados vs automação, layout OOP, KBs design-pipelines e
+    design-automation. Use PROATIVAMENTE ao criar ou reorganizar estrutura de repositório Python antes de implementar código.
+intake_hints:
+- signals_pt: pyodbc, sql server insert, append overwrite truncate, escrita odbc destino relacional
+  primary_agent_id: sql-capacity-expert
+  context_paths:
+  - .cursor/kb/data-engineering-practices/pyodbc-sqlserver-write-mode.md
+  - .cursor/sdd/templates/PYODBC_WRITE_MODE_GATE.md
+  - .cursor/sdd/architecture/PIPELINE_MANDATORY_PRACTICES.yaml
+- signals_pt: mandatos pipeline, boas práticas pipeline, Teams drift quarentena sentinela, criar novo pipeline
+  primary_agent_id: pipeline-architect
+  context_paths:
+  - .cursor/sdd/architecture/PIPELINE_MANDATORY_PRACTICES.yaml
+  - docs/MANDATOS_PIPELINE_DADOS.md
+  - .cursor/kb/data-engineering-practices/index.md
+- signals_pt: schema drift, _rescued_data, coluna extra CSV, evolução contrato
+  primary_agent_id: databricks-data-engineer
+  context_paths:
+  - .cursor/kb/data-engineering-practices/schema-drift-autoloader-rescue.md
+  - .cursor/sdd/architecture/PIPELINE_MANDATORY_PRACTICES.yaml
+- signals_pt: quarentena DQ, métricas quarentena, registos inválidos
+  primary_agent_id: medallion-architect
+  context_paths:
+  - .cursor/kb/data-engineering-practices/dlt-quarantine-split-tables.md
+  - .cursor/kb/data-engineering-practices/dq-quarantine-metrics-uc.md
+- signals_pt: PySpark, Bronze/Silver/Gold, performance Spark, on-prem
+  primary_agent_id: spark-expert
+  context_paths:
+  - .cursor/kb/spark/index.md
+  - .cursor/agents/data-engineering/spark-expert.md
+- signals_pt: migração Spark, YARN, cluster 311, Standalone 7077, portação job, migration-hub, islnx011, pyodbc IHMTZBDBI,
+    Java 11 SSL
+  primary_agent_id: spark-cluster-migration-expert
+  context_paths:
+  - .cursor/kb/migration-hub/index.md
+  - .cursor/agents/data-engineering/spark-cluster-migration-expert.md
+- signals_pt: Lakeflow, DLT, streaming Databricks
+  primary_agent_id: lakeflow-architect
+  context_paths:
+  - .cursor/agents/data-engineering/lakeflow-architect.md
+  - .cursor/kb/spark/index.md
+- signals_pt: SQL capacity, jobs SQL Server, pipelines legados Java
+  primary_agent_id: sql-capacity-expert
+  context_paths:
+  - .cursor/kb/sql-capacity/00-index.md
+- signals_pt: Arquitectura de pipeline end-to-end, orquestração
+  primary_agent_id: pipeline-architect
+  context_paths:
+  - .cursor/agents/domain/pipeline-architect.md
+- signals_pt: Unity Catalog, clusters, segurança Databricks
+  primary_agent_id: databricks-platform-engineer
+  context_paths:
+  - .cursor/kb/databricks/index.md
+- signals_pt: SQL Warehouse, Delta SQL
+  primary_agent_id: databricks-sql-analyst
+  context_paths:
+  - .cursor/kb/databricks/index.md
+- signals_pt: MLflow, feature store, MLOps Databricks
+  primary_agent_id: databricks-ml-engineer
+  context_paths:
+  - .cursor/kb/databricks/index.md
+- signals_pt: Genie, espaços analíticos
+  primary_agent_id: databricks-genie-specialist
+  context_paths:
+  - .cursor/kb/databricks_genie/index.md
+- signals_pt: CrewAI, crews, agentes autónomos
+  primary_agent_id: crewai-builder
+  context_paths:
+  - .cursor/kb/crewai/index.md
+  - .cursor/agents/ai-ml/crewai-builder.md
+- signals_pt: Gemini, Vertex, extracção documental
+  primary_agent_id: genai-architect
+  context_paths:
+  - .cursor/agents/ai-ml/genai-architect.md
+- signals_pt: Terraform, Terragrunt, IaC GCP
+  primary_agent_id: infra-deployer
+  context_paths:
+  - .cursor/agents/domain/infra-deployer.md
+- signals_pt: OCI Vault, segredos, key_oci
+  primary_agent_id: key-oci-expert
+  context_paths:
+  - .cursor/kb/key-oci/index.md
+- signals_pt: Teams, webhook, pymsteams, alerta pipeline, notificação falha, Sentinel, Trilha auditoria
+  primary_agent_id: teams-notifications-expert
+  context_paths:
+  - .cursor/kb/teams-notifications/index.md
+  - .cursor/kb/teams-notifications/quick-reference.md
+  - .cursor/agents/domain/teams-notifications-expert.md
+- signals_pt: nginx, TLS, reverse proxy
+  primary_agent_id: web-edge-specialist
+  context_paths:
+  - .cursor/kb/app_web_middleware/index.md
+  - .cursor/agents/infra/web-edge-specialist.md
+- signals_pt: Segurança, secrets, checklist release
+  primary_agent_id: code-reviewer
+  context_paths:
+  - .cursor/kb/app_security/index.md
+- signals_pt: UX, feedback, checklist UI
+  primary_agent_id: adaptive-explainer
+  context_paths:
+  - .cursor/kb/ui_ux/index.md
+- signals_pt: Revisão por lanes (security → ui_ux)
+  primary_workflow:
+    slash: /workflow-makeapp-review
+    doc_path: .cursor/commands/workflow-makeapp-review/workflow-makeapp-review.md
+  context_paths:
+  - .cursor/commands/workflow-makeapp-review/workflow-makeapp-review.md
+  - .cursor/sdd/architecture/WORKFLOW_MAKEAPP_REVIEW_CONTRACTS.yaml
+- signals_pt: Revisão de pipeline de dados por lanes
+  primary_workflow:
+    slash: /workflow-data-pipeline-review
+    doc_path: .cursor/commands/workflow-data-pipeline-review/workflow-data-pipeline-review.md
+  context_paths:
+  - .cursor/commands/workflow-data-pipeline-review/workflow-data-pipeline-review.md
+  - .cursor/sdd/architecture/WORKFLOW_DATA_PIPELINE_REVIEW_CONTRACTS.yaml
+  - .cursor/kb/databricks/index.md
+- signals_pt: Dev Loop, implementação L2, PROMPT, requirements, design
+  primary_workflow:
+    slash: /workflow-dev-loop
+    doc_path: .cursor/commands/workflow-dev-loop/workflow-dev-loop.md
+  context_paths:
+  - .cursor/commands/workflow-dev-loop/workflow-dev-loop.md
+  - .cursor/sdd/architecture/WORKFLOW_DEV_LOOP_CONTRACTS.yaml
+  - DEV_LOOP_Guia_Comandos.md
+- signals_pt: Brainstorm, fase 0 SDD
+  primary_workflow:
+    slash: /brainstorm
+    doc_path: .cursor/commands/workflow/brainstorm.md
+  context_paths:
+  - .cursor/commands/workflow/brainstorm.md
+- signals_pt: Iterar desenho com agente
+  primary_workflow:
+    slash: /iterate
+    doc_path: .cursor/commands/workflow/iterate.md
+  context_paths:
+  - .cursor/commands/workflow/iterate.md
+  - .cursor/agents/workflow/iterate-agent.md
+- signals_pt: Onboarding, mapa do repositório
+  primary_agent_id: codebase-explorer
+  context_paths:
+  - .cursor/agents/README.md
+  - .cursor/CURSOR.MD
+- signals_pt: Criar ou auditar domínio na KB
+  primary_agent_id: kb-architect
+  context_paths:
+  - .cursor/commands/knowledge/create-kb.md
+  - .cursor/kb/_index.yaml
+- signals_pt: Airflow, DAG, TaskFlow, schedule, dags
+  primary_agent_id: airflow-dag-builder
+  context_paths:
+  - .cursor/kb/airflow/index.md
+  - .cursor/agents/data-engineering/airflow-dag-builder.md
+  - .cursor/kb/migration-hub/data-stack/airflow/README.md
+- signals_pt: Cluster DATALAKE, 311–314, migration-hub, SSH, YARN, Hadoop, islnx
+  primary_agent_id: big-data-cluster-expert
+  context_paths:
+  - .cursor/kb/migration-hub/index.md
+  - .cursor/agents/data-engineering/big-data-cluster-expert.md
+- signals_pt: spark-submit, config/spark.conf, portar job, workspace/prd, YARN on-prem
+  primary_agent_id: big-data-orchestrator
+  context_paths:
+  - .cursor/kb/migration-hub/spark/PADRAO-SPARK-SUBMIT-PROJETO-PRD.md
+  - .cursor/agents/dev/big-data-orchestrator.md
+  - .cursor/kb/design-pipelines-patterns/index.md
+- signals_pt: layout Python, dados vs automação, etl pipelines, src/app core integrations, OOP projeto
+  primary_agent_id: python-project-architect
+  context_paths:
+  - .cursor/kb/design-pipelines-patterns/index.md
+  - .cursor/kb/design-automation-project-patterns/index.md
+  - .cursor/agents/dev/python-project-architect.md
+intake_fallback:
+  primary_agent_id: codebase-explorer
+  note_pt: Se nenhuma hint aplicar com confiança, usar @codebase-explorer e sugerir paths via Glob/Grep.
+kb_reference:
+- kb_domain: Spark
+  path: .cursor/kb/spark/
+  used_by_roster_groups:
+  - data_engineering_spark
+- kb_domain: Pipeline SQL
+  path: .cursor/kb/sql-capacity/
+  used_by_agent_ids:
+  - sql-capacity-expert
+- kb_domain: Teams notifications
+  path: .cursor/kb/teams-notifications/
+  used_by_agent_ids:
+  - teams-notifications-expert
+- kb_domain: Databricks
+  path: .cursor/kb/databricks/
+  used_by_roster_groups:
+  - databricks_lakehouse
+- kb_domain: App security
+  path: .cursor/kb/app_security/
+  used_by_agent_ids:
+  - code-reviewer
+- kb_domain: UI/UX
+  path: .cursor/kb/ui_ux/
+  used_by_agent_ids: []
+- kb_domain: Web middleware
+  path: .cursor/kb/app_web_middleware/
+  used_by_agent_ids:
+  - web-edge-specialist
+skill_reference:
+- skill_name: git-boas-praticas-versionamento
+  path: .claude/skills/git-boas-praticas-versionamento/SKILL.md
+  used_by_agent_ids:
+  - build-agent
+  - ship-agent
+  - dev-loop-executor
+  - devloop-fixer
+# Skills próprias do projeto (não o bundle vendor em .claude/skills/). Ver .cursor/rules/skill-first.mdc para o critério de
+# decisão e a convenção de nome (prefixo de domínio, para não colidir com o bundle vendor).
+# Formato de cada entrada, quando populado:
+#   - skill_name: <nome>
+#     path: .claude/skills/<nome>/SKILL.md   # sempre .claude/skills/ — não é espelhado por mirror
+#     used_by_roster_groups: [...]   # ou used_by_agent_ids: [...]

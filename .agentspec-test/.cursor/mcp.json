@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "exa": {
+      "url": "https://mcp.exa.ai/mcp",
+      "headers": {
+        "x-api-key": "3d5bd3d3-549a-4d73-952a-7163e1613196"
+      }
+    },
+    "Ref": {
+      "type": "http",
+      "url": "https://api.ref.tools/mcp?apiKey=ref-8f3d363b7f24c1244d3b"
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "env": {
+        "CONTEXT7_API_KEY": "ctx7sk-04d7306c-afbd-453b-afc7-6bb6a49c586d",
+        "NODE_OPTIONS": ""
+      }
+    }
+  }
+}

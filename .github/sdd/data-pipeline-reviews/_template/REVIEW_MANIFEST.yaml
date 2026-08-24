@@ -1,0 +1,23 @@
+# Template — copiar para {BASE}/sdd/data-pipeline-reviews/{RUN_ID}/REVIEW_MANIFEST.yaml
+# Substituir run_id e created_at. Manter arquivo ENXUTO; detalhes em lanes/*.md.
+
+schema_version: "1.0"
+review_type: "data_pipeline"
+run_id: "REPLACE_RUN_ID"
+created_at: "REPLACE_ISO8601"
+branch_or_pr: ""
+round: 0
+
+# pending | in_progress | pass | fail | waived
+lanes:
+  data_contracts: { status: pending, updated_at: null }
+  architecture_medallion: { status: pending, updated_at: null }
+  data_quality: { status: pending, updated_at: null }
+  idempotency_reprocessing: { status: pending, updated_at: null }
+  code_quality_solid: { status: pending, updated_at: null }
+  error_handling_resilience: { status: pending, updated_at: null }
+  orchestration_messaging: { status: pending, updated_at: null }
+  observability_logging: { status: pending, updated_at: null }
+  performance_cost: { status: pending, updated_at: null }
+  security_governance: { status: pending, updated_at: null }
+  ml_ai_dataops: { status: pending, updated_at: null }

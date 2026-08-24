@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "databricks-sql": {
+      "type": "http",
+      "url": "https://dbc-029603a1-3b9b.cloud.databricks.com/api/2.0/mcp/sql",
+      "headersHelper": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\databricks-mcp-auth.ps1"
+    }
+  }
+}

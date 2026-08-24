@@ -4,6 +4,14 @@ Pipeline completo de engenharia de dados construido como portfolio profissional,
 
 ---
 
+## Primeiro clone?
+
+Leia [`get_started/START_HERE.md`](get_started/START_HERE.md). Ele explica o fluxo agentic, a fonte canonica `.cursor/`, os espelhos `.github/` e `.claude/`, e o triangulo de contexto.
+
+Veja também o índice completo em [`get_started/README.md`](get_started/README.md).
+
+---
+
 ## Arquitetura (alto nível)
 
 - Fontes: PostgreSQL (OLTP) e MinIO (Data Lake).
@@ -230,6 +238,21 @@ Para problemas específicos, consulte a documentação de cada componente em `do
 - MinIO: [docs/minio/README.md](docs/minio/README.md)
 - ShadowTraffic: [docs/shadowtraffic/README.md](docs/shadowtraffic/README.md)
 - Airbyte: [docs/airbyte/README.md](docs/airbyte/README.md)
+
+---
+
+## Agentic / SDD
+
+| Recurso | Uso |
+|---------|-----|
+| `CONTEXT.md` | Contexto rapido do projeto |
+| `.cursorrules` | Regras de colaboracao e arquitetura |
+| `.cursor/CURSOR.MD` | Contexto canonico do Cursor |
+| `.cursor/agents/domain/uber-eats-case-expert.md` | Agente especialista do dominio (a criar a partir de `templates/agent-expert.md.j2`) |
+| `.cursor/sdd/` | Contratos e artefatos SDD |
+| `get_started/SDD_Guia_Comandos.md` | Guia dos comandos SDD |
+
+Documentação completa do framework agentic: [`docs/00-INDEX.md`](docs/00-INDEX.md).
 
 ---
 

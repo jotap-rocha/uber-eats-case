@@ -1,0 +1,59 @@
+# Checklist para revisão de jobs Python + SQL Server
+schema_version: "1.0"
+domain: dev-python-automation
+file_type: review-checklist
+last_validated: "2026-05-07"
+source: "kb_internal"
+
+sections:
+  style_and_design:
+    description: "PEP 8 (baseline completa), SOLID e estrutura"
+    items:
+      - "Árvore de pastas alinhada a design-automation-project-patterns quando projeto segue padrão corporativo (src/<pacote>, core vs integrations, config/)"
+      - "Revisão considera a PEP 8 na íntegra (não só bullets desta KB)"
+      - "Ruff (ou equivalente) configurado para lint + format; indentação 4 espaços"
+      - "Funções curtas; SRP — IO, regra de negócio e notificação separados quando aplicável"
+      - "OCP/LSP/ISP/DIP aplicados onde há extensão ou testes com doubles"
+      - "Layout src/; execução via python -m ou pacote instalável; sem sys.path hacks"
+      - "Dependências injetadas (logger, repos, factories) conforme padrão DI"
+      - "Sem secrets ou connection strings completas em código ou logs"
+
+  typing_and_config:
+    description: "Tipos e configuração"
+    items:
+      - "Type hints em todas as assinaturas públicas (parâmetros + retorno)"
+      - "Config validada (pydantic ou equivalente); env/.env documentados"
+      - "Credenciais nunca commitadas no Git"
+
+  tools_and_ci:
+    description: "Ambiente e qualidade automática"
+    items:
+      - "venv (ou env isolado) obrigatório para desenvolvimento"
+      - "Versão de Python alinhada dev/CI/prod (pyenv, asdf, uv ou imagem pinada)"
+      - "pre-commit ou CI equivalente com Ruff (e type checker se política exigir)"
+
+  sql_server:
+    description: "Integração Microsoft SQL Server"
+    items:
+      - "Queries parametrizadas (sem f-string com entrada externa)"
+      - "Transações definidas para lotes de escrita relacionados"
+      - "Timeouts e comportamento em falha documentados"
+      - "Versão ODBC/driver alinhada ao ambiente de deploy"
+
+  observability:
+    description: "Erros e execução agendada"
+    items:
+      - "Exceções de domínio onde distingue recuperação vs abort"
+      - "Fail fast: validar entradas no início das funções públicas relevantes"
+      - "logging com níveis semânticos; sem print em produção"
+      - "Códigos de saída documentados para o scheduler"
+      - "Retries apenas para erros transitórios; idempotência nas escritas"
+
+  testing:
+    description: "Qualidade"
+    items:
+      - "Testes unitários em lógica pura e fakes do repositório"
+      - "Smoke ou integração mínima quando política do time exigir"
+
+related_kb:
+  sibling_data_focus: ".claude/kb/dev-python-engineering/index.md"

@@ -1,0 +1,29 @@
+# Checklist — *deploy* na borda web (HTTP/S)
+# Uso: revisão humana + automação parcial (grep em configs exportadas).
+version: "1.0"
+domain: app_web_middleware
+last_updated: "2026-05-08"
+
+categories:
+  tls:
+    - id: TLS-01
+      text: "HTTPS activo para tráfego público; redirecção HTTP→HTTPS definida."
+    - id: TLS-02
+      text: "Certificado válido, cadeia completa, data de expiração monitorizada."
+    - id: TLS-03
+      text: "Política de protocolos/ciphers alinhada ao baseline de segurança (sem TLS 1.0/1.1 em PRD)."
+  proxy:
+    - id: PROXY-01
+      text: "App não exposta directamente; apenas proxy/firewall alcança a porta upstream."
+    - id: PROXY-02
+      text: "Cabeçalhos X-Forwarded-* / Host acordados com a aplicação."
+    - id: PROXY-03
+      text: "Timeouts e limites de corpo alinhados entre proxy e aplicação."
+  headers:
+    - id: HDR-01
+      text: "Cabeçalhos de segurança relevantes (HSTS onde aplicável, X-Content-Type-Options, etc.)."
+  observability:
+    - id: OBS-01
+      text: "Logs de acesso activos com rotação e sem dados sensíveis em claro."
+    - id: OBS-02
+      text: "Correlação possível entre request-id na borda e logs da app (quando existir)."

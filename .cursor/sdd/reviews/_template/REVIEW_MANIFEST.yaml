@@ -1,0 +1,17 @@
+# Template — copiar para .cursor/sdd/reviews/{RUN_ID}/REVIEW_MANIFEST.yaml
+# Substituir run_id e created_at. Manter arquivo ENXUTO; detalhes em lanes/*.md
+
+schema_version: "1.0"
+run_id: "REPLACE_RUN_ID"
+created_at: "REPLACE_ISO8601"
+branch_or_pr: ""
+round: 0
+
+# pending | in_progress | pass | fail | waived
+lanes:
+  backend: { status: pending, updated_at: null }
+  frontend: { status: pending, updated_at: null }
+  security: { status: pending, updated_at: null }
+  databricks: { status: pending, updated_at: null }
+  performance: { status: pending, updated_at: null }
+  ui_ux: { status: pending, updated_at: null }

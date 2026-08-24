@@ -1,0 +1,25 @@
+domain: teams-notifications
+name: Microsoft Teams — Notificações (Icatu)
+description: Envio de mensagens ao Teams via pymsteams e webhooks do ambiente (Sentinel, Trilha de Auditoria, Databricks)
+owner: data-engineering
+entry_points:
+  index: index.md
+  quick_reference: quick-reference.md
+sections:
+  concepts:
+    - concepts/pymsteams-e-databricks.md
+    - concepts/webhooks-ambiente-icatu.md
+    - concepts/migracao-connectors-workflows.md
+  patterns:
+    - patterns/instalacao-e-secrets.md
+    - patterns/notificar-a-partir-de-dataframe.md
+    - patterns/falha-de-pipeline.md
+  references:
+    - references/chaves-webhook-env.md
+  specs:
+    - specs/webhook-keys.yaml
+sources_of_truth:
+  - .env.example
+  - .gitignore
+last_updated: "2026-05-26"
+mcp_validated: "2026-05-26"

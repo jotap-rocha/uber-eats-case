@@ -1,0 +1,452 @@
+# Knowledge Base Index
+# Machine-readable registry for KB domains
+
+version: "1.0"
+last_updated: "2026-05-26"
+
+# File Size Limits (SINGLE SOURCE OF TRUTH)
+limits:
+  quick_reference: 100
+  concept: 150
+  pattern: 200
+  spec: null
+  reference: null
+
+# Templates
+templates:
+  - name: concept
+    path: _templates/concept.md.template
+  - name: pattern
+    path: _templates/pattern.md.template
+  - name: index
+    path: _templates/index.md.template
+  - name: quick-reference
+    path: _templates/quick-reference.md.template
+  - name: spec
+    path: _templates/spec.yaml.template
+  - name: test-case
+    path: _templates/test-case.json.template
+  - name: domain-manifest
+    path: _templates/domain-manifest.yaml.template
+
+# Domain Registry
+domains:
+  pydantic:
+    name: Pydantic
+    description: Python data validation for LLM output parsing and structured extraction
+    path: pydantic/
+    mcp_validated: "2026-01-25"
+    entry_points:
+      index: specs/index.md
+      quick_reference: specs/quick-reference.md
+    concepts:
+      - name: base-model
+        path: concepts/base-model.md
+        confidence: 0.95
+      - name: field-types
+        path: concepts/field-types.md
+        confidence: 0.95
+      - name: validators
+        path: concepts/validators.md
+        confidence: 0.95
+      - name: nested-models
+        path: concepts/nested-models.md
+        confidence: 0.95
+    patterns:
+      - name: llm-output-validation
+        path: patterns/ll-output-validation.md
+      - name: extraction-schema
+        path: patterns/extraction-schema.md
+      - name: error-handling
+        path: patterns/error-handling.md
+      - name: custom-validators
+        path: patterns/custom-validtors.md
+
+  sql-capacity:
+    name: Pipeline SQL
+    description: Knowledge base de pipelines SQL, execução, troubleshooting e objetos de banco
+    path: sql-capacity/
+    mcp_validated: "2026-01-25"
+    entry_points:
+      index: 00-index.md
+    concepts:
+      - name: architecture
+        path: concepts/01-architecture.md
+        confidence: 0.95
+      - name: jobs-reference
+        path: concepts/02-jobs-reference.md
+        confidence: 0.95
+    patterns:
+      - name: execution-patterns
+        path: patterns/04-execution-patterns.md
+      - name: sql-objects
+        path: patterns/05-sql-objects.md
+      - name: troubleshooting
+        path: patterns/03-troubleshooting.md
+      - name: new-pipeline-guide
+        path: patterns/06-criacao-novo-pipeline.md
+      - name: portas-conexao-sql-server
+        path: patterns/07-portas-conexao-servidores.md
+      - name: fallback-manual-script-completo
+        path: patterns/08-fallback-manual-script-completo.md
+      - name: certificados-ssl
+        path: patterns/09-certificados-ssl.md
+      - name: ssl-java-configuration
+        path: patterns/10-ssl-java-configuration.md
+      - name: ssl-trustmanager-custom
+        path: patterns/11-ssl-trustmanager-custom.md
+    
+  crewai:
+    name: CrewAI
+    description: Multi-agent AI orchestration framework for autonomous DataOps monitoring and self-healing pipelines
+    path: crewai/
+    mcp_validated: "2026-04-13"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+      - name: agents
+        path: concepts/agents.md
+        confidence: 0.95
+      - name: crews
+        path: concepts/crews.md
+        confidence: 0.95
+      - name: tasks
+        path: concepts/tasks.md
+        confidence: 0.95
+      - name: tools
+        path: concepts/tools.md
+        confidence: 0.95
+      - name: memory
+        path: concepts/memory.md
+        confidence: 0.95
+      - name: processes
+        path: concepts/processes.md
+        confidence: 0.95
+    patterns:
+      - name: triage-investigation-report
+        path: patterns/triage-investigation-report.md
+      - name: log-analysis-agent
+        path: patterns/log-analysis-agent.md
+      - name: escalation-workflow
+        path: patterns/escalation-workflow.md
+      - name: slack-integration
+        path: patterns/slack-integration.md
+      - name: circuit-breaker
+        path: patterns/circuit-breaker.md
+      - name: crew-coordination
+        path: patterns/crew-coordination.md
+
+  icatu-slides:
+    name: Icatu Slides
+    description: Design system HTML para slides corporativos Icatu (paleta e layouts dos PDFs em templates/ppts/ICATU)
+    path: icatu-slides/
+    mcp_validated: "2026-04-15"
+    entry_points:
+      index: index.md
+      quick_reference: icatu-palette.md
+    concepts:
+      - name: sources-and-logo
+        path: sources-and-logo.md
+        confidence: 0.95
+      - name: design-system
+        path: design-system.md
+        confidence: 0.95
+    patterns:
+      - name: fluxo-agentes
+        path: fluxo-agentes.md
+      - name: layout-and-geometry
+        path: layout-and-geometry.md
+      - name: slide-types
+        path: slide-types.md
+      - name: component-library
+        path: component-library.md
+      - name: quality-rules
+        path: quality-rules.md
+      - name: slide-engine
+        path: slide-engine.md
+      - name: animation-patterns
+        path: animation-patterns.md
+      - name: advanced-visuals
+        path: advanced-visuals.md
+      - name: template
+        path: template.md
+
+  data-engineering-practices:
+    name: Práticas operacionais de pipeline
+    description: Mandatos Teams, schema drift, quarentena, sentinela, logs JSON — referência Varonis
+    path: data-engineering-practices/
+    entry_points:
+      index: index.md
+    patterns:
+      - name: schema-drift-autoloader-rescue
+        path: schema-drift-autoloader-rescue.md
+      - name: dlt-quarantine-split-tables
+        path: dlt-quarantine-split-tables.md
+      - name: dq-quarantine-metrics-uc
+        path: dq-quarantine-metrics-uc.md
+      - name: sentinela-freshness-teams
+        path: sentinela-freshness-teams.md
+      - name: structured-pipeline-logging
+        path: structured-pipeline-logging.md
+      - name: pyodbc-sqlserver-write-mode
+        path: pyodbc-sqlserver-write-mode.md
+
+  teams-notifications:
+    name: Microsoft Teams — Notificações (Icatu)
+    description: Envio de mensagens ao Teams via pymsteams, webhooks Sentinel/Trilha e padrões Databricks
+    path: teams-notifications/
+    mcp_validated: "2026-05-26"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+      - name: pymsteams-e-databricks
+        path: concepts/pymsteams-e-databricks.md
+        confidence: 0.92
+      - name: webhooks-ambiente-icatu
+        path: concepts/webhooks-ambiente-icatu.md
+        confidence: 0.95
+      - name: migracao-connectors-workflows
+        path: concepts/migracao-connectors-workflows.md
+        confidence: 0.88
+    patterns:
+      - name: instalacao-e-secrets
+        path: patterns/instalacao-e-secrets.md
+      - name: notificar-a-partir-de-dataframe
+        path: patterns/notificar-a-partir-de-dataframe.md
+      - name: falha-de-pipeline
+        path: patterns/falha-de-pipeline.md
+      - name: databricks-ambientes-e-smoke-test
+        path: patterns/databricks-ambientes-e-smoke-test.md
+        confidence: 0.95
+    specs:
+      - name: webhook-keys
+        path: specs/webhook-keys.yaml
+
+  key-oci:
+    name: Key OCI
+    description: Módulo Python key_oci e consumo de segredos no Oracle OCI Vault
+    path: key-oci/
+    mcp_validated: "2026-04-28"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+      - name: key-oci-module
+        path: concepts/key-oci-module.md
+        confidence: 0.95
+      - name: authentication-and-resolution
+        path: concepts/authentication-and-resolution.md
+        confidence: 0.95
+    patterns:
+      - name: using-return-secret
+        path: patterns/using-return-secret.md
+      - name: mcp-integration
+        path: patterns/mcp-integration.md
+      - name: troubleshooting
+        path: patterns/troubleshooting.md
+
+  app_security:
+    name: Segurança da informação (desenvolvimento)
+    description: Frontend/backend seguros, secrets, SQLi, APIs, checklist de release — KB transversal (exemplos legados podem citar outros produtos).
+    path: app_security/
+    mcp_validated: "2026-05-12"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+
+  ui_ux:
+    name: UI / UX
+    description: Padrões de interface, erro, loading, checklist UI — genérico.
+    path: ui_ux/
+    mcp_validated: "2026-05-12"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+
+  communication_kb:
+    name: Comunicação (KB)
+    description: Analogias e comunicação técnica — KB transversal.
+    path: communication/
+    mcp_validated: "2026-05-12"
+    entry_points:
+      index: index.md
+
+  frontend_kb:
+    name: Frontend (Vite / TS)
+    description: Config Vite e notas de frontend — KB transversal.
+    path: frontend/
+    mcp_validated: "2026-05-12"
+    entry_points:
+      index: index.md
+
+  databricks:
+    name: Databricks
+    description: Lakehouse, MLflow, SQL, plataforma — KB migrada.
+    path: databricks/
+    mcp_validated: "2026-05-12"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+
+  databricks_genie:
+    name: Databricks Genie
+    description: Genie spaces e governança analítica — KB migrada.
+    path: databricks_genie/
+    mcp_validated: "2026-05-12"
+    entry_points:
+      index: index.md
+
+  app_web_middleware:
+    name: Middleware web (nginx, Apache, IIS)
+    description: Borda HTTP, reverse proxy, hardening — KB migrada.
+    path: app_web_middleware/
+    mcp_validated: "2026-05-12"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+
+
+  dev-python-engineering:
+    name: Python para dados — engenharia
+    description: Boas práticas de desenvolvimento, performance, profiling, I/O colunar, paralelismo e pipelines observáveis
+    path: dev-python-engineering/
+    mcp_validated: "2026-05-06"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+      - name: profiling-baseline
+        path: concepts/profiling-baseline.md
+        confidence: 0.95
+      - name: vectorized-operations
+        path: concepts/vectorized-operations.md
+        confidence: 0.95
+      - name: typing-contracts
+        path: concepts/typing-contracts.md
+        confidence: 0.95
+      - name: memory-dtypes
+        path: concepts/memory-dtypes.md
+        confidence: 0.95
+      - name: io-columnar
+        path: concepts/io-columnar.md
+        confidence: 0.95
+      - name: parallelism-gil
+        path: concepts/parallelism-gil.md
+        confidence: 0.95
+      - name: reproducible-environment
+        path: concepts/reproducible-environment.md
+        confidence: 0.95
+      - name: testing-pipelines
+        path: concepts/testing-pipelines.md
+        confidence: 0.95
+      - name: pipeline-architecture
+        path: concepts/pipeline-architecture.md
+        confidence: 0.95
+      - name: clean-code-modules
+        path: concepts/clean-code-modules.md
+        confidence: 0.95
+    patterns:
+      - name: profiling-workflow
+        path: patterns/profiling-workflow.md
+      - name: schema-boundary
+        path: patterns/schema-boundary.md
+      - name: staged-pipeline-observability
+        path: patterns/staged-pipeline-observability.md
+      - name: parallelism-choice
+        path: patterns/parallelism-choice.md
+    specs:
+      - name: performance-checklist
+        path: specs/performance-checklist.yaml
+
+  dev-python-automation:
+    name: Python para automação
+    description: PEP 8, SOLID, SQL Server, layout src/, logging e jobs operacionais
+    path: dev-python-automation/
+    mcp_validated: "2026-05-07"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    specs:
+      - name: automation-job-checklist
+        path: specs/automation-job-checklist.yaml
+
+  design-automation-project-patterns:
+    name: Desenho de projeto — automação
+    description: Árvore src/app, core, integrations; YAML vs cofre; fail fast
+    path: design-automation-project-patterns/
+    mcp_validated: "2026-05-07"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    specs:
+      - name: project-layout-example
+        path: specs/project-layout-example.yaml
+
+  design-pipelines-patterns:
+    name: Desenho de projeto — dados (pastas, ETL, pipelines)
+    description: Árvore obrigatória etl/pipelines/src/sql/tests/config/data/logs/docs; complementa dev-python-engineering
+    path: design-pipelines-patterns/
+    mcp_validated: "2026-05-15"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+      - name: obrigatoriedade-arvore
+        path: concepts/obrigatoriedade-arvore.md
+        confidence: 0.95
+      - name: separacao-etl-vs-pipelines
+        path: concepts/separacao-etl-vs-pipelines.md
+        confidence: 0.95
+      - name: config-sql-secrets
+        path: concepts/config-sql-secrets.md
+        confidence: 0.95
+      - name: src-modulos-compartilhados
+        path: concepts/src-modulos-compartilhados.md
+        confidence: 0.95
+      - name: testes-por-nivel
+        path: concepts/testes-por-nivel.md
+        confidence: 0.95
+    patterns:
+      - name: scaffold-projeto-dados
+        path: patterns/scaffold-projeto-dados.md
+      - name: spark-submit-yarn-config
+        path: patterns/spark-submit-yarn-config.md
+    specs:
+      - name: project-layout-mandatory
+        path: specs/project-layout-mandatory.yaml
+
+  airflow:
+    name: Apache Airflow (práticas DAG)
+    description: TaskFlow 2.11.x, idempotência, pipeline pré/carga/pós-check, retries, dynamic task mapping; infra no migration-hub
+    path: airflow/
+    mcp_validated: "2026-05-11"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+      - name: taskflow-api
+        path: concepts/taskflow-api.md
+        confidence: 0.95
+      - name: idempotencia-macros-templates
+        path: concepts/idempotencia-macros-templates.md
+        confidence: 0.95
+      - name: dag-metadata-tags
+        path: concepts/dag-metadata-tags.md
+        confidence: 0.95
+    patterns:
+      - name: pipeline-pre-check-load-post-check
+        path: patterns/pipeline-pre-check-load-post-check.md
+      - name: retries-callbacks-alertas
+        path: patterns/retries-callbacks-alertas.md
+      - name: dynamic-task-mapping
+        path: patterns/dynamic-task-mapping.md
+
+  migration-hub:
+    name: Migration Hub (DATALAKE)
+    description: KB da migração e da stack on-prem; Markdown em migration-hub/; scripts em workspace/jp/platform
+    path: migration-hub/
+    entry_points:
+      index: index.md
+      kb_tree: index.md

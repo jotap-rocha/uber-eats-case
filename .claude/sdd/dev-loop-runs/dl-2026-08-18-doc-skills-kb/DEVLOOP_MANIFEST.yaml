@@ -1,0 +1,23 @@
+schema_version: "1.0"
+run_id: "dl-2026-08-18-doc-skills-kb"
+created_at: "2026-08-18T00:03:41Z"
+branch_or_feature: ""
+quality_tier: production
+development_level: L2
+gate_decision: continue_l2
+prompt_file: ".claude/dev/tasks/PROMPT_dl-2026-08-18-doc-skills-kb.md"
+round: 0
+
+artifacts:
+  requirements: "artifacts/dl-2026-08-18-doc-skills-kb_requirements.md"
+  design: "artifacts/dl-2026-08-18-doc-skills-kb_design.md"
+
+# pending | in_progress | pass | fail | blocked | waived
+phases:
+  gate: { status: pass, updated_at: "2026-08-18T00:05:31Z" }
+  requirements: { status: pass, updated_at: "2026-08-18T00:08:31Z" }
+  design: { status: pass, updated_at: "2026-08-18T00:11:06Z" }
+  craft: { status: pass, updated_at: "2026-08-18T00:12:47Z" }
+  prompt_review: { status: pass, updated_at: "2026-08-18T00:13:48Z" }
+  execute: { status: pass, updated_at: "2026-08-18T00:16:59Z" }
+  reflect: { status: pass, updated_at: "2026-08-18T00:20:57Z" }

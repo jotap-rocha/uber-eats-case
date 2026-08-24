@@ -210,3 +210,29 @@ __marimo__/
 gen/postgres/drivers.json
 gen/postgres/users.json
 abctl-v0.30.3-windows-amd64/
+
+# --- Framework agentic (Dev Loop / SDD) ---
+# Projetos Databricks Asset Bundle desenvolvidos com este framework (não fazem parte do
+# framework agentic em si — só .claude/, .cursor/, .github/, .vscode/ são versionados aqui).
+dab_local_dev/
+dab_local_prd/
+
+# Estado local de instaladores/CLI, específico da máquina (paths absolutos, tokens, timestamps)
+.ai-dev-kit/
+
+# Notas pessoais de trabalho
+/proximos-passos.md
+
+logs/
+output/
+
+# Relatório e staging de upgrade agentic (gerado por agentspec/upgrade_agentic.py)
+.agentic-upgrade/
+
+# Dev Loop keeps log directories in the agent trees, while generated logs remain ignored.
+!.claude/dev/logs/
+!.claude/dev/logs/.gitkeep
+!.cursor/dev/logs/
+!.cursor/dev/logs/.gitkeep
+!.github/dev/logs/
+!.github/dev/logs/.gitkeep

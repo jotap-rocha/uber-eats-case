@@ -1,0 +1,61 @@
+# Referência de árvore — automação com src layout + config por ambiente
+schema_version: "1.0"
+domain: design-automation-project-patterns
+file_type: directory-manifest
+last_validated: "2026-05-07"
+source: "kb_internal"
+
+root_items:
+  pyproject.toml:
+    role: "metadata do pacote e dependências"
+  README.md:
+    role: "setup e execução"
+  ".config":
+    role: "bootstrap cofre (local); não versionar segredos"
+    gitignored: true
+  logs/:
+    role: "saída de runtime"
+    gitignored: typical
+
+config_tree:
+  path: config/
+  environments: [dev, prod]
+  domain_files_example:
+    - database.yaml
+    - teams.yaml
+    - app.yaml
+
+src_package:
+  path_template: "src/"
+  app_layer:
+    allowed_files:
+      - "main.py"
+    optional_shim:
+      __main__.py: "apenas delegar para main.main(); sem lógica"
+    responsibilities:
+      - "config bootstrap / ajustes"
+      - "resolver repo root automaticamente se necessário"
+      - "inferir PRD vs não-PRD pelo path (critério projeto)"
+      - "dry-run"
+      - "start → único entry público em core"
+      - "finish"
+      - "opcional --show (resolver e imprimir; sem core)"
+  core_layer:
+    role: "orquestração única — passos de negócio; sem IO bruto"
+    example_flow_sentinela:
+      - "montar molde mestre das cargas"
+      - "verificar cada carga (via integrations)"
+      - "disparar mensagens quando política exigir"
+      - "certificar que tudo foi verificado"
+      - "finalizar fluxo de negócio"
+  integrations_layer:
+    role: "execução real — database, messaging, cloud"
+  utils_layer:
+    role: "helpers (repo_root, contratos); sem regra de negócio pesada"
+
+tests_tree:
+  unit: "isolados"
+  integration: "fluxos entre componentes"
+
+related_kb:
+  coding_standards: ".cursor/kb/dev-python-automation/index.md"

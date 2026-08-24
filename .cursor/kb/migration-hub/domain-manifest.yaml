@@ -1,0 +1,38 @@
+domain: migration-hub
+name: Migration Hub
+description: Base de conhecimento da migração cluster legado → novo (Hadoop/YARN, Spark 3.5, Airflow, infra nós 311–314)
+owner: data-engineering-platform
+entry_points:
+  index: index.md
+  quick_reference: migration/quick-reference.md
+sections:
+  concepts:
+    - migration/concepts/legado-vs-novo.md
+    - architecture.md
+    - cluster_topology.md
+  patterns:
+    - migration/patterns/portacao-de-job.md
+    - migration/patterns/sql-capacity-yarn-prd-piloto.md
+    - migration/patterns/java11-sqlserver-ssl-dual-cause.md
+    - migration/patterns/pyodbc-destino-ihmtzbdbi.md
+    - migration/patterns/pyodbc-destino-hibrido-pyspark.md
+    - spark/PADRAO-SPARK-SUBMIT-PROJETO-PRD.md
+    - spark/CHECKLIST-BOAS-PRATICAS.md
+  references:
+    - planning.md
+    - infra/STATUS-AMBIENTE.md
+    - infra/ssh_configuration.md
+    - inventory.md
+    - data-stack/airflow/README.md
+    - data-stack/dbt/README.md
+sources_of_truth:
+  - .cursor/kb/migration-hub/index.md
+  - .cursor/kb/migration-hub/_index.yaml
+  - .cursor/kb/migration-hub/migration/patterns/java11-sqlserver-ssl-dual-cause.md
+  - .cursor/kb/migration-hub/migration/patterns/pyodbc-destino-ihmtzbdbi.md
+  - .cursor/kb/migration-hub/migration/patterns/pyodbc-destino-hibrido-pyspark.md
+  - .cursor/agents/data-engineering/spark-cluster-migration-expert.md
+  - /DATALAKE/workspace/jp/platform/README.md
+  # Piloto de referência (código fora deste template):
+  - /DATALAKE/workspace/prd/data-sql-capacity-evolution-prd/src/utils/pyodbc_sqlserver.py
+last_updated: "2026-06-03"

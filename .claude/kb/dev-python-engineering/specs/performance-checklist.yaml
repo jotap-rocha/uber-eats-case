@@ -1,0 +1,49 @@
+# Checklist de revisão — Python para dados (performance e robustez)
+# MCP Validated: 2026-05-06
+
+version: 1
+domain: dev-python-engineering
+
+profiling:
+  - id: PROF-01
+    text: Existe baseline (tempo + volume) antes da mudança?
+  - id: PROF-02
+    text: Hotspot confirmado com cProfile/line_profiler/py-spy?
+  - id: PROF-03
+    text: Métricas de negócio (linhas, montantes) alinhadas ao baseline?
+
+compute:
+  - id: CPU-01
+    text: Loops Python evitados em grandes DataFrames?
+  - id: CPU-02
+    text: dtypes escolhidos conscientemente (ex.: float32 vs float64)?
+  - id: CPU-03
+    text: Paralelismo adequado ao tipo (I/O vs CPU vs cluster)?
+
+io:
+  - id: IO-01
+    text: Formato colunar e particionamento condizentes com filtros?
+  - id: IO-02
+    text: Scans duplicados eliminados ou cache explicitamente justificado?
+
+contracts:
+  - id: CON-01
+    text: Type hints nas APIs públicas?
+  - id: CON-02
+    text: Schema validado na entrada/saída dos estágios críticos?
+
+operations:
+  - id: OPS-01
+    text: Logging estruturado com run/correlation id?
+  - id: OPS-02
+    text: Entrega idempotente ou versionada por run_id/partição?
+
+environment:
+  - id: ENV-01
+    text: Dependências fixadas (lockfile) e Python alinhado ao runtime prod?
+
+testing:
+  - id: TST-01
+    text: Testes unitários em transformações puras?
+  - id: TST-02
+    text: Smoke representativo ou benchmark leve para regressão?

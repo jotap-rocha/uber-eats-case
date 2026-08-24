@@ -1,0 +1,89 @@
+# Checklist de segurança para release — app_security KB
+# Uso: revisão de PR, gate pré-deploy, auditorias internas.
+
+schema_version: "1.0"
+domain: app_security
+file_type: security_release_checklist
+last_validated: "2026-04-29"
+locale_default: pt-BR
+references:
+  - "OWASP Top 10"
+  - "OWASP ASVS (Application Security Verification Standard)"
+  - ".github/kb/app_security/quick-reference.md"
+
+categories:
+  - id: secrets_supply
+    name: Secrets e supply chain
+    items:
+      - id: no_secrets_frontend
+        question: "Não há usuário, senha, token ou connection string no bundle frontend?"
+        severity: required
+      - id: no_secrets_git
+        question: "Não há secrets commitados (inclui .env, histórico limpo ou rotacionado se vazou)?"
+        severity: required
+      - id: vault_usage_prd
+        question: "Secrets de PRD vêm de cofre/secret manager ou injeção segura da plataforma?"
+        severity: recommended
+      - id: deps_scanned
+        question: "Dependências foram verificadas (SCA) e atualizações críticas aplicadas ou aceitas?"
+        severity: recommended
+
+  - id: backend_validation
+    name: Backend e dados
+    items:
+      - id: backend_validates
+        question: "Backend valida entrada (schema, limites, tipos) em endpoints alterados?"
+        severity: required
+      - id: backend_authorizes
+        question: "Backend autoriza cada ação sensível (não só ocultação no menu)?"
+        severity: required
+      - id: sql_parameterized
+        question: "Consultas SQL usam parâmetros/ORM seguro; filtros dinâmicos com allowlist?"
+        severity: required
+      - id: db_least_privilege
+        question: "Usuário do banco da aplicação tem privilégio mínimo (não admin)?"
+        severity: required
+
+  - id: transport_api
+    name: Transporte e API
+    items:
+      - id: https
+        question: "APIs expostas usam HTTPS em PRD; cookies sensíveis com flags adequadas?"
+        severity: required
+      - id: cors
+        question: "CORS restrito a origens necessárias (sem * com credenciais indevidas)?"
+        severity: required
+      - id: rate_limit
+        question: "Rate limit em login, recuperação de senha ou endpoints sensíveis?"
+        severity: recommended
+      - id: pagination_limits
+        question: "Listagens grandes com paginação e limite máximo server-side?"
+        severity: recommended
+
+  - id: logging_errors
+    name: Logs e erros
+    items:
+      - id: logs_no_secrets
+        question: "Logs não contêm senhas, tokens, connection strings ou PII integral?"
+        severity: required
+      - id: audit_critical
+        question: "Ações críticas geram auditoria (quem, quando, o quê, sucesso/falha, correlation id)?"
+        severity: recommended
+      - id: user_errors_generic
+        question: "Respostas ao usuário final evitam stack trace e detalhes técnicos excessivos?"
+        severity: required
+
+  - id: environments
+    name: Ambientes
+    items:
+      - id: env_separation
+        question: "DEV/HML/PRD separados (credenciais, URLs, dados)?"
+        severity: required
+      - id: no_prod_data_dev
+        question: "Sem dados reais sensíveis em DEV sem anonimização?"
+        severity: recommended
+
+severity_definitions:
+  required: "Bloqueador para considerar release segura."
+  recommended: "Fortemente desejável; documentar exceção."
+  optional: "Depende do contexto do projeto."

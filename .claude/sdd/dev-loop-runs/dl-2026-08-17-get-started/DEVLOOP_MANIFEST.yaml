@@ -1,0 +1,26 @@
+# Template — copiar para .claude/sdd/dev-loop-runs/{RUN_ID}/DEVLOOP_MANIFEST.yaml
+# Substituir REPLACE_RUN_ID e REPLACE_ISO8601. Manter enxuto; detalhes em phases/ e artifacts/
+
+schema_version: "1.0"
+run_id: "dl-2026-08-17-get-started"
+created_at: "2026-08-17T14:54:08Z"
+branch_or_feature: "Organizar arquivos introdutórios da raiz em get_started/ e reduzir poluição visual da raiz"
+quality_tier: production
+development_level: L2
+gate_decision: continue_l2
+prompt_file: ".claude/dev/tasks/PROMPT_dl-2026-08-17-get-started.md"
+round: 0
+
+artifacts:
+  requirements: "artifacts/dl-2026-08-17-get-started_requirements.md"
+  design: "artifacts/dl-2026-08-17-get-started_design.md"
+
+# pending | in_progress | pass | fail | blocked | waived
+phases:
+  gate: { status: pass, updated_at: "2026-08-17T00:00:00Z" }
+  requirements: { status: pass, updated_at: "2026-08-17T00:00:00Z" }
+  design: { status: pass, updated_at: "2026-08-17T00:00:00Z" }
+  craft: { status: pass, updated_at: "2026-08-17T00:00:00Z" }
+  prompt_review: { status: pass, updated_at: "2026-08-17T00:00:00Z" }
+  execute: { status: pass, updated_at: "2026-08-17T15:40:00Z" }
+  reflect: { status: pass, updated_at: "2026-08-17T16:00:00Z" }

@@ -1,0 +1,52 @@
+---
+description: Skill vs KB — decidir se conteúdo novo vira Skill nativa (.claude/skills/) ou KB de referência (.claude/kb/) antes de criar padrões novos
+globs:
+  - ".claude/**"
+  - ".cursor/**"
+  - ".github/**"
+alwaysApply: false
+---
+
+# Convenção — Skill vs KB
+
+Antes de criar conteúdo novo de referência ou procedimento reutilizável, decida onde ele pertence
+— não crie um novo padrão de KB se já existir (ou fizer mais sentido como) uma Skill, e vice-versa.
+
+## Critério de decisão
+
+| Pergunta | Se SIM → | Local |
+|----------|----------|-------|
+| É um procedimento repetível, "como fazer X" (passo a passo acionável)? | **Skill** | `.claude/skills/<nome>/SKILL.md` |
+| É contexto, conceito, contrato ou "o que é verdade sobre X"? | **KB** | `.claude/kb/<dominio>/...` |
+
+## Descoberta — mecanismos diferentes
+
+- **Skill**: auto-descoberta nativa pelo Claude Code via `SKILL.md` (frontmatter `name`/
+  `description`/`compatibility`) — aparece automaticamente na listagem de skills disponíveis, sem
+  precisar de índice manual. **Diferente da KB, Skill não é espelhada por ferramenta** — o Claude
+  Code só descobre Skills em `.claude/skills/`, independente de você estar lendo esta regra a
+  partir de `.cursor/`, `.claude/` ou `.github/`. Nunca crie Skills em `.cursor/skills/` ou
+  `.github/skills/` esperando que sejam descobertas — não são.
+- **KB**: leitura deliberada — um agente ou regra faz `Read()` explícito de um caminho específico
+  (ex.: `.claude/kb/_index.yaml`, `.claude/kb/<dominio>/index.md`), e **é** espelhada nos três
+  diretórios como o resto do conteúdo agentic.
+
+## Convenção de nome (evitar colisão com o bundle vendor)
+
+`.claude/skills/` já contém Skills vendor (Databricks/MLflow — ex.: `databricks-core`,
+`mlflow-onboarding`). Skills autoradas por este projeto usam **prefixo de domínio** no nome para
+nunca colidir com atualizações futuras do bundle, ex.: `sql-capacity-criar-pipeline/SKILL.md`,
+`teams-notificar-falha/SKILL.md`. Nunca usar nomes genéricos. Sempre em `.claude/skills/`,
+independente de qual mirror leu esta regra.
+
+## Registro
+
+`AGENT_ROUTER.yaml` tem a seção `skill_reference` (paralela a `kb_reference`) para registrar
+Skills próprias do projeto quando existirem. Enquanto não houver nenhuma, a seção fica vazia
+(`skill_reference: []`).
+
+## Não migrar KB existente
+
+Esta regra não implica migrar conteúdo já existente em `.claude/kb/` para Skill — isso é decisão
+caso a caso, feita deliberadamente (ver `.claude/sdd/features/DESIGN_skill-kb-integration.md`
+para o histórico desta decisão).

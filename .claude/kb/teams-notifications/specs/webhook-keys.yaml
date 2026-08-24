@@ -1,0 +1,39 @@
+# Chaves de webhook Microsoft Teams — ambiente Icatu
+# Fonte humana: .env.example + references/chaves-webhook-env.md
+version: "1.0"
+last_updated: "2026-05-26"
+
+keys:
+  - id: URL_WEBHOOK_SENTINEL
+    purpose: Alertas operacionais Sentinel e falhas genéricas de pipeline
+    environments: [local, databricks]
+    secret: true
+    typical_usage:
+      - notify_teams_failure
+      - send_teams_text
+
+  - id: URL_WEBHOOK_TRILHA_AUDITORIA_DSV
+    purpose: Trilha de Auditoria — desenvolvimento / homologação
+    environments: [local, databricks_dsv]
+    secret: true
+    typical_usage:
+      - send_notifications_with_df
+
+  - id: URL_WEBHOOK_TRILHA_AUDITORIA_PRD
+    purpose: Trilha de Auditoria — produção
+    environments: [local, databricks_prd]
+    secret: true
+    typical_usage:
+      - send_notifications_with_df
+
+  - id: URL_TRILHA_DSV_NOVO
+    purpose: Canal alternativo Trilha (DSV)
+    environments: [local, databricks_dsv]
+    secret: true
+    typical_usage: []
+
+library:
+  name: pymsteams
+  install_databricks: "%pip install pymsteams"
+  restart_python_required: true
+  mcp_validated: "2026-05-26"

@@ -1,0 +1,101 @@
+# Árvore obrigatória — projeto de dados (Python)
+# Machine-readable; espelha convenções da KB design-pipelines-patterns
+# Nota: ficheiros Python de pacote usam __init__.py (não "init.py").
+
+version: "1.0"
+mcp_validated: "2026-05-15"
+domain: design-pipelines-patterns
+
+root_files:
+  - .gitignore
+  - environment.yaml
+  - .config
+  - .python_version
+  - pyproject.toml
+  - README.md
+
+directories:
+  logs:
+    purpose: centralização de logs
+    required: true
+  config:
+    purpose: configurações centralizadas (BD, APIs, ambientes); mudar ligações sem tocar no código
+    required: true
+    files:
+      - config.yaml
+  data:
+    purpose: datasets para testes locais; mesmo input entre pipelines
+    required: true
+    children:
+      raw: { required: true }
+      processed: { required: true }
+  docs:
+    purpose: arquitetura e orientações do projeto
+    required: true
+    files:
+      - README.md
+  etl:
+    purpose: fases ETL desacopladas e testáveis
+    required: true
+    children:
+      extract:
+        required: true
+        modules: [__init__.py, extract_data.py]
+      transform:
+        required: true
+        modules: [__init__.py, transform_data.py]
+      load:
+        required: true
+        modules: [__init__.py, load_data.py]
+  pipelines:
+    purpose: orquestração de alto nível — o que corre, quando e como
+    required: true
+    modules:
+      - __init__.py
+      - pipeline_source_1.py
+      - pipeline_source_2.py
+  src:
+    purpose: lógica partilhada, utilidades, validação, contratos de schema
+    required: true
+    children:
+      data:
+        required: true
+        modules: [__init__.py, data_processing.py]
+      utils:
+        required: true
+        modules: [__init__.py, logger.py, key_oci.py]
+        notes:
+          - logger.py obrigatório
+          - key_oci.py obrigatório
+      validation:
+        required: true
+        modules: [__init__.py, data_validation.py]
+      contracts:
+        required: true
+        modules: [__init__.py, source_contract_1.py]
+  tests:
+    purpose: unit, integração, sistema — capturar quebras antes de produção
+    required: true
+    children:
+      unit:
+        required: true
+        modules: [__init__.py, connection_database.py]
+      integrated:
+        required: true
+        modules: [__init__.py, etl.py]
+      system:
+        required: true
+        modules: [__init__.py, pipeline_source_1.py]
+  sql:
+    purpose: queries versionadas; mesmo princípio que config (fora do código)
+    required: true
+    files:
+      - extract_source_1.sql
+
+optional_extensions:
+  - nome: pipelines adicionais
+    path: pipelines/pipeline_source_N.py
+  - nome: contratos por fonte
+    path: src/contracts/source_contract_N.py
+  - nome: SQL por fonte
+    path: sql/extract_source_N.sql

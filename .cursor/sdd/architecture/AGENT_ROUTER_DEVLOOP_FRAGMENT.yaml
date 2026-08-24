@@ -1,0 +1,40 @@
+# Fragmento para merge em .{ecosystem}/sdd/architecture/AGENT_ROUTER.yaml
+# Ver AGENT_ROUTER_DEVLOOP_MERGE.md no mesmo diretório.
+# Caminhos usam .cursor/ — o instalador adapta para .claude/ ou .github/.
+
+roster_groups:
+  workflow_dev_loop:
+    title_pt: Dev Loop — implementação L2 por fases
+    title_en: Dev Loop L2 phased implementation
+
+agents:
+  - id: devloop-fixer
+    file: .cursor/agents/workflow-dev-loop/devloop-fixer.md
+    roster_group: workflow_dev_loop
+    specialty_en: Correção guiada de tarefa do PROMPT Dev Loop; atualiza PROGRESS, manifest e log do RUN. Use com /devloop-fixer.
+  - id: devloop-init
+    file: .cursor/agents/workflow-dev-loop/devloop-init.md
+    roster_group: workflow_dev_loop
+    specialty_en: Inicia RUN Dev Loop (L2) com manifest, phases/ e artifacts/ sob dev-loop-runs. Use PROACTIVELY com /devloop-init.
+  - id: devloop-phase
+    file: .cursor/agents/workflow-dev-loop/devloop-phase.md
+    roster_group: workflow_dev_loop
+    specialty_en: Executa UMA fase Dev Loop (gate, requirements, design, craft, prompt_review, reflect) por invocação.
+  - id: devloop-execute
+    file: .cursor/agents/workflow-dev-loop/devloop-execute.md
+    roster_group: workflow_dev_loop
+    specialty_en: Executa PROMPT do RUN via dev-loop-executor após prompt_review=pass. Use com /devloop-execute.
+  - id: devloop-round
+    file: .cursor/agents/workflow-dev-loop/devloop-round.md
+    roster_group: workflow_dev_loop
+    specialty_en: Revalida tarefas falhas do PROMPT após execute ou fixers; incrementa round no manifest.
+
+intake_hints:
+  - signals_pt: Dev Loop, implementação L2, PROMPT, requirements, design
+    primary_workflow:
+      slash: /workflow-dev-loop
+      doc_path: .cursor/commands/workflow-dev-loop/workflow-dev-loop.md
+    context_paths:
+      - .cursor/commands/workflow-dev-loop/workflow-dev-loop.md
+      - .cursor/sdd/architecture/WORKFLOW_DEV_LOOP_CONTRACTS.yaml
+      - DEV_LOOP_Guia_Comandos.md

@@ -1,0 +1,75 @@
+# Inventário de ambiente — template
+
+> **Propósito:** ser a **fonte de verdade** local para hosts, portas, domínios DNS e URLs de cluster usados **neste** clone.  
+> **Não substitua** a KB em `.cursor/kb/` — a KB descreve **processos e padrões**; este arquivo (ou sua cópia) descreve **o seu ambiente real**.
+
+## Como usar
+
+1. Copie este arquivo para `docs/inventario-ambiente.md` (nome ignorado pelo Git — veja `.gitignore`).
+2. Preencha as tabelas com dados **reais** do time (sem senhas, tokens ou OCIDs completos se o repositório for compartilhado).
+3. Referencie `docs/inventario-ambiente.md` em [`CONTEXT.md`](../CONTEXT.md) na seção de infra ou ambientes.
+4. No Cursor, use `@docs/inventario-ambiente.md` quando o agente `spark-expert-on-premises` ou a KB precisarem de valores concretos.
+
+```bash
+cp docs/inventario-ambiente.md.example docs/inventario-ambiente.md
+```
+
+---
+
+## Spark / runtime
+
+| Campo | Valor (preencher) |
+|-------|-------------------|
+| Modo | Ex.: Standalone / YARN / Kubernetes |
+| Master | Ex.: `spark://<host>:7077` |
+| UI | Ex.: `http://<host>:8080/` |
+| History Server | Ex.: `http://<host>:18080/` ou N/A |
+| `SPARK_HOME` | Caminho no servidor de execução |
+| Observações | VPN, bastion, fila de jobs, etc. |
+
+---
+
+## SQL Server — mapeamento host / instância / porta
+
+> Ajuste colunas ao que o projeto usar (named instance vs porta direta).
+
+| Servidor lógico ou tag | Host corto | Instância | Porta | FQDN (se aplicável) | Ambiente (PRD/HMG/…) |
+|-------------------------|------------|-------------|-------|---------------------|----------------------|
+| *ex.: linha de negócio A* | `EXEMPLO01` | `MSSQLSERVER` | 1433 | `exemplo01.corp.local` | PRD |
+| *ex.: instância nomeada* | `EXEMPLO02` | `INST_X` | 1539 | `exemplo02.corp.local` | PRD |
+
+---
+
+## Domínios e regras de conexão
+
+| Padrão de host (prefixo ou máscara) | Sufixo DNS / regra |
+|-------------------------------------|--------------------|
+| *ex.* | `.corp.local` |
+| *ex.* | sem domínio (apenas NetBIOS) |
+
+**JDBC (modelo):** `jdbc:sqlserver://<FQDN_OU_HOST>:<porta>;databaseName=<db>;encrypt=...`
+
+---
+
+## GitHub / wiki / runbooks (opcional)
+
+| Recurso | URL ou caminho |
+|---------|----------------|
+| Wiki / documentação | `<https://github.com/<org>/<repo>/wiki>` |
+| Pipeline / release (GitHub Actions) | `<...>` |
+
+---
+
+## Segredos (apenas referência — nunca valores)
+
+| Segredo lógico | Onde resolver (vault, `.config`, Key Vault, etc.) |
+|----------------|---------------------------------------------------|
+| *ex.: usuário JDBC capacidade* | Perfil OCI / variável `...` |
+
+---
+
+## Histórico de alterações (opcional)
+
+| Data | O que mudou |
+|------|-------------|
+| AAAA-MM-DD | Ex.: nova porta no servidor X |

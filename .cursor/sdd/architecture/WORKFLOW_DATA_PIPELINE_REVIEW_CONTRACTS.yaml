@@ -1,0 +1,305 @@
+# Workflow Data Pipeline Review — contrato de lanes e KB (contexto controlado)
+# Comandos: .cursor/commands/workflow-data-pipeline-review/workflow-data-pipeline-review.md (entrada) + pipeline-review-*.md
+# Cada lane = uma invocação separada (/pipeline-review-lane) para não misturar dimensões do review.
+# Foco: pipelines de engenharia de dados, Spark, Databricks/Lakehouse, SQL, DataOps, IA/ML e operação.
+
+version: "1.1"
+name: workflow_data_pipeline_review
+
+description: >
+  Revisão por lanes para pipelines de engenharia de dados. O init cria RUN;
+  cada lane revisa uma dimensão do pipeline; round revalida pendências; fixer
+  aplica correções guiadas e atualiza manifest/log.
+  Mandatos operacionais: .cursor/sdd/architecture/PIPELINE_MANDATORY_PRACTICES.yaml
+
+mandatory_practices_ref: ".cursor/sdd/architecture/PIPELINE_MANDATORY_PRACTICES.yaml"
+
+paths:
+  reviews_root: ".cursor/sdd/data-pipeline-reviews"
+  manifest_filename: "REVIEW_MANIFEST.yaml"
+  log_filename: "REVIEW_LOG.md"
+  lanes_subdir: "lanes"
+  summary_filename: "REVIEW_SUMMARY.md"
+
+lanes:
+  - id: data_contracts
+    title: "Contratos de dados"
+    finding_prefix: "DC"
+    kb_entry:
+      - ".cursor/kb/databricks/index.md"
+      - ".cursor/kb/sql-capacity/00-index.md"
+      - ".cursor/kb/data-engineering-practices/index.md"
+    checklist_spec: null
+    scope_globs:
+      - "**/*contract*"
+      - "**/*schema*"
+      - "**/*.yaml"
+      - "**/*.yml"
+      - "**/*.json"
+      - "docs/**"
+      - "**/*.py"
+      - "**/*.sql"
+    shallow_checks:
+      - "Contrato explícito de schema, tipos, nullability e chaves de negócio"
+      - "Owner, SLA/SLO, frequência, granularidade e regras de evolução documentados"
+      - "Mudanças incompatíveis tratadas com versionamento ou migração controlada"
+      - "CHANGELOG-data-contract versionado (MAJOR/MINOR/PATCH) — DC-M02"
+      - "Runbook schema drift / adoptar coluna documentado — DC-M04"
+      - "Testes offline de contrato (medallion_contract, G02) — DC-M05"
+
+  - id: architecture_medallion
+    title: "Arquitetura Medallion"
+    finding_prefix: "MED"
+    kb_entry:
+      - ".cursor/kb/databricks/index.md"
+      - ".cursor/kb/databricks/patterns/medallion-architecture.md"
+      - ".cursor/kb/lakeflow/index.md"
+      - ".cursor/kb/spark/index.md"
+    checklist_spec: null
+    scope_globs:
+      - "**/bronze/**"
+      - "**/silver/**"
+      - "**/gold/**"
+      - "**/*bronze*"
+      - "**/*silver*"
+      - "**/*gold*"
+      - "**/*.py"
+      - "**/*.sql"
+      - "**/*.ipynb"
+    shallow_checks:
+      - "Bronze preserva dado bruto e metadados de ingestão sem regra de negócio pesada"
+      - "Silver aplica limpeza, tipagem, dedupe e conformidade de schema"
+      - "Gold expõe agregações/serving com semântica de negócio clara"
+      - "Delta/Lakehouse, particionamento e evolução de schema estão coerentes com a camada"
+
+  - id: data_quality
+    title: "Qualidade de dados"
+    finding_prefix: "DQ"
+    kb_entry:
+      - ".cursor/kb/lakeflow/index.md"
+      - ".cursor/kb/databricks/patterns/dlt-pipeline.md"
+      - ".cursor/kb/data-engineering-practices/dlt-quarantine-split-tables.md"
+      - ".cursor/kb/data-engineering-practices/dq-quarantine-metrics-uc.md"
+      - ".cursor/kb/spark/16-spark-testing/01-spark-testing.md"
+    checklist_spec: null
+    scope_globs:
+      - "**/*.py"
+      - "**/*.sql"
+      - "**/*.ipynb"
+      - "**/*quality*"
+      - "**/*expect*"
+      - "tests/**"
+    shallow_checks:
+      - "Regras de qualidade implementadas como expectations, constraints ou testes automatizados"
+      - "Registros inválidos têm política clara: warn, drop, fail ou quarentena"
+      - "Quarentena UC com _dq_violated_rules e _quarantined_at — DQ-M02/M03"
+      - "Métricas de qualidade são persistidas ou publicadas para operação"
+      - "Runbook linhas em quarentena após correção — DQ-M05"
+      - "Schema drift → quarentena schema_rescue (se Auto Loader) — SD-M02"
+
+  - id: idempotency_reprocessing
+    title: "Idempotência e reprocessamento"
+    finding_prefix: "IDEMP"
+    kb_entry:
+      - ".cursor/kb/databricks/patterns/incremental-load.md"
+      - ".cursor/kb/lakeflow/index.md"
+      - ".cursor/kb/sql-capacity/patterns/04-execution-patterns.md"
+      - ".cursor/kb/data-engineering-practices/pyodbc-sqlserver-write-mode.md"
+      - ".cursor/kb/spark/index.md"
+    checklist_spec: null
+    scope_globs:
+      - "**/*.py"
+      - "**/*.sql"
+      - "**/*.ipynb"
+      - "**/jobs/**"
+      - "**/pipelines/**"
+      - "**/*checkpoint*"
+      - "**/*watermark*"
+    shallow_checks:
+      - "Pipeline pode rodar mais de uma vez no mesmo dia sem duplicar dados"
+      - "Carga incremental usa watermark, checkpoint, CDF, CDC ou controle equivalente"
+      - "Escrita usa MERGE/upsert/dedupe quando append puro criaria duplicidade"
+      - "Existe estratégia de backfill/reprocessamento por janela, partição ou run_id"
+      - "PyODBC SQL Server: modo APPEND/Overwrite documentado com gate humano — PYODBC-M01"
+      - "PyODBC Overwrite: truncate=false recomendado (preserva DDL); truncate=true exige excepção — PYODBC-M02"
+
+  - id: code_quality_solid
+    title: "Qualidade de código e SOLID"
+    finding_prefix: "CODE"
+    kb_entry:
+      - ".cursor/agents/code-quality/python-developer.md"
+      - ".cursor/agents/code-quality/code-reviewer.md"
+      - ".cursor/kb/spark/index.md"
+    checklist_spec: null
+    scope_globs:
+      - "**/*.py"
+      - "**/*.sql"
+      - "scripts/**"
+      - "src/**"
+      - "tests/**"
+    shallow_checks:
+      - "Extract, transform, load, validação e escrita têm responsabilidades separadas"
+      - "Configuração de ambiente, paths e credenciais não ficam hardcoded no código"
+      - "Funções públicas têm nomes claros, type hints quando aplicável e são testáveis"
+      - "Uso de DataFrame API e funções built-in é preferido a RDD/UDF desnecessária"
+
+  - id: error_handling_resilience
+    title: "Tratamento de erros e resiliência"
+    finding_prefix: "ERR"
+    kb_entry:
+      - ".cursor/kb/spark/14-spark-errors/01-spark-errors.md"
+      - ".cursor/kb/sql-capacity/patterns/03-troubleshooting.md"
+      - ".cursor/kb/crewai/patterns/circuit-breaker.md"
+    checklist_spec: null
+    scope_globs:
+      - "**/*.py"
+      - "**/*.sql"
+      - "**/*.yaml"
+      - "**/*.yml"
+      - "**/jobs/**"
+      - "**/pipelines/**"
+    shallow_checks:
+      - "Erros recuperáveis têm retry/backoff ou repair/rerun documentado"
+      - "Erros fatais falham cedo, com mensagem acionável e sem mascarar exceção"
+      - "Circuit breaker, limites de tentativa ou fallback existem quando há chamadas externas"
+      - "Falhas de leitura, schema, escrita e permissões são distinguíveis nos logs"
+
+  - id: orchestration_messaging
+    title: "Orquestração, mensageria e notificações"
+    finding_prefix: "ORCH"
+    kb_entry:
+      - ".cursor/kb/databricks/concepts/jobs-workflows.md"
+      - ".cursor/kb/databricks/patterns/databricks-asset-bundles.md"
+      - ".cursor/kb/teams-notifications/index.md"
+      - ".cursor/kb/teams-notifications/patterns/pipeline-failure-teams-no-retry.md"
+      - ".cursor/kb/teams-notifications/patterns/databricks-ambientes-e-smoke-test.md"
+      - ".cursor/kb/data-engineering-practices/schema-drift-autoloader-rescue.md"
+      - "docs/DATABRICKS_TEAMS_PIPELINES.md"
+    checklist_spec: null
+    scope_globs:
+      - "**/*.yaml"
+      - "**/*.yml"
+      - "**/*.json"
+      - "**/*.py"
+      - "**/workflows/**"
+      - "**/jobs/**"
+      - "**/*bundle*"
+      - "**/*pubsub*"
+      - "**/*kafka*"
+    shallow_checks:
+      - "Dependências entre tarefas, retries, timeouts e schedules estão explícitos"
+      - "Mensagens/eventos têm payload mínimo, chave de correlação e contrato claro"
+      - "Notificações de sucesso, falha e degradação chegam ao canal operacional correto"
+      - "Teams/webhook DSV e PRD separados + smoke test antes de PRD — TM-M02/M03"
+      - "Alerta schema drift pós-run (se origem variável) — SD-M03"
+      - "Job max_retries=0 com reprocessamento manual documentado — TM-M04"
+      - "Fanout, DLQ ou reentrega não criam duplicidade silenciosa"
+
+  - id: observability_logging
+    title: "Observabilidade e logs estruturados"
+    finding_prefix: "OBS"
+    kb_entry:
+      - ".cursor/kb/spark/15-spark-logger/01-spark-logger.md"
+      - ".cursor/kb/databricks/concepts/jobs-workflows.md"
+      - ".cursor/kb/data-engineering-practices/structured-pipeline-logging.md"
+      - ".cursor/kb/data-engineering-practices/sentinela-freshness-teams.md"
+    checklist_spec: null
+    scope_globs:
+      - "**/*.py"
+      - "**/*.yaml"
+      - "**/*.yml"
+      - "**/*log*"
+      - "**/*observ*"
+      - "**/*metric*"
+    shallow_checks:
+      - "Logs são estruturados em JSON ou formato equivalente parseável"
+      - "run_id, pipeline_id, task_id, dataset, camada e janela de processamento aparecem nos eventos"
+      - "Métricas de volume, duração, qualidade, custo e falhas são emitidas"
+      - "Alertas e dashboards permitem diagnóstico sem abrir o código"
+      - "Sentinela ou job freshness independente do DLT — OBS-M02"
+
+  - id: performance_cost
+    title: "Performance e custo"
+    finding_prefix: "PERF"
+    kb_entry:
+      - ".cursor/kb/spark/index.md"
+      - ".cursor/kb/databricks/patterns/spark-optimization.md"
+      - ".cursor/kb/databricks/index.md"
+    checklist_spec: null
+    scope_globs:
+      - "**/*.py"
+      - "**/*.sql"
+      - "**/*.ipynb"
+      - "**/*.yaml"
+      - "**/*.yml"
+    shallow_checks:
+      - "Particionamento, clustering, shuffle e joins estão adequados ao volume"
+      - "Não há collect/count/show em caminho crítico sem justificativa"
+      - "AQE, broadcast, cache/unpersist e otimizações Delta são usados com critério"
+      - "Configuração de compute, autoscaling e scheduling considera custo operacional"
+
+  - id: security_governance
+    title: "Segurança e governança"
+    finding_prefix: "GOV"
+    kb_entry:
+      - ".cursor/kb/app_security/index.md"
+      - ".cursor/kb/databricks/concepts/security.md"
+      - ".cursor/kb/databricks/concepts/unity-catalog.md"
+      - ".cursor/kb/key-oci/index.md"
+    checklist_spec: ".cursor/kb/app_security/specs/security-release-checklist.yaml"
+    scope_globs:
+      - "**/*.py"
+      - "**/*.sql"
+      - "**/*.yaml"
+      - "**/*.yml"
+      - "**/*.tf"
+      - "**/*secret*"
+      - "**/*vault*"
+    shallow_checks:
+      - "Secrets não aparecem em código, logs, notebooks ou configs versionadas"
+      - "Permissões usam menor privilégio, UC/RBAC e identidades de execução adequadas"
+      - "Dados sensíveis têm masking, anonimização, classificação ou política documentada"
+      - "Audit logs, lineage e ownership permitem rastrear acesso e mudança"
+
+  - id: ml_ai_dataops
+    title: "IA, ML e DataOps autônomo"
+    finding_prefix: "AIML"
+    kb_entry:
+      - ".cursor/kb/databricks/patterns/mlops-pipeline.md"
+      - ".cursor/kb/databricks/concepts/mlflow.md"
+      - ".cursor/kb/databricks/concepts/feature-store.md"
+      - ".cursor/kb/crewai/index.md"
+      - ".cursor/agents/domain/dataops-builder.md"
+    checklist_spec: null
+    scope_globs:
+      - "**/*.py"
+      - "**/*.yaml"
+      - "**/*.yml"
+      - "**/*mlflow*"
+      - "**/*feature*"
+      - "**/*model*"
+      - "**/*agent*"
+      - "**/*crew*"
+    shallow_checks:
+      - "Features, datasets de treino e modelos têm versionamento e lineage"
+      - "MLflow/Registry ou mecanismo equivalente registra métricas, parâmetros e artefatos"
+      - "Monitoramento detecta drift, queda de qualidade ou falhas de agentes"
+      - "Automações de IA/DataOps têm limites, human handoff e rastreabilidade"
+
+execution_order_recommended:
+  - data_contracts
+  - architecture_medallion
+  - data_quality
+  - idempotency_reprocessing
+  - code_quality_solid
+  - error_handling_resilience
+  - orchestration_messaging
+  - observability_logging
+  - performance_cost
+  - security_governance
+  - ml_ai_dataops
+
+notes: >
+  Não executar todas as lanes no mesmo chat. Use um comando /pipeline-review-lane por lane.
+  Logs JSON estruturados ficam dentro de observability_logging; idempotência/reprocessamento é
+  lane própria por ser risco crítico em pipelines de dados.

@@ -1,0 +1,27 @@
+# Manifesto do domínio — app_web_middleware
+domain_key: app_web_middleware
+display_name: "Middleware web — borda da aplicação"
+description: >
+  Camada HTTP na borda: IIS (Windows), NGINX e Apache httpd (Linux);
+  reverse proxy, TLS e integração com upstream da aplicação.
+entry_points:
+  index: index.md
+  quick_reference: quick-reference.md
+concepts:
+  - camada-middleware-aplicacao
+  - iis-windows
+  - nginx-linux
+  - apache-httpd-linux
+patterns:
+  - reverse-proxy-upstream
+  - hardening-borda-checklist
+  - few-shot-iis-web-config-url-rewrite
+  - few-shot-nginx-sites-available
+  - nginx-websocket-proxy-map
+  - few-shot-apache-sites-available
+specs:
+  - borda-web-checklist
+related_kb_domains:
+  - app_security
+  - architecture
+  - backend

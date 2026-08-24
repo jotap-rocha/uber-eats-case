@@ -1,0 +1,30 @@
+---
+description: Handoff obrigatório ao executar ou concluir passos do workflow Dev Loop (L2)
+globs:
+alwaysApply: true
+---
+
+# Workflow Dev Loop — handoff obrigatório
+
+Quando estiveres a executar ou a **concluir** um passo do fluxo definido em [`.github/commands/workflow-dev-loop/workflow-dev-loop.md`](mdc:.github/commands/workflow-dev-loop/workflow-dev-loop.md) (ou comandos `devloop-*`), **inclui sempre** um bloco explícito de próximo passo.
+
+## Ordem canônica das fases
+
+Fonte única: [`execution_order_recommended`](mdc:.github/sdd/architecture/WORKFLOW_DEV_LOOP_CONTRACTS.yaml) em `.github/sdd/architecture/WORKFLOW_DEV_LOOP_CONTRACTS.yaml`:
+
+`gate` → `requirements` → `design` → `craft` → `prompt_review` → `execute` (via `/devloop-execute`) → `reflect`
+
+## O que responder ao usuário
+
+1. **Após `/devloop-init <RUN_ID>`** — linha **`Próximo comando:`** com `` `/devloop-phase <RUN_ID> gate` ``.
+2. **Após `/devloop-phase <RUN_ID> <phase>`** se `<phase>` **não** for `reflect` e gate não for `escalate_sdd`:
+   - Após `craft` → `` `/devloop-phase <RUN_ID> prompt_review` ``
+   - Após `prompt_review` com OK humano → `` `/devloop-execute <RUN_ID>` ``
+   - Caso geral → `` `/devloop-phase <RUN_ID> <próxima_fase>` ``
+3. **Após `/devloop-phase … prompt_review`** sem OK → **não** sugerir execute; pedir revisão ou ajuste do PROMPT.
+4. **Após `/devloop-execute <RUN_ID>`** — sugerir `` `/devloop-phase <RUN_ID> reflect` `` ou round/fixer se falhas.
+5. **Após `/devloop-phase … reflect`** — indicar path a `DEVLOOP_SUMMARY.md` e **`Próximos comandos (pós-run):`** `` `/devloop-round <RUN_ID>` ``, `` `/devloop-fixer <RUN_ID> <task> — …` ``, opcional `` `/devloop-init <novo_RUN_ID>` ``.
+6. **Após `/devloop-round` ou `/devloop-fixer`** — **`Próximo comando sugerido:`** conforme estado do manifest.
+7. **Após `gate` = `escalate_sdd`** — indicar SDD (`/brainstorm`, `SDD_Guia_Comandos.md`); **não** avançar fases L2.
+
+Não substituir este handoff por referência vaga a “continuar o workflow”; o **comando completo** com o mesmo `RUN_ID` deve aparecer no texto.

@@ -1,0 +1,43 @@
+# Pipeline de Dados Uber Eats - Portfolio - Cursor Rules
+
+## Fonte canonica
+
+- `.cursor/` e a fonte canonica para agentes, KB, comandos e SDD.
+- `.github/` e `.claude/` sao espelhos opcionais gerados ou alinhados a partir de `.cursor/`.
+- O triangulo de contexto e: `CONTEXT.md` + `.cursorrules` + `docs/00-INDEX.md`.
+
+## Contexto do projeto
+
+Pipeline completo de engenharia de dados construido como portfolio profissional, simulando um ambiente de producao de um aplicativo de delivery (Uber Eats): ingestao com Airbyte, processamento no Databricks Lakehouse com Delta Live Tables, Arquitetura Medalhao (Bronze -> Silver -> Gold), governanca com Unity Catalog e consumo em Power BI / Databricks AI/BI Genie.
+
+## Regras de inicializacao
+
+Ao iniciar uma conversa relevante para codigo ou documentacao:
+
+1. Leia `CONTEXT.md`.
+2. Leia `README.md` quando a tarefa envolver setup, arquitetura, execucao ou troubleshooting.
+3. Leia `docs/00-INDEX.md` para localizar documentacao complementar.
+4. Para tarefas agentic/SDD, consulte `.cursor/CURSOR.MD`, `.cursor/commands/core/router.md` e `.cursor/sdd/architecture/`.
+5. Para regras do dominio, priorize `.cursor/agents/domain/uber-eats-case-expert.md`.
+
+## Regras de colaboracao
+
+- Responda em portugues brasileiro, salvo pedido explicito em outro idioma.
+- Execute verificacoes reais quando possivel.
+- Faca mudancas pequenas, focadas e alinhadas ao estilo existente.
+- Nao refatore fora do escopo.
+- Nao adicione segredos, tokens, credenciais ou dados sensiveis.
+
+## Regras de codigo e arquitetura
+
+- Aplique Clean Code e SOLID com pragmatismo.
+- Prefira nomes claros, funcoes coesas e responsabilidades bem separadas.
+- Preserve contratos operacionais existentes, salvo pedido explicito para altera-los.
+- Atualize documentacao quando mudar execucao, troubleshooting, arquitetura ou navegacao.
+
+## Checklist antes de encerrar
+
+- [ ] Validacoes pertinentes foram executadas ou justificadas.
+- [ ] Documentacao foi atualizada se comportamento publico mudou.
+- [ ] Nenhum segredo foi adicionado.
+- [ ] Routers, KBs e agentes permanecem consistentes.

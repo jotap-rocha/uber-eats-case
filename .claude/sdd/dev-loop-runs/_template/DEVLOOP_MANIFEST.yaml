@@ -1,0 +1,26 @@
+# Template — copiar para .claude/sdd/dev-loop-runs/{RUN_ID}/DEVLOOP_MANIFEST.yaml
+# Substituir REPLACE_RUN_ID e REPLACE_ISO8601. Manter enxuto; detalhes em phases/ e artifacts/
+
+schema_version: "1.0"
+run_id: "REPLACE_RUN_ID"
+created_at: "REPLACE_ISO8601"
+branch_or_feature: ""
+quality_tier: production
+development_level: L2
+gate_decision: pending
+prompt_file: ".claude/dev/tasks/PROMPT_REPLACE_RUN_ID.md"
+round: 0
+
+artifacts:
+  requirements: "artifacts/REPLACE_RUN_ID_requirements.md"
+  design: "artifacts/REPLACE_RUN_ID_design.md"
+
+# pending | in_progress | pass | fail | blocked | waived
+phases:
+  gate: { status: pending, updated_at: null }
+  requirements: { status: pending, updated_at: null }
+  design: { status: pending, updated_at: null }
+  craft: { status: pending, updated_at: null }
+  prompt_review: { status: pending, updated_at: null }
+  execute: { status: pending, updated_at: null }
+  reflect: { status: pending, updated_at: null }

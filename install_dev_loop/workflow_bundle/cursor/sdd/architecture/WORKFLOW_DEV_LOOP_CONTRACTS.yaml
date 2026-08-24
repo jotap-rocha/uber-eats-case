@@ -1,0 +1,144 @@
+# Workflow Dev Loop — contrato de fases e artefatos (Nível 2)
+# Comandos: .cursor/commands/workflow-dev-loop/workflow-dev-loop.md + devloop-*.md
+# Uma fase por invocação (/devloop-phase) para controlar contexto.
+
+version: "1.1"
+name: workflow_dev_loop
+
+description: >
+  Implementação Agentic Development (L2): gate L2/L3, requirements, design, craft de PROMPT,
+  revisão humana obrigatória do PROMPT, execução via /dev e reflect. Estado em
+  .cursor/sdd/dev-loop-runs/{RUN_ID}/.
+  Mandatos pipeline: .cursor/sdd/architecture/PIPELINE_MANDATORY_PRACTICES.yaml
+
+mandatory_practices_ref: ".cursor/sdd/architecture/PIPELINE_MANDATORY_PRACTICES.yaml"
+
+paths:
+  runs_root: ".cursor/sdd/dev-loop-runs"
+  manifest_filename: "DEVLOOP_MANIFEST.yaml"
+  log_filename: "DEVLOOP_LOG.md"
+  summary_filename: "DEVLOOP_SUMMARY.md"
+  phases_subdir: "phases"
+  artifacts_subdir: "artifacts"
+  prompt_tasks_dir: ".cursor/dev/tasks"
+  prompt_filename_pattern: "PROMPT_{RUN_ID}.md"
+
+l2_vs_l3_gate:
+  use_dev_loop_when:
+    - kb_building
+    - prototypes
+    - single_component_features
+    - utilities_parsers
+  use_sdd_when:
+    - multi_component_features
+    - production_systems
+    - team_projects_full_audit
+    - full_audit_trail_required
+  sdd_entry_commands:
+    - "/brainstorm"
+    - "/define"
+    - "/design"
+    - "/build"
+  sdd_doc: "SDD_Guia_Comandos.md"
+
+artifact_naming:
+  requirements_suffix: "requirements"
+  design_suffix: "design"
+  requirements_example: "artifacts/{run_id}_requirements.md"
+  design_example: "artifacts/{run_id}_design.md"
+
+phases:
+  - id: gate
+    title: "Gate L2 vs L3"
+    agent: devloop-phase
+    delegate_hint: "Avaliar escopo com tabela l2_vs_l3_gate; registrar decisão no manifest."
+    output: "phases/gate.md"
+    shallow_checks:
+      - "Decisão explícita: continue_l2 | escalate_sdd | abort"
+      - "Manifest phases.gate.status atualizado"
+
+  - id: requirements
+    title: "Requisitos"
+    agent: devloop-phase
+    delegate_agent_file: ".cursor/agents/communication/metting-analyst.md"
+    delegate_agent_name: meeting-analyst
+    output: "artifacts/{run_id}_requirements.md"
+    phase_notes: "phases/requirements.md"
+    shallow_checks:
+      - "Arquivo *requirements*.md existe em artifacts/"
+      - "Escopo, fora de escopo e critérios de aceite documentados"
+      - "Se pipeline Databricks/Spark: anexo PIPELINE_OPS_REQUIREMENTS_APPENDIX ou secção mandato presente"
+      - "Se PyODBC SQL Server: PYODBC_WRITE_MODE_GATE preenchido (APPEND/Overwrite + truncate)"
+
+  - id: design
+    title: "Design e plano"
+    agent: devloop-phase
+    delegate_agent_file: ".cursor/agents/communication/the-planner.md"
+    delegate_agent_name: the-planner
+    output: "artifacts/{run_id}_design.md"
+    phase_notes: "phases/design.md"
+    requires_phase: requirements
+    shallow_checks:
+      - "Arquivo *design*.md referencia requirements"
+      - "Tarefas, riscos e verificações planejadas"
+      - "Se pipeline: manifest operacional (Teams, quarentena, contrato, testes) — PIPELINE_OPS_DESIGN_APPENDIX"
+      - "Se PyODBC: parâmetros write mode + truncate reflectidos no design/ADR"
+
+  - id: craft
+    title: "Craft do PROMPT"
+    agent: devloop-phase
+    delegate_agent_file: ".cursor/agents/dev/prompt-crafter.md"
+    delegate_agent_name: prompt-crafter
+    output_prompt: ".cursor/dev/tasks/PROMPT_{run_id}.md"
+    phase_notes: "phases/craft.md"
+    requires_phase: design
+    shallow_checks:
+      - "PROMPT_*.md criado em .cursor/dev/tasks/"
+      - "Tarefas com verificação objetiva e agentes @ quando aplicável"
+      - "Se pipeline: tarefas craft incluem contrato, quarentena, Teams, drift/sentinela conforme mandatos"
+
+  - id: prompt_review
+    title: "Gate humano — revisão do PROMPT"
+    agent: devloop-phase
+    human_gate: true
+    phase_notes: "phases/prompt_review.md"
+    requires_phase: craft
+    shallow_checks:
+      - "Usuário confirmou explicitamente OK para executar (registrado em prompt_review.md)"
+      - "Nenhuma tarefa crítica sem agente ou verificação"
+
+  - id: execute
+    title: "Execução Dev Loop"
+    agent: devloop-execute
+    delegate_agent_file: ".cursor/agents/dev/dev-loop-executor.md"
+    delegate_agent_name: dev-loop-executor
+    phase_notes: "phases/execute.md"
+    requires_phase: prompt_review
+    command_hint: "/dev tasks/PROMPT_{run_id}.md"
+    shallow_checks:
+      - "PROGRESS e LOG atualizados ou sessão concluída"
+      - "Manifest phases.execute reflete done | fail | in_progress"
+
+  - id: reflect
+    title: "Reflect e encerramento"
+    agent: devloop-phase
+    output_summary: "DEVLOOP_SUMMARY.md"
+    phase_notes: "phases/reflect.md"
+    requires_phase: execute
+    shallow_checks:
+      - "DEVLOOP_SUMMARY.md gerado"
+      - "Lições aprendidas e próximos passos documentados"
+      - "Se pipeline PRD-bound: pipeline-review RUN recomendado ou concluído"
+
+execution_order_recommended:
+  - gate
+  - requirements
+  - design
+  - craft
+  - prompt_review
+  - execute
+  - reflect
+
+notes: >
+  Uma fase por conversa (/devloop-phase). prompt_review é gate humano obrigatório antes de
+  /devloop-execute. Detalhes longos em phases/*.md e artifacts/; manifest mantém estado enxuto.
