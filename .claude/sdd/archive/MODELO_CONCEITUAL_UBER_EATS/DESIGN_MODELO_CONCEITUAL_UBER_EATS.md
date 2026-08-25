@@ -4,7 +4,7 @@
 |-------|-------|
 | **Feature** | MODELO_CONCEITUAL_UBER_EATS |
 | **Input** | `.claude/sdd/features/DEFINE_MODELO_CONCEITUAL_UBER_EATS.md` |
-| **Status** | ✅ Complete (Built) |
+| **Status** | ✅ Shipped |
 | **Data** | 2026-08-24 |
 
 ---
@@ -191,6 +191,4 @@ Ao concluir o BUILD, atualizar:
 
 ---
 
-## Status: ✅ Complete (Built)
-
-**Próximo passo:** `/ship`
+## Status: ✅ Shipped

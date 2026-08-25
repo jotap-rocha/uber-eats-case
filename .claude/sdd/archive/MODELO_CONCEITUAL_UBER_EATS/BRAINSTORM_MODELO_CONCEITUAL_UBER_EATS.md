@@ -4,7 +4,7 @@
 |-------|-------|
 | **Feature** | MODELO_CONCEITUAL_UBER_EATS |
 | **Fase do roadmap** | Fase 0 — Fundação (`docs/plan.md`), item "Modelo conceitual" |
-| **Status** | ✅ Complete (Defined) |
+| **Status** | ✅ Shipped |
 | **Data** | 2026-08-24 |
 
 ---
@@ -177,6 +177,6 @@ Nos 3 casos de chave dupla (Usuário, Restaurante, Motorista), **o ID técnico s
 
 ---
 
-## Status: ✅ Complete (Defined)
+## Status: ✅ Shipped
 
-**Revisão:** Status atualizado após `/define` concluído com sucesso — ver `.claude/sdd/features/DEFINE_MODELO_CONCEITUAL_UBER_EATS.md`.
+**Revisão:** Arquivado após `/ship` concluído — ver `SHIPPED_2026-08-24.md` nesta mesma pasta.

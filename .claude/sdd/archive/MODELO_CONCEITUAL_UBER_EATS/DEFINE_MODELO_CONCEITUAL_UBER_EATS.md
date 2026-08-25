@@ -5,7 +5,7 @@
 | **Feature** | MODELO_CONCEITUAL_UBER_EATS |
 | **Fase do roadmap** | Fase 0 — Fundação (`docs/plan.md`) |
 | **Input** | `.claude/sdd/features/BRAINSTORM_MODELO_CONCEITUAL_UBER_EATS.md` |
-| **Status** | ✅ Complete (Built) |
+| **Status** | ✅ Shipped |
 | **Data** | 2026-08-24 |
 
 ---
@@ -97,9 +97,8 @@ O gerador de dados sintéticos do projeto (`gen/minio/uber-eats.json`, 20 stream
 | 1.0 | 2026-08-24 | Documento inicial, extraído de `BRAINSTORM_MODELO_CONCEITUAL_UBER_EATS.md` |
 | 1.1 | 2026-08-24 | Status atualizado para Complete (Designed) após `/design` concluído |
 | 1.2 | 2026-08-24 | Status atualizado para Complete (Built) após `/build` concluído |
+| 1.3 | 2026-08-24 | Shipped e arquivado |
 
 ---
 
-## Status: ✅ Complete (Built)
-
-**Próximo passo:** `/ship`
+## Status: ✅ Shipped
