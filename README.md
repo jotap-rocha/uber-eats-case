@@ -21,6 +21,8 @@ Veja também o índice completo em [`get_started/README.md`](get_started/README.
 - Governança: Unity Catalog (qualidade, linhagem e segurança).
 - Consumo: Power BI e Databricks AI/BI Genie.
 
+Modelo conceitual do domínio (entidades, relacionamentos e chave canônica): [`docs/MODELO_CONCEITUAL_UBER_EATS.md`](docs/MODELO_CONCEITUAL_UBER_EATS.md).
+
 ---
 
 ## Requisitos de Hardware

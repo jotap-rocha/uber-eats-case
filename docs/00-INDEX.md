@@ -49,3 +49,4 @@ Este arquivo faz parte do triangulo de contexto: `CONTEXT.md` + `.cursorrules` +
 |---------|-----------|-------------|
 | `inventario-ambiente.md.example` | Template de inventario local | Copiar para `docs/inventario-ambiente.md` quando necessario |
 | [`GUIA_SKILLS_KB_SDD_DEVLOOP.md`](GUIA_SKILLS_KB_SDD_DEVLOOP.md) | Convenção Skill vs KB, estudo de caso e integração ao SDD/Dev Loop; portabilidade Claude Code/Cursor/Copilot | Criar Skill nova, ou entender como Skill/KB se ligam ao SDD e ao Dev Loop |
+| [`MODELO_CONCEITUAL_UBER_EATS.md`](MODELO_CONCEITUAL_UBER_EATS.md) | Modelo conceitual do domínio (13 entidades, relacionamentos, chave canônica, bugs e gaps do Shadow Traffic) — Fase 0 do roadmap multi-cloud | Reaproveitar o modelo nas 9 combinações arquitetura×cloud (`docs/plan.md`), ou corrigir integridade referencial do gerador |
