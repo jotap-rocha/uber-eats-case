@@ -123,19 +123,18 @@ Syncs executam automaticamente conforme frequencia configurada.
 
 ---
 
-## Parar/Remover
+## Ligar/Desligar sob demanda
 
-### Parar
-
-```powershell
-docker stop airbyte-abctl-control-plane
-```
-
-### Reiniciar
+O Airbyte **nao** faz parte do `docker-compose.yml` deste projeto nem do `scripts/start-all.ps1` — e um cluster `abctl` (kind/k8s) a parte, e o container `airbyte-abctl-control-plane` sozinho costuma consumir alguns GB de RAM e CPU relevante. Mantenha-o desligado por padrao e ligue so quando for configurar ou rodar um sync:
 
 ```powershell
-docker start airbyte-abctl-control-plane
+.\scripts\start-airbyte.ps1   # liga
+.\scripts\stop-airbyte.ps1    # desliga
 ```
+
+Desligar/ligar preserva sources, destinations e connections ja configurados (fica no volume do cluster).
+
+**Se ele aparecer rodando sozinho depois de reiniciar o PC/Docker Desktop:** o Docker Desktop tem uma opcao que retoma containers que estavam rodando na ultima vez que ele foi fechado ("Resume containers on startup" / equivalente em PT-BR), independente da politica de restart do container. Se isso for indesejado, desative em Docker Desktop > Settings > General.
 
 ### Remover
 

@@ -13,6 +13,7 @@ Esta pasta contem todos os scripts PowerShell para orquestracao da infraestrutur
 | `start-infra.ps1` | Sobe **apenas** Postgres + MinIO | Nao |
 | `start-generators.ps1` | Sobe **apenas** ShadowTraffic | Sim |
 | `start-all.ps1` | Sobe **tudo** (Infra + Geradores) | Sim |
+| `start-airbyte.ps1` | Liga o Airbyte (abctl) sob demanda -- nao faz parte de `start-all.ps1` | Nao |
 
 ### Scripts de Parada
 
@@ -21,6 +22,7 @@ Esta pasta contem todos os scripts PowerShell para orquestracao da infraestrutur
 | `stop-infra.ps1` | Para **apenas** infra | Nao |
 | `stop-generators.ps1` | Para **apenas** geradores | Nao |
 | `stop-all.ps1` | Para **todos** os servicos | Nao |
+| `stop-airbyte.ps1` | Desliga o Airbyte (abctl) -- use quando nao estiver rodando syncs | Nao |
 | `reset-all.ps1` | **DESTRUTIVO**: Para tudo + deleta volumes | **SIM** |
 
 ---
@@ -117,6 +119,23 @@ Esta pasta contem todos os scripts PowerShell para orquestracao da infraestrutur
 
 ---
 
+### `start-airbyte.ps1` / `stop-airbyte.ps1` - Airbyte sob demanda
+**Use quando:**
+- Vai configurar sources/destinations/connections no Airbyte
+- Vai disparar um sync manual
+- **Nao** precisa manter o Airbyte rodando o tempo todo -- ele consome bastante RAM/CPU (cluster `abctl`/kind) e nao faz parte de `start-all.ps1`
+
+**Exemplo:**
+```powershell
+.\scripts\start-airbyte.ps1
+# ... usa a UI em http://localhost:8000 ...
+.\scripts\stop-airbyte.ps1
+```
+
+Detalhes de instalacao/configuracao: `docs/airbyte/README.md`.
+
+---
+
 ## Matriz de Decisao Rapida
 
 | Situacao | Script Recomendado |
@@ -125,6 +144,8 @@ Esta pasta contem todos os scripts PowerShell para orquestracao da infraestrutur
 | Desenvolvimento local sem geradores | `start-infra.ps1` |
 | Preciso de mais dados | `start-generators.ps1` |
 | Economizar licenca | `stop-generators.ps1` |
+| Vou configurar/rodar sync no Airbyte | `start-airbyte.ps1` |
+| Terminei de usar o Airbyte | `stop-airbyte.ps1` |
 | Terminar o dia | `stop-all.ps1` |
 | Algo deu errado | `reset-all.ps1` -> `start-all.ps1` |
 
