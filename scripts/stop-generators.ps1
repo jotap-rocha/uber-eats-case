@@ -4,10 +4,10 @@
 # Autor: Uber Eats Data Pipeline Project
 # ==============================================================================
 
-Write-Host "[INFO] Parando APENAS os geradores ShadowTraffic..."
+Write-Host "[INFO] Parando APENAS o gerador ShadowTraffic..."
 
-# Para apenas os geradores
-docker-compose stop gen-drivers gen-users gen-minio
+# Para o gerador unificado
+docker-compose stop gen-unified
 
 Write-Host ""
 Write-Host "[OK] Geradores parados."

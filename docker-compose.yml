@@ -60,41 +60,18 @@ services:
       /usr/bin/mc policy set public local/uber-eats;
       "
   
-  # --- 3. GERADORES DE DADOS ---
-  gen-drivers:
+  # --- 3. GERADOR DE DADOS (unificado: Postgres real + MinIO no mesmo processo,
+  #        necessário para o lookup cruzado entre as duas conexões) ---
+  gen-unified:
     image: shadowtraffic/shadowtraffic:latest
-    container_name: gen-drivers
-    # Espera o Postgres ficar 100% "saudável" (e com as tabelas)
+    container_name: gen-unified
     depends_on:
       postgres-ubereats:
         condition: service_healthy
-    volumes:
-      - ./gen/postgres/drivers.json:/home/config.json:ro
-    env_file: ./gen/.env
-    command: --config /home/config.json
-  
-  gen-users:
-    image: shadowtraffic/shadowtraffic:latest
-    container_name: gen-users
-    # Espera o Postgres ficar 100% "saudável" (e com as tabelas)
-    depends_on:
-      postgres-ubereats:
-        condition: service_healthy
-    volumes:
-      # O caminho que corrigimos antes
-      - ./gen/postgres/users.json:/home/config.json:ro
-    env_file: ./gen/.env
-    command: --config /home/config.json
-  
-  gen-minio:
-    image: shadowtraffic/shadowtraffic:latest
-    container_name: gen-minio
-    # Espera o BUCKET ser criado pelo minio-setup
-    depends_on:
       minio-setup:
         condition: service_completed_successfully
     volumes:
-      - ./gen/minio/uber-eats.json:/home/config.json:ro
+      - ./gen/unified/uber-eats.json:/home/config.json:ro
     env_file: ./gen/.env
     command: --config /home/config.json
 

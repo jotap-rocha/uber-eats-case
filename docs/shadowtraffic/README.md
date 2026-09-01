@@ -44,13 +44,15 @@ LICENSE_OWNER=<seu_nome>
 
 ---
 
-## Geradores
+## Gerador
 
-| Gerador | Destino | Taxa | Limite |
-|---------|---------|------|--------|
-| `gen-drivers` | `drivers` (Postgres) | ~50/s | 80.000 |
-| `gen-users` | `users` (Postgres) | ~50/s | 80.000 |
-| `gen-minio` | `uber-eats` (MinIO) | ~500/s | Infinito |
+Um único processo unificado (`gen-unified`) gera tudo — necessário para o lookup cruzado entre a conexão Postgres real e a conexão MinIO no mesmo config (`gen/unified/uber-eats.json`).
+
+| Destino | Taxa | Limite |
+|---------|------|--------|
+| `users` (Postgres) | ~50/s | 80.000 |
+| `drivers` (Postgres) | ~50/s | 80.000 |
+| `uber-eats` (MinIO) | ~500/s | Infinito |
 
 ---
 
@@ -73,7 +75,7 @@ LICENSE_OWNER=<seu_nome>
 
 ```powershell
 # Logs
-docker-compose logs -f gen-drivers gen-users gen-minio
+docker-compose logs -f gen-unified
 
 # Contagem Postgres (use suas credenciais do .env)
 docker exec postgres-ubereats psql -U <seu_usuario> -d <seu_database> -c "SELECT COUNT(*) FROM drivers;"
@@ -86,7 +88,7 @@ docker exec minio-ubereats mc ls local/uber-eats/ --recursive
 
 ## Ajustar Velocidade
 
-Edite `gen/postgres/*.json.template`:
+Edite `gen/unified/uber-eats.json.template`:
 
 ```json
 {

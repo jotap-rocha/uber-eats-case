@@ -100,9 +100,9 @@ docker-compose up -d postgres-ubereats minio-ubereats minio-setup
 
 Write-Host ""
 
-# --- Passo 4: Sobe Geradores ---
-Write-Host "[4/4] Iniciando geradores ShadowTraffic..." -ForegroundColor Cyan
-docker-compose up -d gen-drivers gen-users gen-minio
+# --- Passo 4: Sobe Gerador ---
+Write-Host "[4/4] Iniciando gerador ShadowTraffic unificado..." -ForegroundColor Cyan
+docker-compose up -d gen-unified
 
 Write-Host ""
 Write-Host "[OK] Fabrica de dados iniciada em background." -ForegroundColor Green

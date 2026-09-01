@@ -68,7 +68,7 @@ docker-compose ps
 
 # Ver logs
 docker-compose logs -f postgres-ubereats
-docker-compose logs -f gen-drivers
+docker-compose logs -f gen-unified
 
 # Ver recursos
 docker stats
@@ -82,9 +82,7 @@ docker stats
 |---------|-----------|-------|
 | `postgres-ubereats` | PostgreSQL 15 | 5432 |
 | `minio-ubereats` | MinIO (Data Lake) | 9000/9001 |
-| `gen-drivers` | Gerador (drivers) | - |
-| `gen-users` | Gerador (users) | - |
-| `gen-minio` | Gerador (eventos) | - |
+| `gen-unified` | Gerador (Postgres real + MinIO, mesmo processo) | - |
 
 ---
 

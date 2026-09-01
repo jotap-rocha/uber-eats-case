@@ -11,30 +11,17 @@ if (-not (Test-Path $envFile)) {
 }
 $envVars = Get-Content $envFile | Where-Object { $_ -match '=' -and $_ -notmatch '^\s*#' } | ConvertFrom-StringData
 
-# 2. Configura o gerador de Drivers (usando o caminho completo)
-$templateDriver = "$scriptFolder\postgres\drivers.json.template"
-$configFileDriver = "$scriptFolder\postgres\drivers.json" 
+# 2. Configura o gerador unificado (Postgres real + MinIO no mesmo processo)
+$templateUnified = "$scriptFolder\unified\uber-eats.json.template"
+$configFileUnified = "$scriptFolder\unified\uber-eats.json"
 
-Write-Host "   -> Gerando $configFileDriver..."
-(Get-Content $templateDriver) `
+Write-Host "   -> Gerando $configFileUnified..."
+(Get-Content $templateUnified) `
     -replace "REPLACE_POSTGRES_HOST", $envVars.POSTGRES_HOST `
     -replace "REPLACE_POSTGRES_PORT", $envVars.POSTGRES_PORT `
     -replace "REPLACE_POSTGRES_DB", $envVars.POSTGRES_DB `
     -replace "REPLACE_POSTGRES_USER", $envVars.POSTGRES_USERNAME `
     -replace "REPLACE_POSTGRES_PASSWORD", $envVars.POSTGRES_PASSWORD |
-    Set-Content $configFileDriver
+    Set-Content $configFileUnified
 
-# 3. Configura o gerador de Users (usando o caminho completo)
-$templateUser = "$scriptFolder\postgres\users.json.template" 
-$configFileUser = "$scriptFolder\postgres\users.json" 
-
-Write-Host "   -> Gerando $configFileUser..."
-(Get-Content $templateUser) `
-    -replace "REPLACE_POSTGRES_HOST", $envVars.POSTGRES_HOST `
-    -replace "REPLACE_POSTGRES_PORT", $envVars.POSTGRES_PORT `
-    -replace "REPLACE_POSTGRES_DB", $envVars.POSTGRES_DB `
-    -replace "REPLACE_POSTGRES_USER", $envVars.POSTGRES_USERNAME `
-    -replace "REPLACE_POSTGRES_PASSWORD", $envVars.POSTGRES_PASSWORD |
-    Set-Content $configFileUser
-
-Write-Host "✅ Arquivos .json do Postgres gerados com sucesso!"
+Write-Host "✅ Arquivo .json unificado (Postgres + MinIO) gerado com sucesso!"

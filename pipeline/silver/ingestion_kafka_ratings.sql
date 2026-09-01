@@ -1,5 +1,5 @@
 CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_mysql_ratings
-COMMENT "Tabela de Avaliações com notas dadas aos restaurantes (identificados por CNPJ)"
+COMMENT "Tabela de Avaliações vinculadas ao pedido (restaurante e usuário obtidos transitivamente via id_pedido)"
 AS
 
 -- 1. LEITURA
@@ -16,8 +16,8 @@ normalized_table AS (
 typed_table AS (
   SELECT
     CAST(rating_id AS STRING)                         AS id_avaliacao,
-    CAST(uuid AS STRING)                              AS id_usuario,
-    CAST(restaurant_identifier AS STRING)             AS cnpj_restaurante,
+    CAST(uuid AS STRING)                              AS id_avaliacao_uuid,
+    CAST(order_id AS STRING)                          AS id_pedido,
     CAST(rating AS DECIMAL(3, 1))                     AS nota_avaliacao,
     CAST(timestamp AS TIMESTAMP)                      AS data_avaliacao
   FROM
@@ -28,8 +28,8 @@ typed_table AS (
 cleansed_table AS (
   SELECT
     TRIM(id_avaliacao)                                AS id_avaliacao,
-    TRIM(id_usuario)                                  AS id_usuario,
-    TRIM(cnpj_restaurante)                            AS cnpj_restaurante,
+    TRIM(id_avaliacao_uuid)                           AS id_avaliacao_uuid,
+    TRIM(id_pedido)                                   AS id_pedido,
     COALESCE(nota_avaliacao, 0.0)                     AS nota_avaliacao,
     COALESCE(data_avaliacao, CAST('1900-01-01 00:00:00' AS TIMESTAMP)) AS data_avaliacao
   FROM

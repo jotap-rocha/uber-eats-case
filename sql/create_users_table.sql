@@ -1,5 +1,5 @@
 CREATE TABLE public.users (
-    user_id           uuid PRIMARY KEY,
+    user_id           int PRIMARY KEY,
     first_name        text,
     last_name         text,
     name              text,

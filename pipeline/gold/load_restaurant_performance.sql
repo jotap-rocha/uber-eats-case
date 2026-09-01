@@ -4,7 +4,7 @@ AS
 WITH transacoes_validas AS (
   SELECT
     o.id_pedido,
-    o.cnpj_restaurante,
+    o.id_restaurante,
     p.valor_bruto,
     p.taxa_plataforma,
     p.valor_imposto
@@ -14,8 +14,9 @@ WITH transacoes_validas AS (
     p.status_pagamento = 'succeeded' 
     AND p.valor_imposto < (p.valor_bruto * 0.15) 
 )
-SELECT 
+SELECT
   -- Dados Cadastrais do Restaurante (Dimensão)
+  r.id_restaurante,
   r.cnpj,
   r.nome_restaurante,
   r.cidade AS cidade_restaurante,
@@ -39,8 +40,9 @@ SELECT
   
 FROM uber_eats.silver.silver_mysql_restaurants r
 -- Usamos LEFT JOIN para garantir que até os restaurantes que não venderam nada apareçam (com valores zerados/nulos)
-LEFT JOIN transacoes_validas t ON r.cnpj = t.cnpj_restaurante
-GROUP BY 
+LEFT JOIN transacoes_validas t ON r.id_restaurante = t.id_restaurante
+GROUP BY
+  r.id_restaurante,
   r.cnpj,
   r.nome_restaurante,
   r.cidade,

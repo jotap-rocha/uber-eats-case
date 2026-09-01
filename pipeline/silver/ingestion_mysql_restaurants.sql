@@ -27,7 +27,9 @@ typed_table AS (
     CAST(num_reviews AS INT)                          AS qtd_avaliacoes_historico,
     CAST(average_rating AS DECIMAL(3, 1))             AS nota_media,
     CAST(opening_time AS STRING)                      AS horario_abertura,
-    CAST(closing_time AS STRING)                      AS horario_fechamento
+    CAST(closing_time AS STRING)                      AS horario_fechamento,
+    CAST(lat AS DOUBLE)                               AS latitude,
+    CAST(lon AS DOUBLE)                               AS longitude
   FROM
     normalized_table
 ),
@@ -47,7 +49,9 @@ cleansed_table AS (
     COALESCE(qtd_avaliacoes_historico, 0)             AS qtd_avaliacoes_historico,
     COALESCE(nota_media, 0.0)                         AS nota_media,
     COALESCE(horario_abertura, '00:00')               AS horario_abertura,
-    COALESCE(horario_fechamento, '00:00')             AS horario_fechamento
+    COALESCE(horario_fechamento, '00:00')             AS horario_fechamento,
+    COALESCE(latitude, 0.0)                           AS latitude,
+    COALESCE(longitude, 0.0)                          AS longitude
   FROM
     typed_table
 ),

@@ -2,9 +2,9 @@ CREATE OR REFRESH LIVE TABLE gold.financial_order_unit_economics
 COMMENT "Dataset focado em rentabilidade unitária por pedido. Integra Kafka, Postgres e MySQL."
 AS
 WITH orders_metrics AS (
-  SELECT 
+  SELECT
     o.id_pedido,
-    o.cnpj_restaurante,
+    o.id_restaurante,
     o.id_motorista,
     p.valor_bruto AS valor_bruto,
     p.valor_imposto,
@@ -29,4 +29,4 @@ SELECT
   round((margem_contribuicao / NULLIF(m.valor_bruto, 0)) * 100, 2) AS taxa_de_retencao,
   current_timestamp() AS _data_processamento
 FROM orders_metrics m
-LEFT JOIN silver_mysql_restaurants r ON m.cnpj_restaurante = r.cnpj;
+LEFT JOIN silver_mysql_restaurants r ON m.id_restaurante = r.id_restaurante;

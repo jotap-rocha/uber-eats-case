@@ -25,19 +25,17 @@ Write-Host ""
 Write-Host "[2/2] Iniciando geradores ShadowTraffic..."
 Write-Host "   (Os geradores vao comecar a popular os dados agora.)"
 
-# Sobe apenas os geradores
-docker-compose up -d gen-drivers gen-users gen-minio
+# Sobe o gerador unificado (Postgres real + MinIO no mesmo processo)
+docker-compose up -d gen-unified
 
 Write-Host ""
-Write-Host "[OK] Geradores ShadowTraffic iniciados em background."
+Write-Host "[OK] Gerador ShadowTraffic iniciado em background."
 Write-Host ""
-Write-Host "Geradores ativos:"
-Write-Host "   -> gen-drivers: Populando tabela 'drivers' no Postgres"
-Write-Host "   -> gen-users: Populando tabela 'users' no Postgres"
-Write-Host "   -> gen-minio: Gerando eventos JSON no bucket 'uber-eats'"
+Write-Host "Gerador ativo:"
+Write-Host "   -> gen-unified: Populando 'users'/'drivers' no Postgres e eventos JSON no bucket 'uber-eats' (mesmo processo, permite lookup cruzado)"
 Write-Host ""
 Write-Host "Monitoramento:"
-Write-Host "   -> Ver logs: docker-compose logs -f gen-drivers gen-users gen-minio"
-Write-Host "   -> Parar geradores: .\scripts\stop-generators.ps1"
+Write-Host "   -> Ver logs: docker-compose logs -f gen-unified"
+Write-Host "   -> Parar gerador: .\scripts\stop-generators.ps1"
 
 

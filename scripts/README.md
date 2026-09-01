@@ -149,12 +149,12 @@ Esta pasta contem todos os scripts PowerShell para orquestracao da infraestrutur
 2. **Monitore logs de um servico especifico:**
    ```powershell
    docker-compose logs -f postgres-ubereats
-   docker-compose logs -f gen-drivers
+   docker-compose logs -f gen-unified
    ```
 
-3. **Verificar se geradores estao ativos:**
+3. **Verificar se o gerador esta ativo:**
    ```powershell
-   docker-compose logs --tail=20 gen-drivers gen-users gen-minio
+   docker-compose logs --tail=20 gen-unified
    ```
 
 4. **Licenca ShadowTraffic expirada?**
