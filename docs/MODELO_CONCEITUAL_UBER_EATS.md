@@ -2,7 +2,7 @@
 
 > Fonte: ciclo SDD arquivado em `.claude/sdd/archive/MODELO_CONCEITUAL_UBER_EATS/` (modelagem inicial), `.claude/sdd/features/*_INTEGRIDADE_REFERENCIAL_SHADOW_TRAFFIC.md` (correção estrutural, Onda 1) e `.claude/sdd/features/*_UNIFICACAO_IDENTIDADE_POSTGRES_MINIO.md` (unificação de identidade, Onda 2).
 >
-> Reaproveitado sem alteração nas 3 arquiteturas (Warehouse, Lakehouse, Kappa) × 3 clouds (Azure, AWS, GCP) do roadmap em [`docs/plan.md`](plan.md) — Fase 0.
+> Reaproveitado sem alteração nas 3 arquiteturas (Warehouse, Lakehouse, Kappa) × 3 clouds (Azure, AWS, GCP) do roadmap em [`docs/ROADMAP_ARQUITETURA_MULTICLOUD.md`](ROADMAP_ARQUITETURA_MULTICLOUD.md) — Fase 0.
 >
 > Fonte única de dados: `gen/unified/uber-eats.json` — gerador único (Postgres real + MinIO no mesmo processo): 2 tabelas Postgres (`users`, `drivers`) + 17 streams MinIO (MySQL, MongoDB, Kafka simulados).
 >
