@@ -2,7 +2,7 @@
 
 **Documento de planejamento**
 
-**Versão:** 1.2
+**Versão:** 1.3
 
 **Data:** Setembro/2026
 
@@ -44,43 +44,33 @@ Implementar as arquiteturas **Warehouse**, **Lakehouse** e **Kappa**, reaproveit
 | Shadow Traffic — integridade referencial (Onda 1) | Corrigir integridade referencial entre os geradores simulados (MySQL, MongoDB, Kafka dentro do MinIO), garantindo que entidades-filho referenciem corretamente chaves de entidades-pai já existentes | ✅ Concluído — `.claude/sdd/archive/INTEGRIDADE_REFERENCIAL_SHADOW_TRAFFIC/` |
 | Unificação de identidade Postgres×MinIO (Onda 2) | Migrar Usuário/Motorista para fonte única (Postgres real), PK sequencial em vez de UUID, reconciliar dimensão única de motorista | ✅ Concluído — `.claude/sdd/archive/UNIFICACAO_IDENTIDADE_POSTGRES_MINIO/` |
 | Modelo conceitual | Desenhar entidades e relacionamentos do domínio Uber Eats (usuário, restaurante, produto, pedido, item de pedido, pagamento, entrega, avaliação, motorista, estoque, turno, incidente, recibo) — modelo único, reaproveitado nas 3 arquiteturas e nas 3 clouds | ✅ Concluído — `docs/MODELO_CONCEITUAL_UBER_EATS.md` |
-| Diversificação de fontes (Onda 3) | Sair de 2 sistemas (Postgres real + MinIO simulado) para 4 sistemas heterogêneos, com CDC real e mutação de estado — ver subseção "Fase 0 — Onda 3" abaixo | 🔜 Planejamento (brainstorm concluído nesta sessão; falta formalizar `/define`) |
+| Diversificação de fontes (Onda 3) | Sair de 2 sistemas (Postgres real + MinIO simulado) para 4 sistemas heterogêneos, com CDC real e mutação de estado — ver subseção "Fase 0 — Onda 3" abaixo | ✅ Brainstorm concluído — `.claude/sdd/features/BRAINSTORM_DIVERSIFICACAO_FONTES_UBEREATS.md`; falta `/define` |
 | Agentes | Carregar com conhecimento de arquitetura de dados (Warehouse, Lakehouse, Kappa, medalhão, modelagem dimensional). Conhecimento específico de cada cloud entra sob demanda, a partir da fase correspondente | Contínuo |
 
 **Critério de saída (revisado na v1.1):** consulta de join entre as fontes de dados — hoje 2 sistemas (Postgres, MinIO), alvo de 4 (Postgres, Oracle, MongoDB, MinIO) após a Onda 3 — retorna resultado consistente, sem registros órfãos; e a mutação de estado (UPDATE/DELETE) em Postgres/Oracle é capturada corretamente pelo CDC (Airbyte para Postgres, Debezium/Kafka Connect para Oracle).
 
 ---
 
-#### Fase 0 — Onda 3: Diversificação de fontes (planejamento)
+#### Fase 0 — Onda 3: Diversificação de fontes (brainstorm concluído)
 
-> Brainstorm conduzido via `/intake` (múltiplas rodadas com `@medallion-architect` e `@databricks-data-engineer`). Decisões abaixo refletem o estado atual do brainstorm — ainda não formalizadas em `/define`.
+> Brainstorm conduzido via `/intake` (múltiplas rodadas com `@medallion-architect` e `@databricks-data-engineer`) e formalizado via `/brainstorm`. Documento completo: [`BRAINSTORM_DIVERSIFICACAO_FONTES_UBEREATS.md`](../.claude/sdd/features/BRAINSTORM_DIVERSIFICACAO_FONTES_UBEREATS.md). Próximo passo: `/define`.
 
-**Objetivo:** sair de 2 sistemas (Postgres real + MinIO simulado) para 4, cada um hospedando um domínio de negócio coerente (não entidades soltas), e tornar a ingestão mais fiel a um cenário real de CDC — capturando `UPDATE`/`DELETE`, não só `INSERT`.
+**Objetivo:** sair de 2 sistemas (Postgres real + MinIO simulado) para 4, cada um hospedando um domínio de negócio coerente, com CDC real e mutação de estado (`UPDATE`/`DELETE`, não só `INSERT`).
 
-| Decisão | Resumo | Confiança |
+**Alocação final:**
+
+| Sistema | Entidades | CDC |
 |---|---|---|
-| Sistemas-alvo | **Postgres** (mantém), **Oracle** (novo), **MongoDB** (novo — cadastro estático/satélites documentais, não dado vivo), **MinIO** (mantém o já existente; descartada a ideia de um 2º MinIO — redundante com os datalakes reais que as Fases 1-3 já entregam) | Fechada |
-| Critério de alocação | "Technology fit": entidades-mestre com estado mutável (Usuário, Motorista, Restaurante, Produto, Estoque) vão para Postgres/Oracle; streams append-only por natureza (Pedido, Pagamento, Entrega, Recibo, eventos, telemetria) permanecem no MinIO; satélites documentais estáticos (ex. "Perfil de Restaurante": menu, horários, tags, políticas) no MongoDB | Fechada — critério; alocação entidade-a-entidade final fica para o `/define` |
-| Entidades novas no modelo | Autorizadas — ex. satélite documental do Restaurante, a modelar em detalhe no `/define` (hoje o modelo conceitual tem 13 entidades) | Fechada |
-| CDC no Oracle | Via **Debezium/Kafka Connect** — o conector Oracle CDC do Airbyte é `source-oracle-enterprise`, pago/Enterprise; o OSS só faz Full Refresh ou incremental por cursor. Decisão: aceitar o componente de infraestrutura novo em troca de CDC real (melhor valor de portfólio: dois motores de CDC diferentes convivendo) | Fechada |
-| CDC no Postgres | Mantém Airbyte OSS (já suportado; `wal_level=logical` já configurado em `docker-compose.yml`) | Fechada |
-| Mutação de estado real (UPDATE/DELETE) | ShadowTraffic suporta `op: insert\|update\|delete` nativamente em conexões `postgres` e `oracle` (mecanismo `fork` + `stateMachine`, confirmado na doc oficial). Candidatos iniciais de v1: `drivers.status`, `users.total_orders`/`last_login`. O log append-only já existente (`kafka/status` para Pedido, `kafka/events` para Pagamento) é mantido — **regra de ouro:** estado mutável e log de transição devem ser alimentados pelo mesmo `stateMachine`, nunca gerados de forma independente (senão divergem) | Fechada quanto ao mecanismo; escopo exato da v1 e desenho fork×lookup ficam para o `/define` |
-| Nomenclatura do medalhão | Tabelas Silver passam a nomear por **domínio de negócio** (ex. `silver_orders`), não mais por sistema de origem (ex. `silver_kafka_orders`) — deixa futuras trocas de fonte mais baratas | Fechada |
+| **Postgres** | Usuário, Motorista (mutável: `drivers.status` etc.) | Airbyte OSS (mantém) |
+| **Oracle** (novo) | Restaurante, Produto, Estoque, **Pedido, Item de Pedido, Pagamento, Recibo** (mutáveis: `orders.status`, `payments.status`) | Debezium/Kafka Connect (novo — conector Oracle CDC do Airbyte é pago/Enterprise) |
+| **MongoDB** (novo) | Satélite "Perfil de Restaurante" (menu + horários) — cadastro estático, FK para `restaurant_id` | Não aplicável (sem CDC; sem sink de escrita no ShadowTraffic) |
+| **MinIO** (mantém) | Entrega, Avaliação, Turno, Incidente + streams fora do core | Airbyte OSS (mantém) |
 
-**Pendências antes de formalizar `/define`:**
-- Desenho exato do gerador de mutação (reescrever `users`/`drivers` com `fork`+`stateMachine`, ou manter os geradores atuais e somar um segundo gerador de update via `lookup` no `where` — recomenda-se um protótipo rápido com `--stdout` antes de decidir)
-- Escopo exato da v1 de mutação de estado (sugestão do brainstorm: começar só com `drivers.status` + `users.total_orders`/`last_login`, soft delete)
-- Modelagem detalhada dos satélites documentais novos (schema do "Perfil de Restaurante" no MongoDB)
-- **Contrato canônico de metadados de CDC na Bronze** (`cdc_operation`, `cdc_commit_ts`, `cdc_sequence`, `cdc_source_system`) — incluir como requisito do `/define`, não como nice-to-have. Motivo: cada ferramenta de ingestão das fases futuras (Airbyte, Debezium, DMS, Datastream) emite um formato de CDC diferente; se a Silver ler o formato nativo de uma ferramenta específica, ela precisa ser reescrita a cada fase (ver princípio "Ingestão/CDC por fase" na Seção 2)
-- Registro formal do processo em `.claude/sdd/features/BRAINSTORM_DIVERSIFICACAO_FONTES_UBEREATS.md` (nome provisório) quando o usuário decidir avançar para `/brainstorm`/`/define`
+**Decisão-chave tomada durante o `/brainstorm`:** Pedido e Pagamento migram para o Oracle (não ficam no MinIO como cogitado inicialmente) porque o usuário decidiu **aposentar os logs append-only `kafka/status`/`kafka/events`** — a mudança de status passa a ser a mutação real da linha, capturada pelo CDC. Descartado de vez: um segundo MinIO/datalake.
 
-**Escopo por fase (v1.2):** a topologia de 4 sistemas (Postgres, Oracle, MongoDB, MinIO) e a ingestão via Airbyte+Debezium são específicas da Fase 0/1 (Azure). Nas Fases 2/3, o modelo de domínio e a mecânica de CDC são reaproveitados, mas Oracle e MinIO são substituídos pelos motores nativos de cada cloud — ver Seção 2 ("Portabilidade de motor por camada") e as Fases 2/3 abaixo.
+**Sequenciamento (mitigação de risco, mesmo método das Ondas 1/2):** 1) provar o mecanismo `fork`+`stateMachine` no Postgres (Motorista) — infra já madura; 2) levantar o Oracle com Restaurante/Produto/Estoque, insert-only, validar CDC básico; 3) só então aplicar mutação real a Pedido/Pagamento no Oracle e aposentar os logs antigos. Detalhe completo no BRAINSTORM.
 
-**Riscos levantados no brainstorm (ver contexto completo na sessão que originou esta seção, a formalizar no `/define`):**
-- Todo sistema novo precisa entrar como `connection` do **mesmo processo único** do `gen-unified` (Postgres/Oracle) — gerador separado recria o bug de "populações desconectadas" que a Onda 2 resolveu
-- MongoDB sem sink no ShadowTraffic — população é seed estático (M1) ou satélite com FK para cadastro congelado (M3), nunca gerada de forma independente
-- Auto-DDL do ShadowTraffic não cria PRIMARY KEY — colunas-chave migradas para Postgres/Oracle precisam de `sqlHint`/`tablePolicy: manual` explícito, senão a réplica lógica falha silenciosamente
-- Hard delete em entidades-pai (Usuário, Motorista) quebra a integridade referencial das Ondas 1/2 — usar soft delete nessas entidades
+**Escopo por fase (v1.2):** a topologia de 4 sistemas e a ingestão via Airbyte+Debezium são específicas da Fase 0/1 (Azure). Nas Fases 2/3, Oracle e MinIO são substituídos pelos motores nativos de cada cloud — ver Seção 2 ("Portabilidade de motor por camada").
 
 ---
 
@@ -170,3 +160,4 @@ Implementar as arquiteturas **Warehouse**, **Lakehouse** e **Kappa**, reaproveit
 | 1.0 | Agosto/2026 | Documento inicial (`docs/plan.md`) |
 | 1.1 | Setembro/2026 | Renomeado para `docs/ROADMAP_ARQUITETURA_MULTICLOUD.md`. Fase 0 detalhada com status real (Ondas 1-2 concluídas) e nova subseção "Onda 3 — Diversificação de fontes" capturando o brainstorm de expansão para Postgres+Oracle+MongoDB+MinIO com CDC real. Estimativa de norte temporal e lacunas de conhecimento atualizadas de acordo |
 | 1.2 | Setembro/2026 | Esclarecido que a topologia de 4 sistemas e Airbyte+Debezium são específicos da Fase 0/1 (Azure). Novos princípios "Portabilidade de motor por camada" e "Ingestão/CDC por fase": nas Fases 2/3, Oracle e MinIO são substituídos pelos motores relacionais e object storage nativos de cada cloud, e a ingestão passa a ser nativa (AWS DMS/MSK Connect; GCP Datastream) em vez de Airbyte/Debezium. Adicionado requisito de contrato canônico de metadados de CDC na Bronze, para a Silver não depender do formato específico de cada ferramenta de ingestão |
+| 1.3 | Setembro/2026 | Brainstorm da Onda 3 formalizado (`/brainstorm` → `.claude/sdd/features/BRAINSTORM_DIVERSIFICACAO_FONTES_UBEREATS.md`). Alocação final: Pedido, Pagamento, Item de Pedido e Recibo migram para o Oracle (não ficam no MinIO como cogitado inicialmente), porque os logs append-only `kafka/status`/`kafka/events` são aposentados em favor de mutação real capturada por CDC. Segundo MinIO descartado definitivamente. Adicionado sequenciamento em 3 etapas (Postgres/Motorista → Oracle plumbing → Oracle/Pedido+Pagamento) para isolar o risco do mecanismo de mutação, nunca testado neste projeto |
