@@ -2,7 +2,7 @@
 
 **Documento de planejamento**
 
-**Versão:** 1.1
+**Versão:** 1.2
 
 **Data:** Setembro/2026
 
@@ -29,6 +29,8 @@ Implementar as arquiteturas **Warehouse**, **Lakehouse** e **Kappa**, reaproveit
 | Abertura de conta cloud | Somente no início de cada fase correspondente, dado que os créditos de free tier têm validade curta (Azure: 30 dias; AWS: até 6 meses; GCP: 90 dias) |
 | IaC / CI-CD | **Terraform** como ferramenta única de provisionamento de infraestrutura, reaproveitada nas 3 clouds. **DAB** (Databricks Asset Bundles) usado especificamente para deploy de jobs/pipelines Databricks — aplicável somente na Fase 1 (Azure) |
 | Uso do Databricks | Restrito à Azure. Em AWS e GCP, o objetivo é praticar a stack de dados nativa de cada cloud (Glue/Iceberg/Athena na AWS; BigLake/Dataproc/BigQuery no GCP) |
+| Portabilidade de motor por camada (v1.2) | O **modelo de domínio** (13+ entidades, `docs/MODELO_CONCEITUAL_UBER_EATS.md`) e a **mecânica de CDC** (replication slot/log, PK obrigatória, soft delete) são fixos e reaproveitados nas 3 clouds. A **implementação física** não é: Oracle e MinIO são específicos da Fase 0/1 (Azure). Nas Fases 2/3, os papéis equivalentes são servidos pelo motor relacional e pelo object storage nativos de cada cloud (ex.: AWS = banco relacional gerenciado da AWS + S3; GCP = banco relacional gerenciado do GCP + GCS) — o motor exato de cada fase é decidido no `/define` daquela fase, não aqui |
+| Ingestão/CDC por fase (v1.2) | Fases 0/1: **Airbyte** (Postgres→Databricks) + **Debezium/Kafka Connect** (Oracle→Databricks) — ver Onda 3. Fases 2/3: ingestão nativa da cloud (ex.: AWS DMS e/ou MSK Connect; GCP Datastream) em vez de Airbyte/Debezium — decisão tomada em brainstorm (`/intake`), detalhamento fica para o `/define` de cada fase. Para não reescrever a Silver a cada fase, a Bronze deve expor um **contrato canônico de metadados de CDC** (`cdc_operation`, `cdc_commit_ts`, `cdc_sequence`, `cdc_source_system`) — cada ferramenta de ingestão emite um formato próprio (`_ab_cdc_*` no Airbyte, `op`/`before`/`after` no Debezium, etc.) e a Silver nunca deve ler o formato nativo diretamente |
 | Gestão de custo | Responsabilidade do usuário — priorizar sempre serviços serverless/on-demand (Redshift Serverless, Synapse Serverless SQL Pool, BigQuery on-demand, Databricks com auto-termination agressivo) para evitar cobrança de recurso ligado sem uso |
 
 ---
@@ -69,7 +71,10 @@ Implementar as arquiteturas **Warehouse**, **Lakehouse** e **Kappa**, reaproveit
 - Desenho exato do gerador de mutação (reescrever `users`/`drivers` com `fork`+`stateMachine`, ou manter os geradores atuais e somar um segundo gerador de update via `lookup` no `where` — recomenda-se um protótipo rápido com `--stdout` antes de decidir)
 - Escopo exato da v1 de mutação de estado (sugestão do brainstorm: começar só com `drivers.status` + `users.total_orders`/`last_login`, soft delete)
 - Modelagem detalhada dos satélites documentais novos (schema do "Perfil de Restaurante" no MongoDB)
+- **Contrato canônico de metadados de CDC na Bronze** (`cdc_operation`, `cdc_commit_ts`, `cdc_sequence`, `cdc_source_system`) — incluir como requisito do `/define`, não como nice-to-have. Motivo: cada ferramenta de ingestão das fases futuras (Airbyte, Debezium, DMS, Datastream) emite um formato de CDC diferente; se a Silver ler o formato nativo de uma ferramenta específica, ela precisa ser reescrita a cada fase (ver princípio "Ingestão/CDC por fase" na Seção 2)
 - Registro formal do processo em `.claude/sdd/features/BRAINSTORM_DIVERSIFICACAO_FONTES_UBEREATS.md` (nome provisório) quando o usuário decidir avançar para `/brainstorm`/`/define`
+
+**Escopo por fase (v1.2):** a topologia de 4 sistemas (Postgres, Oracle, MongoDB, MinIO) e a ingestão via Airbyte+Debezium são específicas da Fase 0/1 (Azure). Nas Fases 2/3, o modelo de domínio e a mecânica de CDC são reaproveitados, mas Oracle e MinIO são substituídos pelos motores nativos de cada cloud — ver Seção 2 ("Portabilidade de motor por camada") e as Fases 2/3 abaixo.
 
 **Riscos levantados no brainstorm (ver contexto completo na sessão que originou esta seção, a formalizar no `/define`):**
 - Todo sistema novo precisa entrar como `connection` do **mesmo processo único** do `gen-unified` (Postgres/Oracle) — gerador separado recria o bug de "populações desconectadas" que a Onda 2 resolveu
@@ -99,6 +104,8 @@ Implementar as arquiteturas **Warehouse**, **Lakehouse** e **Kappa**, reaproveit
 | 2ª | Lakehouse | Glue + Iceberg + Athena |
 | 3ª | Kappa | Kinesis (ou MSK) + Flink/Lambda |
 
+**Fontes e ingestão (v1.2):** Oracle e MinIO da Fase 0 são substituídos pelos papéis equivalentes em serviços nativos AWS (banco relacional gerenciado + S3 — motor exato a decidir no `/define` da fase). Ingestão/CDC via **AWS DMS** (fontes com CDC compatível) e/ou **MSK Connect** rodando o mesmo Debezium aprendido na Fase 0 (útil se alguma fonte não tiver CDC suportado no DMS) — não via Airbyte.
+
 **IaC/CI-CD:** Terraform (sem DAB — não há Databricks nesta fase).
 
 ---
@@ -110,6 +117,8 @@ Implementar as arquiteturas **Warehouse**, **Lakehouse** e **Kappa**, reaproveit
 | 1ª | Warehouse | BigQuery |
 | 2ª | Lakehouse | BigLake/Dataproc + Iceberg |
 | 3ª | Kappa | Pub/Sub + Dataflow |
+
+**Fontes e ingestão (v1.2):** Oracle e MinIO da Fase 0 são substituídos pelos papéis equivalentes em serviços nativos GCP (banco relacional gerenciado + Cloud Storage — motor exato a decidir no `/define` da fase). Ingestão/CDC via **Datastream** (cobre Postgres, Oracle e MongoDB nativamente, com destino direto em BigQuery ou tabelas Iceberg do BigLake) — não via Airbyte/Debezium.
 
 **IaC/CI-CD:** Terraform (sem DAB).
 
@@ -148,8 +157,8 @@ Implementar as arquiteturas **Warehouse**, **Lakehouse** e **Kappa**, reaproveit
 | 0 (Onda 3) | CDC real multi-motor (Airbyte + Debezium/Kafka Connect), Oracle como fonte, modelagem documental (MongoDB), geração sintética de mutação de estado (ShadowTraffic `fork`/`stateMachine`) |
 | 1 (Warehouse) | Modelagem dimensional |
 | 1 (Kappa) | Streaming/Kafka (em ambiente já conhecido) |
-| 2 | AWS como cloud (maior lacuna declarada) |
-| 3 | GCP como cloud; streaming em ambiente novo (Pub/Sub + Dataflow) |
+| 2 | AWS como cloud (maior lacuna declarada); CDC gerenciado (AWS DMS, MSK Connect) |
+| 3 | GCP como cloud; streaming em ambiente novo (Pub/Sub + Dataflow); CDC gerenciado (Datastream) |
 | DevOps/DataOps | Terraform + CI/CD, presente desde a Fase 1 |
 
 ---
@@ -160,3 +169,4 @@ Implementar as arquiteturas **Warehouse**, **Lakehouse** e **Kappa**, reaproveit
 |--------|------|---------|
 | 1.0 | Agosto/2026 | Documento inicial (`docs/plan.md`) |
 | 1.1 | Setembro/2026 | Renomeado para `docs/ROADMAP_ARQUITETURA_MULTICLOUD.md`. Fase 0 detalhada com status real (Ondas 1-2 concluídas) e nova subseção "Onda 3 — Diversificação de fontes" capturando o brainstorm de expansão para Postgres+Oracle+MongoDB+MinIO com CDC real. Estimativa de norte temporal e lacunas de conhecimento atualizadas de acordo |
+| 1.2 | Setembro/2026 | Esclarecido que a topologia de 4 sistemas e Airbyte+Debezium são específicos da Fase 0/1 (Azure). Novos princípios "Portabilidade de motor por camada" e "Ingestão/CDC por fase": nas Fases 2/3, Oracle e MinIO são substituídos pelos motores relacionais e object storage nativos de cada cloud, e a ingestão passa a ser nativa (AWS DMS/MSK Connect; GCP Datastream) em vez de Airbyte/Debezium. Adicionado requisito de contrato canônico de metadados de CDC na Bronze, para a Silver não depender do formato específico de cada ferramenta de ingestão |
