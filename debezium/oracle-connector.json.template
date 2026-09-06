@@ -11,7 +11,7 @@
     "database.pdb.name": "FREEPDB1",
     "topic.prefix": "oracle",
     "schema.include.list": "UBEREATS",
-    "table.include.list": "UBEREATS.RESTAURANTS,UBEREATS.PRODUCTS,UBEREATS.INVENTORY",
+    "table.include.list": "UBEREATS.RESTAURANTS,UBEREATS.PRODUCTS,UBEREATS.INVENTORY,UBEREATS.ORDERS,UBEREATS.PAYMENTS,UBEREATS.ORDER_ITEMS,UBEREATS.RECEIPTS",
     "log.mining.strategy": "online_catalog",
     "snapshot.mode": "initial",
     "decimal.handling.mode": "double",

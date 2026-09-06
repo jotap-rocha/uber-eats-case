@@ -1,14 +1,13 @@
 CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_payments
-COMMENT "Tabela de pagamentos realizados na plataforma com dados padronizados, tipados e enriquecidos."
+COMMENT "Tabela de pagamentos realizados na plataforma com dados padronizados, tipados e enriquecidos. Origem Oracle via Debezium/Kafka Connect (Onda 3, Etapa 3) — status agora é mutação real da linha (fork+stateMachine), não mais um stream de eventos separado (kafka/events, aposentado)."
 AS
 
 -- 1. LEITURA
 WITH bronze_table AS (
-  SELECT * FROM STREAM(live.payments)
+  SELECT * FROM STREAM(live.ods_payments)
 ),
 
 -- 2. NORMALIZAÇÃO
--- Neste caso, os dados já vieram normalizados
 normalized_table AS (
   SELECT * FROM bronze_table
 ),
@@ -17,7 +16,7 @@ normalized_table AS (
 typed_table AS (
   SELECT
     CAST(payment_id AS STRING)                                                                    AS id_pagamento,
-    CAST(order_key AS STRING)                                                                     AS id_pedido,
+    CAST(order_id AS STRING)                                                                      AS id_pedido,
     CAST(invoice_id AS STRING)                                                                    AS id_fatura,
     CAST(amount AS DECIMAL(18, 2))                                                                AS valor_bruto,
     CAST(net_amount AS DECIMAL(18, 2))                                                            AS valor_liquido,
@@ -31,7 +30,7 @@ typed_table AS (
     CAST(card_brand AS STRING)                                                                    AS bandeira_cartao,
     CAST(card_last4 AS STRING)                                                                    AS ultimos_4_digitos_cartao,
     CAST(wallet_provider AS STRING)                                                               AS carteira_digital,
-    CAST(from_unixtime(timestamp / 1000) AS TIMESTAMP)                                            AS data_transacao,
+    CAST(txn_timestamp AS TIMESTAMP)                                                              AS data_transacao,
     CAST(card_exp_month AS INT)                                                                   AS mes_expiracao_cartao,
     CAST(card_exp_year AS INT)                                                                    AS ano_expiracao_cartao,
     CAST(captured AS BOOLEAN)                                                                     AS flag_capturado,
@@ -80,7 +79,7 @@ silver_table AS (
   SELECT
     *,
     current_timestamp()                                                                           AS _data_ingestao,
-    'kafka-minio'                                                                                 AS _sistema_fonte
+    'oracle-ubereats'                                                                             AS _sistema_fonte
   FROM
     cleared_table
 )

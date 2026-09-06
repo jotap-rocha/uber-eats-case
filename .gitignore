@@ -209,6 +209,8 @@ __marimo__/
 .databricks
 gen/postgres/drivers.json
 gen/postgres/users.json
+gen/unified/uber-eats.json
+mongo/init/01_perfil_restaurante.js
 abctl-v0.30.3-windows-amd64/
 
 # --- Framework agentic (Dev Loop / SDD) ---

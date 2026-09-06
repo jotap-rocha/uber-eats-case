@@ -1,10 +1,10 @@
 CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_receipts
-COMMENT " Tabela de recibos com dados padronizados, tipados e limpos."
+COMMENT "Tabela de recibos com dados padronizados, tipados e limpos. Origem Oracle via Debezium/Kafka Connect (Onda 3, Etapa 3) — antes kafka/receipts simulado no MinIO."
 AS
 
 -- 1. LEITURA
 WITH bronze_table AS (
-  SELECT * FROM STREAM(live.receipts)
+  SELECT * FROM STREAM(live.ods_receipts)
 ),
 
 -- 2. NORMALIZAÇÃO
@@ -45,7 +45,7 @@ silver_table AS (
   SELECT
     *,
     current_timestamp()                                             AS _data_ingestao,
-    'kafka-minio'                                                   AS _sistema_fonte
+    'oracle-ubereats'                                               AS _sistema_fonte
   FROM
     cleared_table
 )

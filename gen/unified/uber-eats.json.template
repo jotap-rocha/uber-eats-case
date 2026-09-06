@@ -1141,10 +1141,10 @@
         },
         "order_id": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "kafka/orders/",
+          "connection": "oracle",
+          "table": "orders",
           "path": [
-            "data",
+            "row",
             "order_id"
           ]
         },
@@ -1180,465 +1180,116 @@
       "connection": "minio"
     },
     {
-      "bucket": "uber-eats",
-      "bucketConfigs": {
-        "keyPrefix": "kafka/payments/",
-        "format": "jsonl"
+      "table": "payments",
+      "localConfigs": {
+        "throttleMs": 25
       },
-      "vars": {
-        "amount": {
-          "_gen": "uniformDistribution",
-          "bounds": [
-            5.0,
-            100.0
-          ],
-          "decimals": 2
-        },
-        "platform_fee": {
-          "_gen": "uniformDistribution",
-          "bounds": [
-            0.3,
-            5.0
-          ],
-          "decimals": 2
-        },
-        "provider_fee": {
-          "_gen": "uniformDistribution",
-          "bounds": [
-            0.5,
-            7.0
-          ],
-          "decimals": 2
-        },
-        "tax_amount": {
-          "_gen": "uniformDistribution",
-          "bounds": [
-            0.0,
-            10.0
-          ],
-          "decimals": 2
-        }
-      },
-      "data": {
-        "payment_id": {
-          "_gen": "uuid"
-        },
-        "order_key": {
-          "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "kafka/orders/",
-          "path": [
-            "data",
-            "order_id"
-          ]
-        },
-        "amount": {
-          "_gen": "var",
-          "var": "amount"
-        },
-        "currency": {
-          "_gen": "oneOf",
-          "choices": [
-            "BRL",
-            "USD",
-            "EUR"
-          ]
-        },
-        "method": {
-          "_gen": "oneOf",
-          "choices": [
-            "Card",
-            "Pix",
-            "Boleto",
-            "Wallet"
-          ]
-        },
-        "provider": {
-          "_gen": "oneOf",
-          "choices": [
-            "Stripe",
-            "PayPal",
-            "Adyen"
-          ]
-        },
-        "card_brand": {
-          "_gen": "oneOf",
-          "choices": [
-            "Visa",
-            "MasterCard",
-            "Amex",
-            "Elo",
-            "Hipercard"
-          ]
-        },
-        "card_last4": {
-          "_gen": "string",
-          "expr": "#{numerify '####'}"
-        },
-        "card_exp_month": {
-          "_gen": "uniformDistribution",
-          "bounds": [
-            1,
-            12
-          ],
-          "decimals": 0
-        },
-        "card_exp_year": {
-          "_gen": "uniformDistribution",
-          "bounds": [
-            2024,
-            2030
-          ],
-          "decimals": 0
-        },
-        "wallet_provider": {
-          "_gen": "oneOf",
-          "choices": [
-            "Apple Pay",
-            "Google Pay",
-            "Samsung Pay",
-            "None"
-          ]
-        },
-        "status": {
-          "_gen": "oneOf",
-          "choices": [
-            "succeeded",
-            "pending",
-            "failed",
-            "refunded"
-          ]
-        },
-        "failure_reason": {
-          "_gen": "oneOf",
-          "choices": [
-            "",
-            "card_declined",
-            "insufficient_funds",
-            "expired_card",
-            "processing_error"
-          ]
-        },
-        "refunded": {
-          "_gen": "boolean"
-        },
-        "refund_amount": {
-          "_gen": "uniformDistribution",
-          "bounds": [
-            0,
-            100
-          ],
-          "decimals": 2
-        },
-        "captured": {
-          "_gen": "boolean"
-        },
-        "capture_timestamp": {
-          "_gen": "formatDateTime",
-          "ms": {
-            "_gen": "now"
-          },
-          "format": "yyyy-MM-dd HH:mm:ss.SSS"
-        },
-        "platform_fee": {
-          "_gen": "var",
-          "var": "platform_fee"
-        },
-        "provider_fee": {
-          "_gen": "var",
-          "var": "provider_fee"
-        },
-        "tax_amount": {
-          "_gen": "var",
-          "var": "tax_amount"
-        },
-        "net_amount": {
-          "_gen": "math",
-          "expr": "amount - platform_fee - provider_fee - tax_amount",
-          "format": "#.##",
-          "names": {
-            "amount": {
-              "_gen": "var",
-              "var": "amount"
-            },
-            "platform_fee": {
-              "_gen": "var",
-              "var": "platform_fee"
-            },
-            "provider_fee": {
-              "_gen": "var",
-              "var": "provider_fee"
-            },
-            "tax_amount": {
-              "_gen": "var",
-              "var": "tax_amount"
-            }
-          }
-        },
-        "receipt_url": {
-          "_gen": "string",
-          "expr": "#{Internet.url}"
-        },
-        "invoice_id": {
-          "_gen": "string",
-          "expr": "#{bothify 'INV-#####'}"
-        },
-        "country": {
-          "_gen": "oneOf",
-          "choices": [
-            "BR",
-            "US",
-            "DE"
-          ]
-        },
-        "ip_address": {
-          "_gen": "string",
-          "expr": "#{Internet.ipV4Address}"
-        },
-        "user_agent": {
-          "_gen": "string",
-          "expr": "#{Internet.userAgent}"
-        },
-        "timestamp": {
-          "_gen": "formatDateTime",
-          "ms": {
-            "_gen": "now"
-          },
-          "format": "yyyy-MM-dd HH:mm:ss.SSS"
-        },
-        "dt_current_timestamp": {
-          "_gen": "formatDateTime",
-          "ms": {
-            "_gen": "now"
-          },
-          "format": "yyyy-MM-dd HH:mm:ss.SSS"
-        }
-      },
-      "connection": "minio"
-    },
-    {
-      "bucket": "uber-eats",
-      "bucketConfigs": {
-        "keyPrefix": "kafka/events/",
-        "format": "jsonl"
+      "sqlHint": {
+        "payment_id": "NUMBER(10) PRIMARY KEY"
       },
       "fork": {
         "key": {
-          "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "kafka/payments/",
-          "path": [
-            "data",
-            "payment_id"
-          ]
-        }
-      },
-      "data": {
-        "event_id": {
-          "_gen": "uuid"
+          "_gen": "sequentialInteger",
+          "startingFrom": 1
         },
+        "maxForks": 300,
+        "keepAlive": true
+      },
+      "row": {
         "payment_id": {
           "_gen": "var",
           "var": "forkKey"
-        },
-        "event": {
-          "_gen": "stateMachine",
-          "initial": "created",
-          "transitions": {
-            "created": "authorized",
-            "authorized": "captured",
-            "captured": {
-              "_gen": "weightedOneOf",
-              "choices": [
-                {
-                  "weight": 9,
-                  "value": "succeeded"
-                },
-                {
-                  "weight": 1,
-                  "value": "refunded"
-                }
-              ]
-            },
-            "succeeded": "settled",
-            "refunded": "closed",
-            "settled": "closed"
-          },
-          "states": {
-            "created": {
-              "event_name": "created",
-              "timestamp": {
-                "_gen": "now",
-                "format": "yyyy-MM-dd HH:mm:ss.SSS"
-              }
-            },
-            "authorized": {
-              "event_name": "authorized",
-              "timestamp": {
-                "_gen": "math",
-                "expr": "previousTimestamp + delay",
-                "format": "yyyy-MM-dd HH:mm:ss.SSS",
-                "names": {
-                  "previousTimestamp": {
-                    "_gen": "previousEvent",
-                    "path": [
-                      "data",
-                      "event",
-                      "timestamp"
-                    ]
-                  },
-                  "delay": {
-                    "_gen": "uniformDistribution",
-                    "bounds": [
-                      1000,
-                      3000
-                    ],
-                    "decimals": 0
-                  }
-                }
-              }
-            },
-            "captured": {
-              "event_name": "captured",
-              "timestamp": {
-                "_gen": "math",
-                "expr": "previousTimestamp + delay",
-                "format": "yyyy-MM-dd HH:mm:ss.SSS",
-                "names": {
-                  "previousTimestamp": {
-                    "_gen": "previousEvent",
-                    "path": [
-                      "data",
-                      "event",
-                      "timestamp"
-                    ]
-                  },
-                  "delay": {
-                    "_gen": "uniformDistribution",
-                    "bounds": [
-                      1000,
-                      2000
-                    ],
-                    "decimals": 0
-                  }
-                }
-              }
-            },
-            "succeeded": {
-              "event_name": "succeeded",
-              "timestamp": {
-                "_gen": "math",
-                "expr": "previousTimestamp + delay",
-                "format": "yyyy-MM-dd HH:mm:ss.SSS",
-                "names": {
-                  "previousTimestamp": {
-                    "_gen": "previousEvent",
-                    "path": [
-                      "data",
-                      "event",
-                      "timestamp"
-                    ]
-                  },
-                  "delay": {
-                    "_gen": "uniformDistribution",
-                    "bounds": [
-                      1000,
-                      2000
-                    ],
-                    "decimals": 0
-                  }
-                }
-              }
-            },
-            "refunded": {
-              "event_name": "refunded",
-              "timestamp": {
-                "_gen": "math",
-                "expr": "previousTimestamp + delay",
-                "format": "yyyy-MM-dd HH:mm:ss.SSS",
-                "names": {
-                  "previousTimestamp": {
-                    "_gen": "previousEvent",
-                    "path": [
-                      "data",
-                      "event",
-                      "timestamp"
-                    ]
-                  },
-                  "delay": {
-                    "_gen": "uniformDistribution",
-                    "bounds": [
-                      5000,
-                      10000
-                    ],
-                    "decimals": 0
-                  }
-                }
-              }
-            },
-            "settled": {
-              "event_name": "settled",
-              "timestamp": {
-                "_gen": "math",
-                "expr": "previousTimestamp + delay",
-                "format": "yyyy-MM-dd HH:mm:ss.SSS",
-                "names": {
-                  "previousTimestamp": {
-                    "_gen": "previousEvent",
-                    "path": [
-                      "data",
-                      "event",
-                      "timestamp"
-                    ]
-                  },
-                  "delay": {
-                    "_gen": "uniformDistribution",
-                    "bounds": [
-                      2000,
-                      5000
-                    ],
-                    "decimals": 0
-                  }
-                }
-              }
-            },
-            "closed": {
-              "event_name": "closed",
-              "timestamp": {
-                "_gen": "math",
-                "expr": "previousTimestamp + delay",
-                "format": "yyyy-MM-dd HH:mm:ss.SSS",
-                "names": {
-                  "previousTimestamp": {
-                    "_gen": "previousEvent",
-                    "path": [
-                      "data",
-                      "event",
-                      "timestamp"
-                    ]
-                  },
-                  "delay": {
-                    "_gen": "uniformDistribution",
-                    "bounds": [
-                      1000,
-                      2000
-                    ],
-                    "decimals": 0
-                  }
-                }
-              }
-            }
-          }
-        },
-        "dt_current_timestamp": {
-          "_gen": "formatDateTime",
-          "ms": {
-            "_gen": "now"
-          },
-          "format": "yyyy-MM-dd HH:mm:ss.SSS"
         }
       },
-      "connection": "minio"
+      "stateMachine": {
+        "_gen": "stateMachine",
+        "initial": "insertIt",
+        "transitions": {
+          "insertIt": {
+            "_gen": "weightedOneOf",
+            "choices": [
+              {"weight": 85, "value": "succeeded"},
+              {"weight": 10, "value": "failed"},
+              {"weight": 5, "value": "refunded"}
+            ]
+          }
+        },
+        "states": {
+          "insertIt": {
+            "row": {
+              "order_id": {
+                "_gen": "lookup",
+                "connection": "oracle",
+                "table": "orders",
+                "path": ["row", "order_id"]
+              },
+              "amount": {"_gen": "uniformDistribution", "bounds": [5.0, 100.0], "decimals": 2},
+              "currency": {"_gen": "oneOf", "choices": ["BRL", "USD", "EUR"]},
+              "method": {"_gen": "oneOf", "choices": ["Card", "Pix", "Boleto", "Wallet"]},
+              "provider": {"_gen": "oneOf", "choices": ["Stripe", "PayPal", "Adyen"]},
+              "card_brand": {"_gen": "oneOf", "choices": ["Visa", "MasterCard", "Amex", "Elo", "Hipercard"]},
+              "card_last4": {"_gen": "string", "expr": "#{numerify '####'}"},
+              "card_exp_month": {"_gen": "uniformDistribution", "bounds": [1, 12], "decimals": 0},
+              "card_exp_year": {"_gen": "uniformDistribution", "bounds": [2024, 2030], "decimals": 0},
+              "wallet_provider": {"_gen": "oneOf", "choices": ["Apple Pay", "Google Pay", "Samsung Pay", "None"]},
+              "status": {"_gen": "oneOf", "choices": ["pending"]},
+              "failure_reason": {"_gen": "oneOf", "choices": [""]},
+              "refunded": {"_gen": "oneOf", "choices": [0]},
+              "refund_amount": {"_gen": "oneOf", "choices": [0.0]},
+              "captured": {"_gen": "oneOf", "choices": [0]},
+              "capture_timestamp": {"_gen": "oneOf", "choices": [""]},
+              "platform_fee": {"_gen": "uniformDistribution", "bounds": [0.3, 5.0], "decimals": 2},
+              "provider_fee": {"_gen": "uniformDistribution", "bounds": [0.5, 7.0], "decimals": 2},
+              "tax_amount": {"_gen": "uniformDistribution", "bounds": [0.0, 10.0], "decimals": 2},
+              "net_amount": {
+                "_gen": "math",
+                "expr": "amount - platform_fee - provider_fee - tax_amount",
+                "format": "#.##",
+                "names": {
+                  "amount": {"_gen": "uniformDistribution", "bounds": [5.0, 100.0], "decimals": 2},
+                  "platform_fee": {"_gen": "uniformDistribution", "bounds": [0.3, 5.0], "decimals": 2},
+                  "provider_fee": {"_gen": "uniformDistribution", "bounds": [0.5, 7.0], "decimals": 2},
+                  "tax_amount": {"_gen": "uniformDistribution", "bounds": [0.0, 10.0], "decimals": 2}
+                }
+              },
+              "receipt_url": {"_gen": "string", "expr": "#{Internet.url}"},
+              "invoice_id": {"_gen": "string", "expr": "#{bothify 'INV-#####'}"},
+              "country": {"_gen": "oneOf", "choices": ["BR", "US", "DE"]},
+              "ip_address": {"_gen": "string", "expr": "#{Internet.ipV4Address}"},
+              "user_agent": {"_gen": "string", "expr": "#{Internet.userAgent}"},
+              "txn_timestamp": {"_gen": "formatDateTime", "ms": {"_gen": "now"}, "format": "yyyy-MM-dd HH:mm:ss"}
+            }
+          },
+          "succeeded": {
+            "op": "update",
+            "where": {"payment_id": {"_gen": "var", "var": "forkKey"}},
+            "row": {
+              "status": {"_gen": "oneOf", "choices": ["succeeded"]},
+              "captured": {"_gen": "oneOf", "choices": [1]},
+              "capture_timestamp": {"_gen": "formatDateTime", "ms": {"_gen": "now"}, "format": "yyyy-MM-dd HH:mm:ss"}
+            }
+          },
+          "failed": {
+            "op": "update",
+            "where": {"payment_id": {"_gen": "var", "var": "forkKey"}},
+            "row": {
+              "status": {"_gen": "oneOf", "choices": ["failed"]},
+              "failure_reason": {"_gen": "oneOf", "choices": ["card_declined", "insufficient_funds", "expired_card", "processing_error"]}
+            }
+          },
+          "refunded": {
+            "op": "update",
+            "where": {"payment_id": {"_gen": "var", "var": "forkKey"}},
+            "row": {
+              "status": {"_gen": "oneOf", "choices": ["refunded"]},
+              "refunded": {"_gen": "oneOf", "choices": [1]},
+              "refund_amount": {"_gen": "uniformDistribution", "bounds": [5.0, 100.0], "decimals": 2}
+            }
+          }
+        }
+      },
+      "name": "payments",
+      "connection": "oracle"
     },
     {
       "bucket": "uber-eats",
@@ -1661,10 +1312,10 @@
         },
         "order_id": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "kafka/orders/",
+          "connection": "oracle",
+          "table": "orders",
           "path": [
-            "data",
+            "row",
             "order_id"
           ]
         },
@@ -1713,18 +1364,20 @@
       "connection": "minio"
     },
     {
-      "bucket": "uber-eats",
-      "bucketConfigs": {
-        "keyPrefix": "mongodb/items/",
-        "format": "jsonl"
+      "table": "order_items",
+      "localConfigs": {
+        "throttleMs": 20
+      },
+      "sqlHint": {
+        "order_item_id": "VARCHAR2(36) PRIMARY KEY"
       },
       "fork": {
         "key": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "kafka/orders/",
+          "connection": "oracle",
+          "table": "orders",
           "path": [
-            "data",
+            "row",
             "order_id"
           ]
         },
@@ -1756,7 +1409,7 @@
           "decimals": 2
         }
       },
-      "data": {
+      "row": {
         "order_item_id": {
           "_gen": "uuid"
         },
@@ -1859,16 +1512,10 @@
               "var": "discount_applied"
             }
           }
-        },
-        "dt_current_timestamp": {
-          "_gen": "formatDateTime",
-          "ms": {
-            "_gen": "now"
-          },
-          "format": "yyyy-MM-dd HH:mm:ss.SSS"
         }
       },
-      "connection": "minio"
+      "name": "order_items",
+      "connection": "oracle"
     },
     {
       "bucket": "uber-eats",
@@ -2020,10 +1667,10 @@
         },
         "order_id": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "kafka/orders/",
+          "connection": "oracle",
+          "table": "orders",
           "path": [
-            "data",
+            "row",
             "order_id"
           ]
         },
@@ -2230,132 +1877,191 @@
       "connection": "minio"
     },
     {
-      "bucket": "uber-eats",
-      "bucketConfigs": {
-        "keyPrefix": "kafka/orders/",
-        "format": "jsonl"
+      "table": "orders",
+      "localConfigs": {
+        "throttleMs": 25
       },
-      "vars": {
-        "item_count": {
-          "_gen": "uniformDistribution",
-          "bounds": [
-            1,
-            5
-          ],
-          "decimals": 0
+      "sqlHint": {
+        "order_id": "NUMBER(10) PRIMARY KEY"
+      },
+      "fork": {
+        "key": {
+          "_gen": "sequentialInteger",
+          "startingFrom": 1
         },
-        "avg_price": {
-          "_gen": "uniformDistribution",
-          "bounds": [
-            10.0,
-            35.0
-          ],
-          "decimals": 2
+        "maxForks": 300,
+        "keepAlive": true
+      },
+      "row": {
+        "order_id": {
+          "_gen": "var",
+          "var": "forkKey"
         }
       },
-      "data": {
-        "order_id": {
-          "_gen": "uuid"
+      "stateMachine": {
+        "_gen": "stateMachine",
+        "initial": "insertIt",
+        "transitions": {
+          "insertIt": "inAnalysis",
+          "inAnalysis": "accepted",
+          "accepted": "preparing",
+          "preparing": "readyForPickup",
+          "readyForPickup": "pickedUp",
+          "pickedUp": "outForDelivery",
+          "outForDelivery": "delivered",
+          "delivered": "completed"
         },
-        "user_key": {
-          "_gen": "lookup",
-          "connection": "postgres",
-          "table": "users",
-          "path": [
-            "row",
-            "user_id"
-          ]
-        },
-        "restaurant_key": {
-          "_gen": "lookup",
-          "connection": "oracle",
-          "table": "restaurants",
-          "path": [
-            "row",
-            "restaurant_id"
-          ]
-        },
-        "driver_key": {
-          "_gen": "lookup",
-          "connection": "postgres",
-          "table": "drivers",
-          "path": [
-            "row",
-            "driver_id"
-          ]
-        },
-        "order_date": {
-          "_gen": "formatDateTime",
-          "ms": {
-            "_gen": "uniformDistribution",
-            "bounds": [
-              1609459200000,
-              {
-                "_gen": "now"
+        "states": {
+          "insertIt": {
+            "row": {
+              "user_id": {
+                "_gen": "lookup",
+                "connection": "postgres",
+                "table": "users",
+                "path": ["row", "user_id"]
+              },
+              "restaurant_id": {
+                "_gen": "lookup",
+                "connection": "oracle",
+                "table": "restaurants",
+                "path": ["row", "restaurant_id"]
+              },
+              "driver_id": {
+                "_gen": "lookup",
+                "connection": "postgres",
+                "table": "drivers",
+                "path": ["row", "driver_id"]
+              },
+              "order_date": {
+                "_gen": "formatDateTime",
+                "ms": {
+                  "_gen": "uniformDistribution",
+                  "bounds": [1609459200000, {"_gen": "now"}]
+                },
+                "format": "yyyy-MM-dd HH:mm:ss"
+              },
+              "total_amount": {
+                "_gen": "math",
+                "expr": "item_count * avg_price",
+                "format": "#.##",
+                "names": {
+                  "item_count": {"_gen": "uniformDistribution", "bounds": [1, 5], "decimals": 0},
+                  "avg_price": {"_gen": "uniformDistribution", "bounds": [10.0, 35.0], "decimals": 2}
+                }
+              },
+              "status": {"_gen": "oneOf", "choices": ["Order Placed"]},
+              "updated_at": {
+                "_gen": "formatDateTime",
+                "ms": {"_gen": "now"},
+                "format": "yyyy-MM-dd HH:mm:ss"
               }
-            ]
+            }
           },
-          "format": "yyyy-MM-dd HH:mm:ss.SSSSSS"
-        },
-        "total_amount": {
-          "_gen": "math",
-          "expr": "item_count * avg_price",
-          "format": "#.##",
-          "names": {
-            "item_count": {
-              "_gen": "var",
-              "var": "item_count"
-            },
-            "avg_price": {
-              "_gen": "var",
-              "var": "avg_price"
+          "inAnalysis": {
+            "op": "update",
+            "where": {"order_id": {"_gen": "var", "var": "forkKey"}},
+            "row": {
+              "status": {"_gen": "oneOf", "choices": ["In Analysis"]},
+              "updated_at": {"_gen": "formatDateTime", "ms": {"_gen": "now"}, "format": "yyyy-MM-dd HH:mm:ss"}
+            }
+          },
+          "accepted": {
+            "op": "update",
+            "where": {"order_id": {"_gen": "var", "var": "forkKey"}},
+            "row": {
+              "status": {"_gen": "oneOf", "choices": ["Accepted"]},
+              "updated_at": {"_gen": "formatDateTime", "ms": {"_gen": "now"}, "format": "yyyy-MM-dd HH:mm:ss"}
+            }
+          },
+          "preparing": {
+            "op": "update",
+            "where": {"order_id": {"_gen": "var", "var": "forkKey"}},
+            "row": {
+              "status": {"_gen": "oneOf", "choices": ["Preparing"]},
+              "updated_at": {"_gen": "formatDateTime", "ms": {"_gen": "now"}, "format": "yyyy-MM-dd HH:mm:ss"}
+            }
+          },
+          "readyForPickup": {
+            "op": "update",
+            "where": {"order_id": {"_gen": "var", "var": "forkKey"}},
+            "row": {
+              "status": {"_gen": "oneOf", "choices": ["Ready for Pickup"]},
+              "updated_at": {"_gen": "formatDateTime", "ms": {"_gen": "now"}, "format": "yyyy-MM-dd HH:mm:ss"}
+            }
+          },
+          "pickedUp": {
+            "op": "update",
+            "where": {"order_id": {"_gen": "var", "var": "forkKey"}},
+            "row": {
+              "status": {"_gen": "oneOf", "choices": ["Picked Up"]},
+              "updated_at": {"_gen": "formatDateTime", "ms": {"_gen": "now"}, "format": "yyyy-MM-dd HH:mm:ss"}
+            }
+          },
+          "outForDelivery": {
+            "op": "update",
+            "where": {"order_id": {"_gen": "var", "var": "forkKey"}},
+            "row": {
+              "status": {"_gen": "oneOf", "choices": ["Out for Delivery"]},
+              "updated_at": {"_gen": "formatDateTime", "ms": {"_gen": "now"}, "format": "yyyy-MM-dd HH:mm:ss"}
+            }
+          },
+          "delivered": {
+            "op": "update",
+            "where": {"order_id": {"_gen": "var", "var": "forkKey"}},
+            "row": {
+              "status": {"_gen": "oneOf", "choices": ["Delivered"]},
+              "updated_at": {"_gen": "formatDateTime", "ms": {"_gen": "now"}, "format": "yyyy-MM-dd HH:mm:ss"}
+            }
+          },
+          "completed": {
+            "op": "update",
+            "where": {"order_id": {"_gen": "var", "var": "forkKey"}},
+            "row": {
+              "status": {"_gen": "oneOf", "choices": ["Completed"]},
+              "updated_at": {"_gen": "formatDateTime", "ms": {"_gen": "now"}, "format": "yyyy-MM-dd HH:mm:ss"}
             }
           }
-        },
-        "dt_current_timestamp": {
-          "_gen": "formatDateTime",
-          "ms": {
-            "_gen": "now"
-          },
-          "format": "yyyy-MM-dd HH:mm:ss.SSS"
         }
       },
-      "connection": "minio"
+      "name": "orders",
+      "connection": "oracle"
     },
     {
-      "bucket": "uber-eats",
-      "bucketConfigs": {
-        "keyPrefix": "kafka/receipts/",
-        "format": "jsonl"
+      "table": "receipts",
+      "localConfigs": {
+        "throttleMs": 25
       },
-      "data": {
+      "sqlHint": {
+        "receipt_id": "VARCHAR2(36) PRIMARY KEY"
+      },
+      "row": {
         "receipt_id": {
           "_gen": "uuid"
         },
         "order_id": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "kafka/orders/",
+          "connection": "oracle",
+          "table": "orders",
           "path": [
-            "data",
+            "row",
             "order_id"
           ]
         },
         "payment_id": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "kafka/payments/",
+          "connection": "oracle",
+          "table": "payments",
           "path": [
-            "data",
+            "row",
             "payment_id"
           ]
         },
         "total_amount": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "kafka/orders/",
+          "connection": "oracle",
+          "table": "orders",
           "path": [
-            "data",
+            "row",
             "total_amount"
           ]
         },
@@ -2372,372 +2078,11 @@
           "ms": {
             "_gen": "now"
           },
-          "format": "yyyy-MM-dd HH:mm:ss.SSS"
+          "format": "yyyy-MM-dd HH:mm:ss"
         }
       },
-      "connection": "minio"
-    },
-    {
-      "bucket": "uber-eats",
-      "bucketConfigs": {
-        "keyPrefix": "kafka/status/",
-        "format": "jsonl"
-      },
-      "fork": {
-        "key": {
-          "_gen": "uuid"
-        }
-      },
-      "data": {
-        "status_id": {
-          "_gen": "sequentialInteger",
-          "startingFrom": 1
-        },
-        "order_identifier": {
-          "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "kafka/orders/",
-          "path": [
-            "data",
-            "order_id"
-          ]
-        },
-        "status": {
-          "_gen": "stateMachine",
-          "initial": "Order Placed",
-          "transitions": {
-            "Order Placed": "In Analysis",
-            "In Analysis": "Accepted",
-            "Accepted": "Preparing",
-            "Preparing": "Ready for Pickup",
-            "Ready for Pickup": "Picked Up",
-            "Picked Up": "Out for Delivery",
-            "Out for Delivery": "Delivered",
-            "Delivered": "Completed"
-          },
-          "states": {
-            "Order Placed": {
-              "status_name": "Order Placed",
-              "timestamp": {
-                "_gen": "now",
-                "format": "yyyy-MM-dd HH:mm:ss.SSS"
-              }
-            },
-            "In Analysis": {
-              "status_name": "In Analysis",
-              "timestamp": {
-                "_gen": "math",
-                "expr": "previousTimestamp + duration",
-                "format": "yyyy-MM-dd HH:mm:ss.SSS",
-                "names": {
-                  "previousTimestamp": {
-                    "_gen": "previousEvent",
-                    "path": [
-                      "data",
-                      "status",
-                      "timestamp"
-                    ]
-                  },
-                  "duration": {
-                    "_gen": "weightedOneOf",
-                    "choices": [
-                      {
-                        "weight": 8,
-                        "value": {
-                          "_gen": "uniformDistribution",
-                          "bounds": [
-                            300000,
-                            900000
-                          ],
-                          "decimals": 0
-                        }
-                      },
-                      {
-                        "weight": 2,
-                        "value": 0
-                      }
-                    ]
-                  }
-                }
-              }
-            },
-            "Accepted": {
-              "status_name": "Accepted",
-              "timestamp": {
-                "_gen": "math",
-                "expr": "previousTimestamp + duration",
-                "format": "yyyy-MM-dd HH:mm:ss.SSS",
-                "names": {
-                  "previousTimestamp": {
-                    "_gen": "previousEvent",
-                    "path": [
-                      "data",
-                      "status",
-                      "timestamp"
-                    ]
-                  },
-                  "duration": {
-                    "_gen": "weightedOneOf",
-                    "choices": [
-                      {
-                        "weight": 7,
-                        "value": {
-                          "_gen": "uniformDistribution",
-                          "bounds": [
-                            300000,
-                            900000
-                          ],
-                          "decimals": 0
-                        }
-                      },
-                      {
-                        "weight": 2,
-                        "value": 0
-                      }
-                    ]
-                  }
-                }
-              }
-            },
-            "Preparing": {
-              "status_name": "Preparing",
-              "timestamp": {
-                "_gen": "math",
-                "expr": "previousTimestamp + duration",
-                "format": "yyyy-MM-dd HH:mm:ss.SSS",
-                "names": {
-                  "previousTimestamp": {
-                    "_gen": "previousEvent",
-                    "path": [
-                      "data",
-                      "status",
-                      "timestamp"
-                    ]
-                  },
-                  "duration": {
-                    "_gen": "weightedOneOf",
-                    "choices": [
-                      {
-                        "weight": 6,
-                        "value": {
-                          "_gen": "uniformDistribution",
-                          "bounds": [
-                            600000,
-                            1800000
-                          ],
-                          "decimals": 0
-                        }
-                      },
-                      {
-                        "weight": 4,
-                        "value": 0
-                      }
-                    ]
-                  }
-                }
-              }
-            },
-            "Ready for Pickup": {
-              "status_name": "Ready for Pickup",
-              "timestamp": {
-                "_gen": "math",
-                "expr": "previousTimestamp + duration",
-                "format": "yyyy-MM-dd HH:mm:ss.SSS",
-                "names": {
-                  "previousTimestamp": {
-                    "_gen": "previousEvent",
-                    "path": [
-                      "data",
-                      "status",
-                      "timestamp"
-                    ]
-                  },
-                  "duration": {
-                    "_gen": "weightedOneOf",
-                    "choices": [
-                      {
-                        "weight": 6,
-                        "value": {
-                          "_gen": "uniformDistribution",
-                          "bounds": [
-                            300000,
-                            600000
-                          ],
-                          "decimals": 0
-                        }
-                      },
-                      {
-                        "weight": 4,
-                        "value": 0
-                      }
-                    ]
-                  }
-                }
-              }
-            },
-            "Picked Up": {
-              "status_name": "Picked Up",
-              "timestamp": {
-                "_gen": "math",
-                "expr": "previousTimestamp + duration",
-                "format": "yyyy-MM-dd HH:mm:ss.SSS",
-                "names": {
-                  "previousTimestamp": {
-                    "_gen": "previousEvent",
-                    "path": [
-                      "data",
-                      "status",
-                      "timestamp"
-                    ]
-                  },
-                  "duration": {
-                    "_gen": "weightedOneOf",
-                    "choices": [
-                      {
-                        "weight": 6,
-                        "value": {
-                          "_gen": "uniformDistribution",
-                          "bounds": [
-                            300000,
-                            600000
-                          ],
-                          "decimals": 0
-                        }
-                      },
-                      {
-                        "weight": 4,
-                        "value": 0
-                      }
-                    ]
-                  }
-                }
-              }
-            },
-            "Out for Delivery": {
-              "status_name": "Out for Delivery",
-              "timestamp": {
-                "_gen": "math",
-                "expr": "previousTimestamp + duration",
-                "format": "yyyy-MM-dd HH:mm:ss.SSS",
-                "names": {
-                  "previousTimestamp": {
-                    "_gen": "previousEvent",
-                    "path": [
-                      "data",
-                      "status",
-                      "timestamp"
-                    ]
-                  },
-                  "duration": {
-                    "_gen": "weightedOneOf",
-                    "choices": [
-                      {
-                        "weight": 6,
-                        "value": {
-                          "_gen": "uniformDistribution",
-                          "bounds": [
-                            600000,
-                            1800000
-                          ],
-                          "decimals": 0
-                        }
-                      },
-                      {
-                        "weight": 4,
-                        "value": 0
-                      }
-                    ]
-                  }
-                }
-              }
-            },
-            "Delivered": {
-              "status_name": "Delivered",
-              "timestamp": {
-                "_gen": "math",
-                "expr": "previousTimestamp + duration",
-                "format": "yyyy-MM-dd HH:mm:ss.SSS",
-                "names": {
-                  "previousTimestamp": {
-                    "_gen": "previousEvent",
-                    "path": [
-                      "data",
-                      "status",
-                      "timestamp"
-                    ]
-                  },
-                  "duration": {
-                    "_gen": "weightedOneOf",
-                    "choices": [
-                      {
-                        "weight": 6,
-                        "value": {
-                          "_gen": "uniformDistribution",
-                          "bounds": [
-                            300000,
-                            600000
-                          ],
-                          "decimals": 0
-                        }
-                      },
-                      {
-                        "weight": 4,
-                        "value": 0
-                      }
-                    ]
-                  }
-                }
-              }
-            },
-            "Completed": {
-              "status_name": "Completed",
-              "timestamp": {
-                "_gen": "math",
-                "expr": "previousTimestamp + duration",
-                "format": "yyyy-MM-dd HH:mm:ss.SSS",
-                "names": {
-                  "previousTimestamp": {
-                    "_gen": "previousEvent",
-                    "path": [
-                      "data",
-                      "status",
-                      "timestamp"
-                    ]
-                  },
-                  "duration": {
-                    "_gen": "weightedOneOf",
-                    "choices": [
-                      {
-                        "weight": 6,
-                        "value": {
-                          "_gen": "uniformDistribution",
-                          "bounds": [
-                            300000,
-                            600000
-                          ],
-                          "decimals": 0
-                        }
-                      },
-                      {
-                        "weight": 4,
-                        "value": 0
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        },
-        "dt_current_timestamp": {
-          "_gen": "formatDateTime",
-          "ms": {
-            "_gen": "now"
-          },
-          "format": "yyyy-MM-dd HH:mm:ss.SSS"
-        }
-      },
-      "connection": "minio"
+      "name": "receipts",
+      "connection": "oracle"
     }
   ],
   "connections": {

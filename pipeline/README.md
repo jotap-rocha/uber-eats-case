@@ -15,9 +15,11 @@ Bronze Layer → Silver Layer → Gold Layer
 
 Recursos utilizados:
 - **Auto Loader** / streaming tables para ingestão incremental
-- **CDC** (`APPLY CHANGES`) para Postgres via Airbyte
+- **CDC** (`APPLY CHANGES`) para Postgres via Airbyte, e para Oracle via Debezium/Kafka Connect (lido direto de tópico Kafka com `read_kafka()`)
 - **Expectations** para qualidade de dados
 - **Unity Catalog** para governança
+
+Tabelas Silver/Bronze são nomeadas por **domínio de negócio** (ex.: `silver_orders`), não por sistema de origem — ver `docs/MODELO_CONCEITUAL_UBER_EATS.md` e `docs/ROADMAP_ARQUITETURA_MULTICLOUD.md` (Onda 3) para o histórico da convenção.
 
 ---
 
@@ -25,9 +27,9 @@ Recursos utilizados:
 
 ```
 pipeline/
-├── bronze/          # ODS Postgres (CDC): users, drivers
-├── silver/          # Limpeza e tipagem (18 scripts)
-└── gold/            # Métricas de negócio (3 scripts)
+├── bronze/          # ODS: users/drivers (Postgres, CDC via Airbyte); restaurants/products/inventory/orders/payments/order_items/receipts (Oracle, CDC via Debezium/Kafka Connect)
+├── silver/          # Limpeza e tipagem, nomeada por domínio
+└── gold/            # Métricas de negócio
 ```
 
 ---
@@ -37,9 +39,11 @@ pipeline/
 | Tipo | Onde vive | Como acessar |
 |------|-----------|--------------|
 | **Postgres OLTP** | Container `postgres-ubereats` | DBeaver em `localhost:5432` ou Airbyte → Databricks `raw` |
-| **MySQL, MongoDB, Kafka (lógicos)** | **Embarcados no MinIO** | Bucket `uber-eats`, prefixos S3 (ex.: `kafka/orders/`, `mysql/restaurants/`, `mongodb/items/`) |
+| **Oracle OLTP** | Container `oracle-ubereats` (sob demanda — ver `docker-compose.yml`) | SQL*Plus/DBeaver em `localhost:1521/FREEPDB1`, ou Debezium/Kafka Connect → tópicos no Redpanda → Bronze via `read_kafka()` |
+| **MySQL, MongoDB, Kafka (lógicos, o que sobrou)** | **Embarcados no MinIO** | Bucket `uber-eats`, prefixos S3 (ex.: `kafka/route/`, `mysql/menu/`, `mongodb/support/`, `kafka/gps/`) — Pedido, Pagamento, Item de Pedido e Recibo saíram daqui na Onda 3/Etapa 3 e agora vivem no Oracle |
+| **MongoDB (satélite documental)** | Container `mongo-ubereats` (sob demanda) | Cadastro estático "Perfil de Restaurante" (menu + horários), lido via Lakehouse Federation |
 
-> **Importante:** Os scripts Silver com nomes `ingestion_kafka_*`, `ingestion_mysql_*` ou `ingestion_mongodb_*` **não exigem** instalar MySQL, MongoDB ou Kafka no Docker. Eles modelam a **origem lógica** dos JSONs que o ShadowTraffic já grava no MinIO (`gen/minio/uber-eats.json`). Em produção, esses dados viriam de sistemas reais; no projeto local, o MinIO concentra todas essas “fontes” simuladas.
+> **Importante:** os scripts Silver com nomes `ingestion_kafka_*`, `ingestion_mysql_*` ou `ingestion_mongodb_*` que restam **não exigem** instalar MySQL, MongoDB ou Kafka no Docker — modelam a **origem lógica** dos JSONs que o ShadowTraffic grava no MinIO. Já os scripts `ingestion_oracle_*`/`ingest_oracle_*` leem de um Oracle **real**, via CDC real.
 
 Lista de prefixos no bucket: veja [docs/minio/README.md](../docs/minio/README.md).
 

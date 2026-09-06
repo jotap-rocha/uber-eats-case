@@ -1,10 +1,10 @@
 CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_order_items
-COMMENT "Tabela de detalhes dos pedidos feitos no app, com dados padronizados, tipados e limpos."
+COMMENT "Tabela de detalhes dos pedidos feitos no app, com dados padronizados, tipados e limpos. Origem Oracle via Debezium/Kafka Connect (Onda 3, Etapa 3) — antes mongodb/items simulado no MinIO."
 AS
 
 -- 1. LEITURA
 WITH bronze_table AS (
-  SELECT * FROM STREAM(live.mongodb_items)
+  SELECT * FROM STREAM(live.ods_order_items)
 ),
 
 -- 2. NORMALIZAÇÃO (Pass-through)
@@ -29,7 +29,7 @@ typed_table AS (
     CAST(quantity AS INT)                             AS quantidade,
     CAST(is_combo AS BOOLEAN)                         AS flag_combo,
     CAST(is_vegetarian AS BOOLEAN)                    AS flag_vegetariano,
-    CAST(dt_current_timestamp AS TIMESTAMP)           AS data_registro
+    CAST(cdc_commit_ts AS TIMESTAMP)                  AS data_registro
   FROM
     normalized_table
 ),
@@ -61,7 +61,7 @@ silver_table AS (
   SELECT
     *,
     current_timestamp()                                   AS _data_ingestao,
-    'mongodb-minio'                                       AS _sistema_fonte
+    'oracle-ubereats'                                     AS _sistema_fonte
   FROM
     cleared_table
 )
