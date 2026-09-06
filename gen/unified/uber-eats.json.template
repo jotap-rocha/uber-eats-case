@@ -312,130 +312,255 @@
     {
       "table": "drivers",
       "localConfigs": {
-        "maxEvents": 80000,
         "throttleMs": 20
       },
-      "row": {
-        "driver_id": {
+      "fork": {
+        "key": {
           "_gen": "sequentialInteger",
           "startingFrom": 1
         },
-        "name": {
-          "_gen": "string",
-          "expr": "#{Name.fullName}"
-        },
-        "email": {
-          "_gen": "string",
-          "expr": "#{Internet.emailAddress}"
-        },
-        "phone_number": {
-          "_gen": "string",
-          "expr": "#{PhoneNumber.phoneNumber}"
-        },
-        "vehicle_type": {
-          "_gen": "oneOf",
-          "choices": [
-            "Car",
-            "Motorcycle",
-            "Bicycle",
-            "Scooter"
-          ]
-        },
-        "license_plate": {
-          "_gen": "string",
-          "expr": "#{bothify '???-####'}"
-        },
-        "registration_date": {
-          "_gen": "formatDateTime",
-          "ms": {
-            "_gen": "uniformDistribution",
-            "bounds": [
-              1514764800000,
-              {
-                "_gen": "now"
-              }
+        "maxForks": 80000
+      },
+      "row": {
+        "driver_id": {
+          "_gen": "var",
+          "var": "forkKey"
+        }
+      },
+      "stateMachine": {
+        "_gen": "stateMachine",
+        "initial": "insertIt",
+        "transitions": {
+          "insertIt": "onShift",
+          "onShift": "offShift",
+          "offShift": {
+            "_gen": "weightedOneOf",
+            "choices": [
+              { "weight": 95, "value": "onShift" },
+              { "weight": 5, "value": "banned" }
             ]
           },
-          "format": "yyyy-MM-dd HH:mm:ss"
+          "banned": "onShift"
         },
-        "total_deliveries": {
-          "_gen": "uniformDistribution",
-          "bounds": [
-            0,
-            1000
-          ],
-          "decimals": 0
-        },
-        "total_earnings": {
-          "_gen": "normalDistribution",
-          "mean": 5000,
-          "sd": 1000,
-          "decimals": 2
-        },
-        "average_rating": {
-          "_gen": "uniformDistribution",
-          "bounds": [
-            3.5,
-            5.0
-          ],
-          "decimals": 1
-        },
-        "last_login": {
-          "_gen": "formatDateTime",
-          "ms": {
-            "_gen": "uniformDistribution",
-            "bounds": [
-              1672531200000,
-              {
-                "_gen": "now"
+        "states": {
+          "insertIt": {
+            "row": {
+              "name": {
+                "_gen": "string",
+                "expr": "#{Name.fullName}"
+              },
+              "email": {
+                "_gen": "string",
+                "expr": "#{Internet.emailAddress}"
+              },
+              "phone_number": {
+                "_gen": "string",
+                "expr": "#{PhoneNumber.phoneNumber}"
+              },
+              "vehicle_type": {
+                "_gen": "oneOf",
+                "choices": [
+                  "Car",
+                  "Motorcycle",
+                  "Bicycle",
+                  "Scooter"
+                ]
+              },
+              "license_plate": {
+                "_gen": "string",
+                "expr": "#{bothify '???-####'}"
+              },
+              "registration_date": {
+                "_gen": "formatDateTime",
+                "ms": {
+                  "_gen": "uniformDistribution",
+                  "bounds": [
+                    1514764800000,
+                    {
+                      "_gen": "now"
+                    }
+                  ]
+                },
+                "format": "yyyy-MM-dd HH:mm:ss"
+              },
+              "total_deliveries": {
+                "_gen": "oneOf",
+                "choices": [0]
+              },
+              "total_earnings": {
+                "_gen": "oneOf",
+                "choices": [0.0]
+              },
+              "average_rating": {
+                "_gen": "oneOf",
+                "choices": [0.0]
+              },
+              "last_login": {
+                "_gen": "formatDateTime",
+                "ms": {
+                  "_gen": "now"
+                },
+                "format": "yyyy-MM-dd HH:mm:ss"
+              },
+              "status": {
+                "_gen": "oneOf",
+                "choices": ["Inactive"]
+              },
+              "vehicle_make": {
+                "_gen": "string",
+                "expr": "#{Company.name}",
+                "locale": [
+                  "pt",
+                  "BR"
+                ]
+              },
+              "vehicle_model": {
+                "_gen": "string",
+                "expr": "#{Commerce.productName}",
+                "locale": [
+                  "pt",
+                  "BR"
+                ]
+              },
+              "vehicle_year": {
+                "_gen": "uniformDistribution",
+                "bounds": [
+                  1980,
+                  2024
+                ],
+                "decimals": 0
+              },
+              "license_number": {
+                "_gen": "string",
+                "expr": "#{bothify '??#######'}"
+              },
+              "city": {
+                "_gen": "string",
+                "expr": "#{Address.city}",
+                "locale": [
+                  "pt",
+                  "BR"
+                ]
               }
-            ]
+            }
           },
-          "format": "yyyy-MM-dd HH:mm:ss"
-        },
-        "status": {
-          "_gen": "oneOf",
-          "choices": [
-            "Active",
-            "Inactive",
-            "Banned"
-          ]
-        },
-        "vehicle_make": {
-          "_gen": "string",
-          "expr": "#{Company.name}",
-          "locale": [
-            "pt",
-            "BR"
-          ]
-        },
-        "vehicle_model": {
-          "_gen": "string",
-          "expr": "#{Commerce.productName}",
-          "locale": [
-            "pt",
-            "BR"
-          ]
-        },
-        "vehicle_year": {
-          "_gen": "uniformDistribution",
-          "bounds": [
-            1980,
-            2024
-          ],
-          "decimals": 0
-        },
-        "license_number": {
-          "_gen": "string",
-          "expr": "#{bothify '??#######'}"
-        },
-        "city": {
-          "_gen": "string",
-          "expr": "#{Address.city}",
-          "locale": [
-            "pt",
-            "BR"
-          ]
+          "onShift": {
+            "op": "update",
+            "where": {
+              "driver_id": {
+                "_gen": "var",
+                "var": "forkKey"
+              }
+            },
+            "row": {
+              "status": {
+                "_gen": "oneOf",
+                "choices": ["Active"]
+              },
+              "last_login": {
+                "_gen": "formatDateTime",
+                "ms": {
+                  "_gen": "now"
+                },
+                "format": "yyyy-MM-dd HH:mm:ss"
+              },
+              "total_deliveries": {
+                "_gen": "previousEvent",
+                "path": ["row", "total_deliveries"]
+              },
+              "total_earnings": {
+                "_gen": "previousEvent",
+                "path": ["row", "total_earnings"]
+              },
+              "average_rating": {
+                "_gen": "previousEvent",
+                "path": ["row", "average_rating"]
+              }
+            }
+          },
+          "offShift": {
+            "op": "update",
+            "where": {
+              "driver_id": {
+                "_gen": "var",
+                "var": "forkKey"
+              }
+            },
+            "row": {
+              "status": {
+                "_gen": "oneOf",
+                "choices": ["Inactive"]
+              },
+              "total_deliveries": {
+                "_gen": "math",
+                "expr": "previousDeliveries + 1",
+                "names": {
+                  "previousDeliveries": {
+                    "_gen": "previousEvent",
+                    "path": [
+                      "row",
+                      "total_deliveries"
+                    ]
+                  }
+                }
+              },
+              "total_earnings": {
+                "_gen": "math",
+                "expr": "previousEarnings + tripEarning",
+                "format": "#.##",
+                "names": {
+                  "previousEarnings": {
+                    "_gen": "previousEvent",
+                    "path": [
+                      "row",
+                      "total_earnings"
+                    ]
+                  },
+                  "tripEarning": {
+                    "_gen": "normalDistribution",
+                    "mean": 25,
+                    "sd": 8,
+                    "decimals": 2
+                  }
+                }
+              },
+              "average_rating": {
+                "_gen": "uniformDistribution",
+                "bounds": [
+                  3.5,
+                  5.0
+                ],
+                "decimals": 1
+              }
+            }
+          },
+          "banned": {
+            "op": "update",
+            "where": {
+              "driver_id": {
+                "_gen": "var",
+                "var": "forkKey"
+              }
+            },
+            "row": {
+              "status": {
+                "_gen": "oneOf",
+                "choices": ["Banned"]
+              },
+              "total_deliveries": {
+                "_gen": "previousEvent",
+                "path": ["row", "total_deliveries"]
+              },
+              "total_earnings": {
+                "_gen": "previousEvent",
+                "path": ["row", "total_earnings"]
+              },
+              "average_rating": {
+                "_gen": "previousEvent",
+                "path": ["row", "average_rating"]
+              }
+            }
+          }
         }
       },
       "name": "drivers",
