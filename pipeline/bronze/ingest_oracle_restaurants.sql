@@ -45,10 +45,10 @@ WHERE
 -- 3. Ingerir tabela na camada bronze (mesmo padrao de ingest_postgres_drivers.sql,
 --    trocando SEQUENCE BY timestamp por SEQUENCE BY SCN -- monotonico no Oracle,
 --    evita colisao de ordenacao em rajada de updates)
-CREATE OR REFRESH STREAMING TABLE ods_oracle_restaurants
+CREATE OR REFRESH STREAMING TABLE ods_restaurants
 COMMENT "ODS de restaurantes. Origem Oracle via Debezium/Kafka Connect (Onda 3, Etapa 2).";
 APPLY CHANGES INTO
-  uber_eats.bronze.ods_oracle_restaurants
+  uber_eats.bronze.ods_restaurants
 FROM
   STREAM(live.view_oracle_restaurants_pre_processed)
 KEYS(restaurant_id)

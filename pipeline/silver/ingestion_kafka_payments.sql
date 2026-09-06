@@ -1,4 +1,4 @@
-CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_kafka_payments
+CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_payments
 COMMENT "Tabela de pagamentos realizados na plataforma com dados padronizados, tipados e enriquecidos."
 AS
 

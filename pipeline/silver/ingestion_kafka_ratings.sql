@@ -1,4 +1,4 @@
-CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_mysql_ratings
+CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_ratings
 COMMENT "Tabela de Avaliações vinculadas ao pedido (restaurante e usuário obtidos transitivamente via id_pedido)"
 AS
 

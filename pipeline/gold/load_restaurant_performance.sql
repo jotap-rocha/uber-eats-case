@@ -8,8 +8,8 @@ WITH transacoes_validas AS (
     p.valor_bruto,
     p.taxa_plataforma,
     p.valor_imposto
-  FROM uber_eats.silver.silver_kafka_orders o
-  INNER JOIN uber_eats.silver.silver_kafka_payments p ON o.id_pedido = p.id_pedido
+  FROM uber_eats.silver.silver_orders o
+  INNER JOIN uber_eats.silver.silver_payments p ON o.id_pedido = p.id_pedido
   WHERE 
     p.status_pagamento = 'succeeded' 
     AND p.valor_imposto < (p.valor_bruto * 0.15) 

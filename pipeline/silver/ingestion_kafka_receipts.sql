@@ -1,4 +1,4 @@
-CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_kafka_receipts
+CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_receipts
 COMMENT " Tabela de recibos com dados padronizados, tipados e limpos."
 AS
 

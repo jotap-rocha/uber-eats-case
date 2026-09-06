@@ -4,7 +4,7 @@ AS
 
 -- 1. LEITURA
 WITH bronze_table AS (
-  SELECT * FROM STREAM(live.ods_oracle_restaurants)
+  SELECT * FROM STREAM(live.ods_restaurants)
 ),
 
 -- 2. NORMALIZAÇÃO (Pass-through)

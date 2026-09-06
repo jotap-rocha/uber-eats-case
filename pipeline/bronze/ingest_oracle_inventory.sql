@@ -28,10 +28,10 @@ WHERE
 
 -- =================================================================
 
-CREATE OR REFRESH STREAMING TABLE ods_oracle_inventory
+CREATE OR REFRESH STREAMING TABLE ods_inventory
 COMMENT "ODS de estoque. Origem Oracle via Debezium/Kafka Connect (Onda 3, Etapa 2).";
 APPLY CHANGES INTO
-  uber_eats.bronze.ods_oracle_inventory
+  uber_eats.bronze.ods_inventory
 FROM
   STREAM(live.view_oracle_inventory_pre_processed)
 KEYS(stock_id)

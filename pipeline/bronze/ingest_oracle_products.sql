@@ -38,10 +38,10 @@ WHERE
 
 -- =================================================================
 
-CREATE OR REFRESH STREAMING TABLE ods_oracle_products
+CREATE OR REFRESH STREAMING TABLE ods_products
 COMMENT "ODS de produtos. Origem Oracle via Debezium/Kafka Connect (Onda 3, Etapa 2).";
 APPLY CHANGES INTO
-  uber_eats.bronze.ods_oracle_products
+  uber_eats.bronze.ods_products
 FROM
   STREAM(live.view_oracle_products_pre_processed)
 KEYS(product_id)

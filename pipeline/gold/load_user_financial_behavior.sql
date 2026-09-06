@@ -43,4 +43,4 @@ SELECT
 
   current_timestamp() AS _data_processamento
 
-FROM uber_eats.silver.silver_postgres_users;
+FROM uber_eats.silver.silver_users;

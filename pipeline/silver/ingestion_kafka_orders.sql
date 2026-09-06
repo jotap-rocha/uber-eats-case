@@ -1,4 +1,4 @@
-CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_kafka_orders
+CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_orders
 COMMENT "Tabela de pedidos da Uber com dados padronizados, tipados e enriquecidos."
 AS
 -- 1. LEITURA

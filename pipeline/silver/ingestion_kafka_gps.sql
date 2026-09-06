@@ -1,4 +1,4 @@
-CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_kafka_gps
+CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_gps
 COMMENT "Tabela silver de telemetria GPS com dados padronizados, tipados e enriquecidos."
 AS
 

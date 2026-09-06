@@ -4,7 +4,7 @@ AS
 
 -- 1. LEITURA
 WITH bronze_table AS (
-  SELECT * FROM STREAM(live.ods_postgres_drivers)
+  SELECT * FROM STREAM(live.ods_drivers)
 ),
 
 -- 2. NORMALIZAÇÃO (Pass-through)

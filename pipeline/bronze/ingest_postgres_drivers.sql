@@ -19,10 +19,10 @@ FROM
 -- =================================================================
 
 -- 2. Ingerir tabela na camada bronze
-CREATE OR REFRESH STREAMING TABLE ods_postgres_drivers
+CREATE OR REFRESH STREAMING TABLE ods_drivers
 COMMENT "ODS de motoristas. Esta ODS se refere a tabela drivers da origem.";
 APPLY CHANGES INTO
-  uber_eats.bronze.ods_postgres_drivers
+  uber_eats.bronze.ods_drivers
 FROM
   STREAM(live.view_drivers_pre_processed)
 KEYS(driver_id)

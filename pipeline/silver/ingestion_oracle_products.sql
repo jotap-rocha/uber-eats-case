@@ -4,7 +4,7 @@ AS
 
 -- 1. LEITURA
 WITH bronze_table AS (
-  SELECT * FROM STREAM(live.ods_oracle_products)
+  SELECT * FROM STREAM(live.ods_products)
 ),
 
 -- 2. NORMALIZAÇÃO (Pass-through)

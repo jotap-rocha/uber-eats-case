@@ -1,4 +1,4 @@
-CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_kafka_route
+CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_route
 COMMENT "Tabela de rotas que os motoristas tomaram, segundo o aplicativo, com dados padronizados, tipados e limpos"
 AS
 

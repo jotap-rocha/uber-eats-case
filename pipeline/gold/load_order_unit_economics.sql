@@ -11,8 +11,8 @@ WITH orders_metrics AS (
     p.taxa_plataforma AS custo_plataforma,
     p.taxa_provedor_cartao AS taxa_provedor_cartao,
     p.valor_estornado
-  FROM silver_kafka_orders o
-  INNER JOIN silver_kafka_payments p ON o.id_pedido = p.id_pedido
+  FROM silver_orders o
+  INNER JOIN silver_payments p ON o.id_pedido = p.id_pedido
   WHERE
     p.status_pagamento = 'succeeded'             -- Apenas o que foi pago de fato
     AND p.valor_imposto < (p.valor_bruto * 0.15) -- Imposto deve ser menor que 15% do valor bruto

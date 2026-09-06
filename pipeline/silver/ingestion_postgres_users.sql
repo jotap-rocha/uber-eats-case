@@ -1,10 +1,10 @@
-CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_postgres_users
+CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_users
 COMMENT "Tabela de Usuários. Visão unificada do perfil, métricas de gastos e status de assinatura."
 AS
 
 -- 1. LEITURA
 WITH source_table AS (
-  SELECT * FROM STREAM(live.ods_postgres_users)
+  SELECT * FROM STREAM(live.ods_users)
 ),
 
 -- 2. NORMALIZAÇÃO (Pass-through)

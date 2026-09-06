@@ -1,4 +1,4 @@
-CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_kafka_shift
+CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_shift
 COMMENT "Tabela de turnos dentro do app, com dados padronizados, tipados e limpos."
 AS
 

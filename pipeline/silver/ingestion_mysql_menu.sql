@@ -1,4 +1,4 @@
-CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_mysql_menu
+CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_menu
 COMMENT "Tabela de Seções do Menu (Categorias). Estrutura do cardápio vinda do MySQL, com dados padronizados, tipados e limpos."
 AS
 

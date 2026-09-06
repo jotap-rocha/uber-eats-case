@@ -1,4 +1,4 @@
-CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_mongodb_items
+CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_order_items
 COMMENT "Tabela de detalhes dos pedidos feitos no app, com dados padronizados, tipados e limpos."
 AS
 

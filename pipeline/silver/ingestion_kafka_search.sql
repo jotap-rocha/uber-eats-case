@@ -1,4 +1,4 @@
-CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_kafka_search
+CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_search
 COMMENT "Tabela de busca dentro do app da Uber Eats, com dados padronizados, tipados e limpos."
 AS
 

@@ -12,10 +12,10 @@ FROM
 -- =================================================================
 
 -- 2. Ingerir tabela na camada bronze
-CREATE OR REFRESH STREAMING TABLE ods_postgres_users
+CREATE OR REFRESH STREAMING TABLE ods_users
 COMMENT "ODS de usuários. Esta ODS se refere a tabela users da origem.";
 APPLY CHANGES INTO
-  uber_eats.bronze.ods_postgres_users
+  uber_eats.bronze.ods_users
 FROM
   STREAM(live.view_pre_processed_users)
 KEYS(user_id)
