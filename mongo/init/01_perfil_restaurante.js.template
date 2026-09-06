@@ -1,0 +1,57 @@
+// Seed estatico do satelite documental "Perfil de Restaurante" (Onda 3, Etapa 2).
+// restaurant_id vai de 1 a RESTAURANT_COUNT, espelhando o range sequencial que o
+// gerador `restaurants` do gen-unified produz no Oracle (mesma variavel de
+// populacao usada nos dois lugares -- ver gen/.env RESTAURANT_COUNT).
+// MongoDB nao tem sink de escrita no ShadowTraffic, entao este satelite eh
+// cadastro estatico (seed unico), nunca gerado de forma continua/independente.
+
+const RESTAURANT_COUNT = REPLACE_RESTAURANT_COUNT;
+
+const menuSections = ["Entradas", "Pratos Principais", "Sobremesas", "Bebidas"];
+const cuisineTags = ["vegetariano", "vegano", "sem-gluten", "picante", "sem-lactose"];
+const weekdays = ["segunda", "terca", "quarta", "quinta", "sexta", "sabado", "domingo"];
+
+function randomChoice(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function buildMenu() {
+  const items = [];
+  const itemCount = 3 + Math.floor(Math.random() * 8);
+  for (let i = 0; i < itemCount; i++) {
+    items.push({
+      section: randomChoice(menuSections),
+      name: "Item " + (i + 1),
+      tags: [randomChoice(cuisineTags)],
+      customizations: Math.random() > 0.5
+        ? ["sem cebola", "extra queijo", "ponto da carne"]
+        : []
+    });
+  }
+  return items;
+}
+
+function buildHorarios() {
+  const horarios = {};
+  weekdays.forEach(function (day) {
+    const closed = Math.random() < 0.1;
+    horarios[day] = closed
+      ? { fechado: true }
+      : { abre: "11:00", fecha: randomChoice(["22:00", "23:00", "00:00"]) };
+  });
+  return horarios;
+}
+
+const docs = [];
+for (let restaurantId = 1; restaurantId <= RESTAURANT_COUNT; restaurantId++) {
+  docs.push({
+    restaurant_id: restaurantId,
+    menu: buildMenu(),
+    horarios: buildHorarios(),
+    seeded_at: new Date()
+  });
+}
+
+db = db.getSiblingDB("ubereats");
+db.perfil_restaurante.insertMany(docs);
+print("Seed concluido: " + docs.length + " documentos em perfil_restaurante");

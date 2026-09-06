@@ -5,7 +5,14 @@ SELECT
   current_timestamp() AS _datetime_ingestion,
   CAST(_ab_cdc_updated_at AS timestamp) AS _source_updated_at,
   'postgres ubereats' AS source_system,
-  'public.drivers' AS source_table
+  'public.drivers' AS source_table,
+  -- Contrato canonico de CDC (Onda 3) -- a Silver deve ler estas 4 colunas,
+  -- nunca o formato nativo de uma ferramenta especifica (Airbyte aqui,
+  -- Debezium no Oracle) -- ver DESIGN_DIVERSIFICACAO_FONTES_UBEREATS.md
+  CASE WHEN _ab_cdc_deleted_at IS NOT NULL THEN 'd' ELSE 'u' END AS cdc_operation,
+  CAST(_ab_cdc_updated_at AS timestamp) AS cdc_commit_ts,
+  CAST(_ab_cdc_lsn AS STRING) AS cdc_sequence,
+  'postgres-ubereats' AS cdc_source_system
 FROM
   STREAM(uber_eats.raw.drivers);
 
@@ -20,7 +27,7 @@ FROM
   STREAM(live.view_drivers_pre_processed)
 KEYS(driver_id)
 APPLY AS DELETE WHEN _ab_cdc_deleted_at IS NOT NULL            -- Instrui o DLT a deletar fisicamente da Bronze
-SEQUENCE BY _ab_cdc_updated_at                                 -- Campo de controle do CDC
+SEQUENCE BY cdc_sequence                                       -- LSN (Onda 3): evita empate de ordenacao em rajada de UPDATEs
 COLUMNS * EXCEPT (
     _ab_cdc_lsn,
     _ab_cdc_deleted_at,

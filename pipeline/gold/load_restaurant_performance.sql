@@ -38,7 +38,7 @@ SELECT
 
   current_timestamp() AS _data_processamento
   
-FROM uber_eats.silver.silver_mysql_restaurants r
+FROM uber_eats.silver.silver_restaurants r
 -- Usamos LEFT JOIN para garantir que até os restaurantes que não venderam nada apareçam (com valores zerados/nulos)
 LEFT JOIN transacoes_validas t ON r.id_restaurante = t.id_restaurante
 GROUP BY

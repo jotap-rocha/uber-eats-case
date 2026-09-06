@@ -1,10 +1,10 @@
-CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_mysql_products
-COMMENT "Tabela de Produtos e preços, custos e classificações dietéticas, com dados padronizados, tipados e limpos."
+CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_products
+COMMENT "Tabela de Produtos e preços, custos e classificações dietéticas, com dados padronizados, tipados e limpos. Origem Oracle via Debezium/Kafka Connect (Onda 3, Etapa 2) — antes mysql/products simulado no MinIO."
 AS
 
 -- 1. LEITURA
 WITH bronze_table AS (
-  SELECT * FROM STREAM(live.mysql_products)
+  SELECT * FROM STREAM(live.ods_oracle_products)
 ),
 
 -- 2. NORMALIZAÇÃO (Pass-through)
@@ -61,7 +61,7 @@ silver_table AS (
   SELECT
     *,
     current_timestamp()                               AS _data_ingestao,
-    'mysql-minio'                                     AS _sistema_fonte
+    'oracle-ubereats'                                 AS _sistema_fonte
   FROM
     cleansed_table
 )

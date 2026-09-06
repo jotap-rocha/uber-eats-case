@@ -60,8 +60,8 @@ services:
       /usr/bin/mc policy set public local/uber-eats;
       "
   
-  # --- 3. GERADOR DE DADOS (unificado: Postgres real + MinIO no mesmo processo,
-  #        necessário para o lookup cruzado entre as duas conexões) ---
+  # --- 3. GERADOR DE DADOS (unificado: Postgres real + Oracle real + MinIO no
+  #        mesmo processo, necessário para o lookup cruzado entre as conexões) ---
   gen-unified:
     image: shadowtraffic/shadowtraffic:latest
     container_name: gen-unified
@@ -70,11 +70,80 @@ services:
         condition: service_healthy
       minio-setup:
         condition: service_completed_successfully
+      oracle-ubereats:
+        condition: service_healthy
     volumes:
       - ./gen/unified/uber-eats.json:/home/config.json:ro
     env_file: ./gen/.env
     command: --config /home/config.json
 
+  # --- 4. ORACLE (Onda 3, Etapa 2) — recebe Restaurante/Produto/Estoque,
+  #        com ARCHIVELOG + supplemental logging habilitados para o Debezium ---
+  oracle-ubereats:
+    image: gvenzl/oracle-free:23.4-full
+    container_name: oracle-ubereats
+    ports:
+      - "1521:1521"
+    env_file: ./gen/.env
+    environment:
+      - ORACLE_PASSWORD=${ORACLE_PASSWORD}
+      - APP_USER=${ORACLE_APP_USERNAME}
+      - APP_USER_PASSWORD=${ORACLE_APP_PASSWORD}
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+      - ./sql/oracle:/container-entrypoint-startdb.d
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 20s
+      timeout: 10s
+      retries: 15
+      start_period: 120s
+
+  # --- 5. REDPANDA (broker Kafka-compativel, leve — sem Zookeeper) ---
+  redpanda:
+    image: redpandadata/redpanda:latest
+    container_name: redpanda
+    command:
+      - redpanda
+      - start
+      - --smp=1
+      - --memory=1G
+      - --overprovisioned
+      - --node-id=0
+      - --kafka-addr=PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:9092
+    ports:
+      - "9092:9092"
+
+  # --- 6. KAFKA CONNECT + DEBEZIUM (CDC do Oracle -> topicos no Redpanda) ---
+  kafka-connect:
+    image: quay.io/debezium/connect:3.0
+    container_name: kafka-connect
+    depends_on:
+      - redpanda
+      - oracle-ubereats
+    environment:
+      - BOOTSTRAP_SERVERS=redpanda:9092
+      - GROUP_ID=uber-eats-connect
+      - CONFIG_STORAGE_TOPIC=connect_configs
+      - OFFSET_STORAGE_TOPIC=connect_offsets
+      - STATUS_STORAGE_TOPIC=connect_status
+    ports:
+      - "8083:8083"
+
+  # --- 7. MONGODB (satelite estatico "Perfil de Restaurante") ---
+  mongo-ubereats:
+    image: mongo:7
+    container_name: mongo-ubereats
+    ports:
+      - "27017:27017"
+    env_file: ./gen/.env
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo/init:/docker-entrypoint-initdb.d:ro
+
 volumes:
   postgres_data:
   minio_data:
+  oracle_data:
+  mongo_data:

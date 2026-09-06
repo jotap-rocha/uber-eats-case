@@ -757,30 +757,33 @@
       "connection": "minio"
     },
     {
-      "bucket": "uber-eats",
-      "bucketConfigs": {
-        "keyPrefix": "postgres/inventory/",
-        "format": "jsonl"
+      "table": "inventory",
+      "localConfigs": {
+        "maxEvents": 5000,
+        "throttleMs": 30
       },
-      "data": {
+      "sqlHint": {
+        "stock_id": "VARCHAR2(36) PRIMARY KEY"
+      },
+      "row": {
         "stock_id": {
           "_gen": "uuid"
         },
         "restaurant_id": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "mysql/restaurants/",
+          "connection": "oracle",
+          "table": "restaurants",
           "path": [
-            "data",
+            "row",
             "restaurant_id"
           ]
         },
         "product_id": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "mysql/products/",
+          "connection": "oracle",
+          "table": "products",
           "path": [
-            "data",
+            "row",
             "product_id"
           ]
         },
@@ -797,28 +800,32 @@
           "ms": {
             "_gen": "now"
           },
-          "format": "yyyy-MM-dd HH:mm:ss.SSS"
+          "format": "yyyy-MM-dd HH:mm:ss"
         }
       },
-      "connection": "minio"
+      "name": "inventory",
+      "connection": "oracle"
     },
     {
-      "bucket": "uber-eats",
-      "bucketConfigs": {
-        "keyPrefix": "mysql/products/",
-        "format": "jsonl"
+      "table": "products",
+      "localConfigs": {
+        "maxEvents": 2000,
+        "throttleMs": 40
       },
-      "data": {
+      "sqlHint": {
+        "product_id": "VARCHAR2(20) PRIMARY KEY"
+      },
+      "row": {
         "product_id": {
           "_gen": "string",
           "expr": "#{bothify 'PRD-#####'}"
         },
         "restaurant_id": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "mysql/restaurants/",
+          "connection": "oracle",
+          "table": "restaurants",
           "path": [
-            "data",
+            "row",
             "restaurant_id"
           ]
         },
@@ -933,16 +940,10 @@
             "_gen": "now"
           },
           "format": "yyyy-MM-dd HH:mm:ss"
-        },
-        "dt_current_timestamp": {
-          "_gen": "formatDateTime",
-          "ms": {
-            "_gen": "now"
-          },
-          "format": "yyyy-MM-dd HH:mm:ss.SSS"
         }
       },
-      "connection": "minio"
+      "name": "products",
+      "connection": "oracle"
     },
     {
       "bucket": "uber-eats",
@@ -956,10 +957,10 @@
         },
         "restaurant_id": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "mysql/restaurants/",
+          "connection": "oracle",
+          "table": "restaurants",
           "path": [
-            "data",
+            "row",
             "restaurant_id"
           ]
         },
@@ -996,12 +997,15 @@
       "connection": "minio"
     },
     {
-      "bucket": "uber-eats",
-      "bucketConfigs": {
-        "keyPrefix": "mysql/restaurants/",
-        "format": "jsonl"
+      "table": "restaurants",
+      "localConfigs": {
+        "maxEvents": 500,
+        "throttleMs": 50
       },
-      "data": {
+      "sqlHint": {
+        "restaurant_id": "NUMBER(10) PRIMARY KEY"
+      },
+      "row": {
         "restaurant_id": {
           "_gen": "sequentialInteger",
           "startingFrom": 1
@@ -1093,13 +1097,6 @@
           ],
           "decimals": 0
         },
-        "dt_current_timestamp": {
-          "_gen": "formatDateTime",
-          "ms": {
-            "_gen": "now"
-          },
-          "format": "yyyy-MM-dd HH:mm:ss.SSS"
-        },
         "cnpj": {
           "_gen": "string",
           "expr": "#{numerify '##.###.###/####-##'}",
@@ -1125,7 +1122,8 @@
           "decimals": 6
         }
       },
-      "connection": "minio"
+      "name": "restaurants",
+      "connection": "oracle"
     },
     {
       "bucket": "uber-eats",
@@ -1768,19 +1766,19 @@
         },
         "restaurant_id": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "mysql/restaurants/",
+          "connection": "oracle",
+          "table": "restaurants",
           "path": [
-            "data",
+            "row",
             "restaurant_id"
           ]
         },
         "product_id": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "mysql/products/",
+          "connection": "oracle",
+          "table": "products",
           "path": [
-            "data",
+            "row",
             "product_id"
           ]
         },
@@ -1902,10 +1900,10 @@
         },
         "product_id": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "mysql/products/",
+          "connection": "oracle",
+          "table": "products",
           "path": [
-            "data",
+            "row",
             "product_id"
           ]
         },
@@ -1973,10 +1971,10 @@
         },
         "clicked_product_id": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "mysql/products/",
+          "connection": "oracle",
+          "table": "products",
           "path": [
-            "data",
+            "row",
             "product_id"
           ]
         },
@@ -2040,19 +2038,19 @@
         },
         "start_lat": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "mysql/restaurants/",
+          "connection": "oracle",
+          "table": "restaurants",
           "path": [
-            "data",
+            "row",
             "lat"
           ]
         },
         "start_lon": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "mysql/restaurants/",
+          "connection": "oracle",
+          "table": "restaurants",
           "path": [
-            "data",
+            "row",
             "lon"
           ]
         },
@@ -2270,10 +2268,10 @@
         },
         "restaurant_key": {
           "_gen": "lookup",
-          "bucket": "uber-eats",
-          "keyPrefix": "mysql/restaurants/",
+          "connection": "oracle",
+          "table": "restaurants",
           "path": [
-            "data",
+            "row",
             "restaurant_id"
           ]
         },
@@ -2752,6 +2750,16 @@
         "username": "REPLACE_POSTGRES_USER",
         "password": "REPLACE_POSTGRES_PASSWORD",
         "sslmode": "disable"
+      }
+    },
+    "oracle": {
+      "kind": "oracle",
+      "connectionConfigs": {
+        "host": "REPLACE_ORACLE_HOST",
+        "port": REPLACE_ORACLE_PORT,
+        "db": "REPLACE_ORACLE_SERVICE",
+        "username": "REPLACE_ORACLE_USER",
+        "password": "REPLACE_ORACLE_PASSWORD"
       }
     },
     "minio": {

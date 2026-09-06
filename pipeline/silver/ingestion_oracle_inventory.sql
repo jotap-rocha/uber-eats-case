@@ -1,15 +1,15 @@
-CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_postgres_inventory
-COMMENT "Tabela de Estoque com controle de disponibilidade de produtos por restaurante."
+CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_inventory
+COMMENT "Tabela de Estoque com controle de disponibilidade de produtos por restaurante. Origem Oracle via Debezium/Kafka Connect (Onda 3, Etapa 2) — antes postgres/inventory simulado no MinIO."
 AS
 
 -- 1. LEITURA
-WITH source_table AS (
-  SELECT * FROM STREAM(live.postgres_inventory)
+WITH bronze_table AS (
+  SELECT * FROM STREAM(live.ods_oracle_inventory)
 ),
 
 -- 2. NORMALIZAÇÃO (Pass-through)
 normalized_table AS (
-  SELECT * FROM source_table
+  SELECT * FROM bronze_table
 ),
 
 -- 3. RENOMEAÇÃO E TIPAGEM
@@ -41,7 +41,7 @@ silver_table AS (
   SELECT
     *,
     current_timestamp()                               AS _data_ingestao,
-    'postgres-minio'                                  AS _sistema_fonte
+    'oracle-ubereats'                                 AS _sistema_fonte
   FROM
     cleansed_table
 )

@@ -21,7 +21,24 @@ Write-Host "   -> Gerando $configFileUnified..."
     -replace "REPLACE_POSTGRES_PORT", $envVars.POSTGRES_PORT `
     -replace "REPLACE_POSTGRES_DB", $envVars.POSTGRES_DB `
     -replace "REPLACE_POSTGRES_USER", $envVars.POSTGRES_USERNAME `
-    -replace "REPLACE_POSTGRES_PASSWORD", $envVars.POSTGRES_PASSWORD |
+    -replace "REPLACE_POSTGRES_PASSWORD", $envVars.POSTGRES_PASSWORD `
+    -replace "REPLACE_ORACLE_HOST", $envVars.ORACLE_HOST `
+    -replace "REPLACE_ORACLE_PORT", $envVars.ORACLE_PORT `
+    -replace "REPLACE_ORACLE_SERVICE", $envVars.ORACLE_SERVICE `
+    -replace "REPLACE_ORACLE_USER", $envVars.ORACLE_APP_USERNAME `
+    -replace "REPLACE_ORACLE_PASSWORD", $envVars.ORACLE_APP_PASSWORD |
     Set-Content $configFileUnified
 
 Write-Host "✅ Arquivo .json unificado (Postgres + MinIO) gerado com sucesso!"
+
+# 3. Gera o seed do satelite MongoDB "Perfil de Restaurante" (Onda 3, Etapa 2)
+$mongoTemplate = "$scriptFolder\..\mongo\init\01_perfil_restaurante.js.template"
+$mongoOutput = "$scriptFolder\..\mongo\init\01_perfil_restaurante.js"
+
+if (Test-Path $mongoTemplate) {
+    Write-Host "   -> Gerando $mongoOutput..."
+    (Get-Content $mongoTemplate) `
+        -replace "REPLACE_RESTAURANT_COUNT", $envVars.RESTAURANT_COUNT |
+        Set-Content $mongoOutput
+    Write-Host "✅ Seed do Mongo (Perfil de Restaurante) gerado com sucesso!"
+}

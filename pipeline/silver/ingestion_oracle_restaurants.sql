@@ -1,15 +1,15 @@
-CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_mysql_restaurants
-COMMENT "Tabela de Restaurantes (Dimensão). Dados cadastrais limpos, unificando ID interno e CNPJ."
+CREATE OR REFRESH STREAMING LIVE TABLE silver.silver_restaurants
+COMMENT "Tabela de Restaurantes (Dimensão). Dados cadastrais limpos, unificando ID interno e CNPJ. Origem Oracle via Debezium/Kafka Connect (Onda 3, Etapa 2) — antes mysql/restaurants simulado no MinIO."
 AS
 
 -- 1. LEITURA
-WITH source_table AS (
-  SELECT * FROM STREAM(live.mysql_restaurants)
+WITH bronze_table AS (
+  SELECT * FROM STREAM(live.ods_oracle_restaurants)
 ),
 
 -- 2. NORMALIZAÇÃO (Pass-through)
 normalized_table AS (
-  SELECT * FROM source_table
+  SELECT * FROM bronze_table
 ),
 
 -- 3. RENOMEAÇÃO E TIPAGEM
@@ -61,7 +61,7 @@ silver_table AS (
   SELECT
     *,
     current_timestamp()                               AS _data_ingestao,
-    'mysql-minio'                                     AS _sistema_fonte
+    'oracle-ubereats'                                 AS _sistema_fonte
   FROM
     cleansed_table
 )
