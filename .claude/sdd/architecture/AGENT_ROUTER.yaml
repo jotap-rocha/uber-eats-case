@@ -617,6 +617,15 @@ skill_reference:
   - ship-agent
   - dev-loop-executor
   - devloop-fixer
+- skill_name: shadowtraffic-ajustar-geracao
+  path: .claude/skills/shadowtraffic-ajustar-geracao/SKILL.md
+  used_by_agent_ids: []
+- skill_name: shadowtraffic-adicionar-generator-seguro
+  path: .claude/skills/shadowtraffic-adicionar-generator-seguro/SKILL.md
+  used_by_agent_ids: []
+- skill_name: shadowtraffic-renovar-licenca
+  path: .claude/skills/shadowtraffic-renovar-licenca/SKILL.md
+  used_by_agent_ids: []
 # Skills próprias do projeto (não o bundle vendor em .claude/skills/). Ver .claude/rules/skill-first.md para o critério de
 # decisão e a convenção de nome (prefixo de domínio, para não colidir com o bundle vendor).
 # Formato de cada entrada, quando populado:

@@ -37,9 +37,11 @@ AWS_SECRET_ACCESS_KEY=<sua_senha>
 
 # ShadowTraffic License (obtenha em https://shadowtraffic.io)
 LICENSE_ID=<seu_license_id>
-LICENSE_KEY=<sua_license_key>
 LICENSE_EMAIL=<seu_email>
-LICENSE_OWNER=<seu_nome>
+LICENSE_ORGANIZATION=<sua_organizacao>
+LICENSE_EDITION=<sua_edicao>
+LICENSE_EXPIRATION=<data_expiracao>
+LICENSE_SIGNATURE=<assinatura_da_licenca>
 ```
 
 ---
@@ -71,6 +73,8 @@ Um único processo unificado (`gen-unified`) gera tudo — necessário para o lo
 .\scripts\stop-generators.ps1
 ```
 
+> ⚠️ Para **religar** depois de parar (quando as tabelas já têm dados gerados), não use `start-generators.ps1` — use `.\scripts\toggle-shadowtraffic.ps1 on` (ver seção "Ajustar Velocidade" abaixo). `start-generators.ps1` só é seguro em ambiente 100% novo, sem dado prévio.
+
 ### Monitorar
 
 ```powershell
@@ -99,13 +103,17 @@ Edite `gen/unified/uber-eats.json.template`:
 }
 ```
 
-Depois:
+Depois, **se as tabelas já tem dados de uma execucao anterior**, religue com o script seguro (nao use `stop-generators.ps1`/`start-generators.ps1` aqui — eles nao recalculam `startingFrom` e ja causaram travamento total do pipeline por colisao de PK):
 
 ```powershell
-.\gen\setup-configs.ps1
-.\scripts\stop-generators.ps1
-.\scripts\start-generators.ps1
+.\scripts\toggle-shadowtraffic.ps1 off
+# edite o .template aqui
+.\scripts\toggle-shadowtraffic.ps1 on
 ```
+
+`toggle-shadowtraffic.ps1 on` ja injeta os segredos do `.env` e recalcula `startingFrom` a partir do `MAX(id)` real de cada tabela antes de subir o container — nao e preciso rodar `gen\setup-configs.ps1` manualmente. Detalhe do incidente: `.claude/kb/shadowtraffic/patterns/restart-seguro-startingFrom.md`.
+
+Só use `.\gen\setup-configs.ps1` + `stop-generators.ps1`/`start-generators.ps1` em ambiente **recem-criado** (`docker-compose down -v` + `up`, tabelas vazias).
 
 ---
 
@@ -115,10 +123,11 @@ Depois:
 
 ```powershell
 # 1. Renove em https://shadowtraffic.io
-# 2. Atualize gen/.env
-# 3. Reinicie:
-.\scripts\stop-generators.ps1
-.\scripts\start-generators.ps1
+# 2. Atualize gen/.env (LICENSE_ID, LICENSE_EMAIL, LICENSE_ORGANIZATION,
+#    LICENSE_EDITION, LICENSE_EXPIRATION, LICENSE_SIGNATURE)
+# 3. Religue com seguranca (tabelas ja tem dados na maioria dos casos):
+.\scripts\toggle-shadowtraffic.ps1 off
+.\scripts\toggle-shadowtraffic.ps1 on
 ```
 
 ### Connection refused

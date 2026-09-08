@@ -2,7 +2,7 @@
 # Machine-readable registry for KB domains
 
 version: "1.0"
-last_updated: "2026-05-26"
+last_updated: "2026-09-07"
 
 # File Size Limits (SINGLE SOURCE OF TRUTH)
 limits:
@@ -450,3 +450,35 @@ domains:
     entry_points:
       index: index.md
       kb_tree: index.md
+
+  shadowtraffic:
+    name: ShadowTraffic
+    description: Gerador de dados sintéticos (gen/unified/uber-eats.json.template) — semântica de lookup/fork/stateMachine, limites reais e incidentes já corrigidos neste projeto
+    path: shadowtraffic/
+    mcp_validated: "2026-09-07"
+    entry_points:
+      index: index.md
+      quick_reference: quick-reference.md
+    concepts:
+      - name: conceitos-fundamentais
+        path: concepts/conceitos-fundamentais.md
+        confidence: 0.95
+      - name: lookup-semantica-e-limites
+        path: concepts/lookup-semantica-e-limites.md
+        confidence: 0.95
+      - name: mutacao-real-fork-statemachine
+        path: concepts/mutacao-real-fork-statemachine.md
+        confidence: 0.9
+      - name: licenciamento-e-env
+        path: concepts/licenciamento-e-env.md
+        confidence: 0.85
+    patterns:
+      - name: evitar-lookup-circular-e-multiplo
+        path: patterns/evitar-lookup-circular-e-multiplo.md
+      - name: nome-de-campo-igual-a-coluna-real
+        path: patterns/nome-de-campo-igual-a-coluna-real.md
+      - name: conexoes-sql-e-object-storage
+        path: patterns/conexoes-sql-e-object-storage.md
+    specs:
+      - name: generator-targets-uber-eats
+        path: specs/generator-targets-uber-eats.yaml

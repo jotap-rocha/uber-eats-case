@@ -1,0 +1,145 @@
+schema_version: "1.0"
+domain: shadowtraffic
+file_type: spec
+last_validated: "2026-09-07"
+source: "gen/unified/uber-eats.json.template + .claude/sdd/reports/BUILD_REPORT_DIVERSIFICACAO_FONTES_UBEREATS_ETAPA3.md"
+
+note: >
+  Mapa dos 17 generators do config unificado atual (pós Onda 3 Etapa 3).
+  keyPrefix "mysql/", "mongodb/", "kafka/" dentro da connection "minio" (s3)
+  sao pastas do bucket, nao conexoes reais a esses sistemas dentro do
+  ShadowTraffic — ver quick-reference.md.
+
+connections:
+  postgres:
+    kind: postgres
+    generators: [users, drivers]
+  oracle:
+    kind: oracle
+    generators: [restaurants, products, inventory, orders, payments, order_items, receipts]
+  minio:
+    kind: s3
+    generators:
+      - kafka/shift
+      - mysql/menu
+      - mysql/ratings
+      - mongodb/support
+      - mongodb/recommendations
+      - kafka/search
+      - kafka/route
+      - kafka/gps
+
+generators:
+  users:
+    connection: postgres
+    mechanism: static_insert
+    max_events: 80000
+    notes: "sem lookup de saida; e referenciado por varios outros generators"
+
+  drivers:
+    connection: postgres
+    mechanism: fork_statemachine_update
+    fork_key: sequentialInteger
+    states: [insertIt, onShift, offShift, banned]
+    notes: "primeira prova do mecanismo de mutacao real (Onda 1)"
+
+  kafka/shift:
+    connection: minio
+    mechanism: static_insert
+    looks_up: [drivers]
+
+  inventory:
+    connection: oracle
+    mechanism: static_insert
+    max_events: 5000
+    looks_up: [restaurants, products]
+
+  products:
+    connection: oracle
+    mechanism: static_insert
+    max_events: 2000
+    looks_up: [restaurants]
+
+  mysql/menu:
+    connection: minio
+    mechanism: static_insert
+    looks_up: [restaurants]
+
+  restaurants:
+    connection: oracle
+    mechanism: static_insert
+    max_events: 437
+    notes: "raiz de varios lookups; sem dependencia de outro generator"
+
+  mysql/ratings:
+    connection: minio
+    mechanism: static_insert
+    looks_up: [orders]
+
+  payments:
+    connection: oracle
+    mechanism: fork_statemachine_update
+    fork_key: sequentialInteger
+    keep_alive: true
+    states: [insertIt, succeeded, failed, refunded]
+    looks_up: [orders]
+    notes: "mutacao real migrada para Oracle na Etapa 3; CDC confirmado via Debezium (op:u)"
+
+  mongodb/support:
+    connection: minio
+    mechanism: static_insert
+    looks_up: [users, orders]
+
+  order_items:
+    connection: oracle
+    mechanism: fork_static
+    fork_key: "lookup(orders.order_id)"
+    max_forks: 10000
+    looks_up: [orders, restaurants, products]
+
+  mongodb/recommendations:
+    connection: minio
+    mechanism: static_insert
+    looks_up: [users, products]
+
+  kafka/search:
+    connection: minio
+    mechanism: static_insert
+    looks_up: [users, products]
+
+  kafka/route:
+    connection: minio
+    mechanism: static_insert
+    looks_up: [orders, drivers, restaurants, users]
+    known_gap: >
+      start_lat e start_lon fazem duas chamadas de lookup separadas contra
+      restaurants — sem garantia de virem do mesmo restaurante entre si
+      (ver concepts/lookup-semantica-e-limites.md). end_lat/end_lon tem o
+      mesmo padrao contra users.
+
+  kafka/gps:
+    connection: minio
+    mechanism: fork_geowander
+    fork_key: "lookup(kafka/route.order_id)"
+    max_forks: 20
+
+  orders:
+    connection: oracle
+    mechanism: fork_statemachine_update
+    fork_key: sequentialInteger
+    keep_alive: true
+    states: [insertIt, inAnalysis, accepted, preparing, readyForPickup, pickedUp, outForDelivery, delivered, completed]
+    looks_up: [users, restaurants, drivers]
+    notes: "mutacao real migrada para Oracle na Etapa 3; 9 estados de ciclo de vida"
+
+  receipts:
+    connection: oracle
+    mechanism: static_insert
+    looks_up: [orders, payments]
+
+out_of_scope:
+  - name: mongo-ubereats (satelite "Perfil de Restaurante")
+    reason: >
+      Nao e gerado pelo ShadowTraffic. Seed estatico via
+      mongo/init/01_perfil_restaurante.js, populado uma vez no start do
+      container mongo-ubereats.
