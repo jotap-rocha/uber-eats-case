@@ -1182,7 +1182,7 @@
     {
       "table": "payments",
       "localConfigs": {
-        "throttleMs": 25
+        "throttleMs": 8
       },
       "sqlHint": {
         "payment_id": "NUMBER(10) PRIMARY KEY"
@@ -1192,7 +1192,7 @@
           "_gen": "sequentialInteger",
           "startingFrom": 1
         },
-        "maxForks": 300,
+        "maxForks": 1200,
         "keepAlive": true
       },
       "row": {
@@ -1366,7 +1366,7 @@
     {
       "table": "order_items",
       "localConfigs": {
-        "throttleMs": 20
+        "throttleMs": 3
       },
       "sqlHint": {
         "order_item_id": "VARCHAR2(36) PRIMARY KEY"
@@ -1879,7 +1879,7 @@
     {
       "table": "orders",
       "localConfigs": {
-        "throttleMs": 25
+        "throttleMs": 8
       },
       "sqlHint": {
         "order_id": "NUMBER(10) PRIMARY KEY"
@@ -1889,7 +1889,7 @@
           "_gen": "sequentialInteger",
           "startingFrom": 1
         },
-        "maxForks": 300,
+        "maxForks": 1200,
         "keepAlive": true
       },
       "row": {
