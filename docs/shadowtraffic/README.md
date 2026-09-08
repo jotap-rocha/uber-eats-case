@@ -88,6 +88,8 @@ docker exec postgres-ubereats psql -U <seu_usuario> -d <seu_database> -c "SELECT
 docker exec minio-ubereats mc ls local/uber-eats/ --recursive
 ```
 
+> Report automático: `.\scripts\toggle-shadowtraffic.ps1 on` já sobe junto um loop de background que escreve um snapshot (contagem por tabela + crescimento desde o snapshot anterior) em `logs/shadowtraffic-report.log` a cada hora, enquanto `gen-unified` estiver ativo — útil para deixar rodando sem monitorar a tela. `.\scripts\toggle-shadowtraffic.ps1 off` encerra o loop junto com o gerador. `.\scripts\toggle-shadowtraffic.ps1 status` mostra se o loop está ativo e o caminho do log.
+
 ---
 
 ## Ajustar Velocidade

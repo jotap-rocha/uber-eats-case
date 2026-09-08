@@ -56,6 +56,7 @@ Ferramenta em container (`docker run shadowtraffic/shadowtraffic`) que gera dado
 | Confiar em `docs/shadowtraffic/README.md` para nomes de variável de licença | Confiar em `gen/.env.template` (fonte real) |
 | Desenhar `lookup` circular (A depende de B que depende de A) | Reordenar/remover campo — ver ADR em `.claude/sdd/archive/INTEGRIDADE_REFERENCIAL_SHADOW_TRAFFIC/` |
 | Religar `gen-unified` (`docker restart`/`stop`+`up`) com dado já existente nas tabelas | Usar `scripts/toggle-shadowtraffic.ps1 on`/`off` — recalcula `startingFrom` a partir do MAX(id) real antes de subir (ver `patterns/restart-seguro-startingFrom.md`) |
+| Monitorar geração sem ficar de olho na tela | `toggle-shadowtraffic.ps1 on`/`off` já liga/desliga junto um loop horário (`scripts/shadowtraffic-report-loop.ps1`) que grava snapshot + crescimento em `logs/shadowtraffic-report.log` |
 
 ## Related Documentation
 

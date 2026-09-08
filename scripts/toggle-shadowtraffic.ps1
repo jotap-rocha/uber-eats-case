@@ -3,7 +3,9 @@
 # Descricao: Liga/desliga o gerador ShadowTraffic (gen-unified) manualmente,
 #            SEM reiniciar a numeracao dos IDs (users/drivers/orders/payments/
 #            restaurants). Cada "on" recalcula "startingFrom" a partir do
-#            MAX(id) real nas tabelas antes de subir o container.
+#            MAX(id) real nas tabelas antes de subir o container. Tambem
+#            liga/desliga junto um loop de report horario (ver
+#            shadowtraffic-report-loop.ps1) em logs/shadowtraffic-report.log.
 #
 # Por que este script existe (nao usar apenas docker-compose stop/start):
 #   O config gen/unified/uber-eats.json.template usa "startingFrom": N fixo
@@ -33,73 +35,74 @@ param(
 $ErrorActionPreference = "Stop"
 
 $repoRoot  = Split-Path -Parent $PSScriptRoot
-$envFile   = "$repoRoot\gen\.env"
 $jsonPath  = "$repoRoot\gen\unified\uber-eats.json"
 $RESTAURANT_TARGET = 500
 
+$logDir      = "$repoRoot\logs"
+$logFile     = "$logDir\shadowtraffic-report.log"
+$reportPid   = "$logDir\report.pid"
+$reportLoop  = "$PSScriptRoot\shadowtraffic-report-loop.ps1"
+
+. "$PSScriptRoot\lib\shadowtraffic-common.ps1"
+
 # ------------------------------------------------------------------------------
-# Helpers
+# Helpers proprios deste script
 # ------------------------------------------------------------------------------
 
-function Get-EnvVars {
-    if (-not (Test-Path $envFile)) {
-        Write-Host "[ERRO] gen\.env nao encontrado. Copie gen\.env.template para gen\.env e preencha as credenciais." -ForegroundColor Red
-        exit 1
+function Test-ReportLoopRunning {
+    if (-not (Test-Path $reportPid)) { return $false }
+    $procId = Get-Content $reportPid -Raw
+    if (-not $procId) { return $false }
+    return [bool](Get-Process -Id ([int]$procId.Trim()) -ErrorAction SilentlyContinue)
+}
+
+function Start-ReportLoop {
+    if (-not (Test-Path $logDir)) {
+        New-Item -ItemType Directory -Path $logDir -Force | Out-Null
     }
-    return (Get-Content $envFile | Where-Object { $_ -match '=' -and $_ -notmatch '^\s*#' } | ConvertFrom-StringData)
+    if (Test-ReportLoopRunning) { return }
+
+    $proc = Start-Process powershell -ArgumentList @("-NoProfile", "-WindowStyle", "Hidden", "-File", $reportLoop) -WindowStyle Hidden -PassThru
+    Set-Content -Path $reportPid -Value $proc.Id
+    Write-Host "[OK] Loop de report iniciado (PID $($proc.Id)) -> $logFile"
 }
 
-function Test-ContainerRunning([string]$name) {
-    $running = docker ps --filter "name=$name" --filter "status=running" --format "{{.Names}}"
-    return [bool]$running
-}
-
-function Get-PgMax([string]$table, [string]$column) {
-    $sql = "SELECT COALESCE(MAX($column),0) FROM $table;"
-    $out = docker exec postgres-ubereats psql -U $envVars.POSTGRES_USERNAME -d $envVars.POSTGRES_DB -t -A -c $sql
-    return [int]($out.Trim())
-}
-
-function Get-OracleScalar([string]$sql) {
-    $conn = "$($envVars.ORACLE_APP_USERNAME)/$($envVars.ORACLE_APP_PASSWORD)@//localhost:1521/$($envVars.ORACLE_SERVICE)"
-    $script = "SET PAGESIZE 0`nSET FEEDBACK OFF`nSET HEADING OFF`nSET VERIFY OFF`n$sql`nexit;`n"
-    $lines = $script | docker exec -i oracle-ubereats sqlplus -s $conn
-    $value = ($lines | Where-Object { $_.Trim() -match '^\d+$' } | Select-Object -First 1)
-    if (-not $value) {
-        Write-Host "[ERRO] Nao consegui ler resultado do Oracle para: $sql" -ForegroundColor Red
-        Write-Host ($lines -join "`n")
-        exit 1
+function Stop-ReportLoop {
+    if (-not (Test-Path $reportPid)) { return }
+    $procId = (Get-Content $reportPid -Raw).Trim()
+    if ($procId) {
+        Stop-Process -Id ([int]$procId) -Force -ErrorAction SilentlyContinue
     }
-    return [int]($value.Trim())
+    Remove-Item $reportPid -Force -ErrorAction SilentlyContinue
+    Write-Host "[OK] Loop de report encerrado."
 }
 
 function Show-Status {
-    $running = Test-ContainerRunning "gen-unified"
+    $running = Test-ContainerRunning -Name "gen-unified"
     $state = if ($running) { "ATIVO" } else { "PARADO" }
     Write-Host "Gerador (gen-unified): $state"
 
-    $u = Get-PgMax "users" "user_id"
-    $d = Get-PgMax "drivers" "driver_id"
-    $o = Get-OracleScalar "SELECT NVL(MAX(order_id),0) FROM UBEREATS.ORDERS;"
-    $p = Get-OracleScalar "SELECT NVL(MAX(payment_id),0) FROM UBEREATS.PAYMENTS;"
-    $r = Get-OracleScalar "SELECT NVL(COUNT(*),0) FROM UBEREATS.RESTAURANTS;"
+    $reportState = if (Test-ReportLoopRunning) { "ATIVO" } else { "PARADO" }
+    Write-Host "Loop de report:        $reportState  (log: $logFile)"
 
-    Write-Host "  users:       $u"
-    Write-Host "  drivers:     $d"
-    Write-Host "  orders:      $o"
-    Write-Host "  payments:    $p"
-    Write-Host "  restaurants: $r / $RESTAURANT_TARGET"
+    $snap = Get-GeneratorSnapshot -EnvVars $envVars
+    Write-Host "  users:       $($snap.users)"
+    Write-Host "  drivers:     $($snap.drivers)"
+    Write-Host "  orders:      $($snap.orders)"
+    Write-Host "  payments:    $($snap.payments)"
+    Write-Host "  restaurants: $($snap.restaurants) / $RESTAURANT_TARGET"
 }
 
 function Sync-StartingPoints {
     Write-Host "[1/3] Calculando pontos de retomada (MAX id atual em cada tabela)..."
 
-    $maxUser    = Get-PgMax "users" "user_id"
-    $maxDriver  = Get-PgMax "drivers" "driver_id"
-    $maxOrder   = Get-OracleScalar "SELECT NVL(MAX(order_id),0) FROM UBEREATS.ORDERS;"
-    $maxPayment = Get-OracleScalar "SELECT NVL(MAX(payment_id),0) FROM UBEREATS.PAYMENTS;"
-    $restCount  = Get-OracleScalar "SELECT NVL(COUNT(*),0) FROM UBEREATS.RESTAURANTS;"
-    $maxRest    = Get-OracleScalar "SELECT NVL(MAX(restaurant_id),0) FROM UBEREATS.RESTAURANTS;"
+    $snap = Get-GeneratorSnapshot -EnvVars $envVars
+    $maxUser    = $snap.users
+    $maxDriver  = $snap.drivers
+    $maxOrder   = $snap.orders
+    $maxPayment = $snap.payments
+    $restCount  = $snap.restaurants
+    $maxRest    = Get-OracleScalar -EnvVars $envVars -Sql "SELECT NVL(MAX(restaurant_id),0) FROM UBEREATS.RESTAURANTS;"
 
     Write-Host "   users=$maxUser drivers=$maxDriver orders=$maxOrder payments=$maxPayment restaurants=$restCount/$RESTAURANT_TARGET"
 
@@ -133,7 +136,7 @@ function Sync-StartingPoints {
 # Main
 # ------------------------------------------------------------------------------
 
-$envVars = Get-EnvVars
+$envVars = Get-EnvVars -RepoRoot $repoRoot
 
 switch ($Action) {
 
@@ -143,14 +146,15 @@ switch ($Action) {
 
     "on" {
         foreach ($c in @("postgres-ubereats", "oracle-ubereats", "minio-ubereats")) {
-            if (-not (Test-ContainerRunning $c)) {
+            if (-not (Test-ContainerRunning -Name $c)) {
                 Write-Host "[ERRO] $c nao esta rodando. Rode primeiro: .\scripts\start-infra.ps1" -ForegroundColor Red
                 exit 1
             }
         }
 
-        if (Test-ContainerRunning "gen-unified") {
+        if (Test-ContainerRunning -Name "gen-unified") {
             Write-Host "[OK] gen-unified ja esta ativo. Nada a fazer."
+            Start-ReportLoop
             Show-Status
             exit 0
         }
@@ -160,13 +164,18 @@ switch ($Action) {
         Write-Host "[INFO] Subindo gen-unified..."
         docker-compose up -d gen-unified | Out-Null
 
+        Start-ReportLoop
+
         Write-Host "[OK] Gerador LIGADO, retomando de onde parou."
-        Write-Host "   Ver logs:  docker-compose logs -f gen-unified"
+        Write-Host "   Ver logs gerador:  docker-compose logs -f gen-unified"
+        Write-Host "   Ver report horario: $logFile"
         Write-Host "   Desligar:  .\scripts\toggle-shadowtraffic.ps1 off"
     }
 
     "off" {
-        if (-not (Test-ContainerRunning "gen-unified")) {
+        Stop-ReportLoop
+
+        if (-not (Test-ContainerRunning -Name "gen-unified")) {
             Write-Host "[OK] gen-unified ja esta parado."
             exit 0
         }

@@ -238,3 +238,8 @@ output/
 !.cursor/dev/logs/.gitkeep
 !.github/dev/logs/
 !.github/dev/logs/.gitkeep
+
+# scripts/lib guarda funcoes PowerShell compartilhadas (nao build artifact) -- sem isso,
+# a regra generica "lib/" (Python packaging, topo do arquivo) engole o diretorio inteiro.
+!scripts/lib/
+!scripts/lib/**
