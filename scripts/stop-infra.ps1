@@ -1,20 +1,18 @@
 # ==============================================================================
 # Script: stop-infra.ps1
-# Descricao: Para APENAS a infraestrutura (Postgres + MinIO)
+# Descricao: Para APENAS os bancos (Postgres + Oracle + MinIO + Mongo)
 # Autor: Uber Eats Data Pipeline Project
 # ==============================================================================
 
-Write-Host "[INFO] Parando APENAS a infraestrutura..."
+Write-Host "[INFO] Parando APENAS os bancos..."
 
-# Para apenas os servicos de infraestrutura
-docker-compose stop postgres-ubereats minio-ubereats
+docker-compose stop postgres-ubereats oracle-ubereats minio-ubereats mongo-ubereats
 
 Write-Host ""
-Write-Host "[OK] Infraestrutura parada."
+Write-Host "[OK] Bancos parados."
 Write-Host "   -> Os volumes (dados) estao preservados."
 Write-Host "   -> Para iniciar novamente: .\scripts\start-infra.ps1"
 Write-Host ""
-Write-Host "[AVISO] Os geradores ShadowTraffic (se estiverem rodando) podem falhar."
-Write-Host "   -> Para parar os geradores tambem: .\scripts\stop-generators.ps1"
-
-
+Write-Host "[AVISO] ShadowTraffic e ingestao/CDC (se estiverem rodando) vao falhar sem os bancos."
+Write-Host "   -> Parar geracao: .\scripts\toggle-shadowtraffic.ps1 off"
+Write-Host "   -> Parar ingestao: .\scripts\toggle-ingestion.ps1 off"

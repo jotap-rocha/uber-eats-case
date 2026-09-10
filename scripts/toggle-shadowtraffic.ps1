@@ -145,9 +145,21 @@ switch ($Action) {
     }
 
     "on" {
-        foreach ($c in @("postgres-ubereats", "oracle-ubereats", "minio-ubereats")) {
+        foreach ($c in @("postgres-ubereats", "oracle-ubereats", "minio-ubereats", "mongo-ubereats")) {
             if (-not (Test-ContainerRunning -Name $c)) {
                 Write-Host "[ERRO] $c nao esta rodando. Rode primeiro: .\scripts\start-infra.ps1" -ForegroundColor Red
+                exit 1
+            }
+        }
+
+        # Container "running" != pronto para conexao (Oracle em especial fica
+        # rodando bem antes do listener registrar o FREEPDB1). Sem isso, rodar
+        # logo apos start-infra.ps1 (ex.: via start-all.ps1) da ORA-12514 aqui
+        # ou no Show-Status abaixo.
+        Write-Host "[INFO] Aguardando bancos ficarem prontos (healthcheck)..." -ForegroundColor Cyan
+        foreach ($c in @("postgres-ubereats", "oracle-ubereats", "minio-ubereats")) {
+            if (-not (Wait-ContainerHealthy -Name $c)) {
+                Write-Host "[ERRO] $c nao ficou pronto a tempo. Verifique: docker logs $c" -ForegroundColor Red
                 exit 1
             }
         }

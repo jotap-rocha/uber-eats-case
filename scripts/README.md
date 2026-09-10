@@ -10,10 +10,11 @@ Esta pasta contem todos os scripts PowerShell para orquestracao da infraestrutur
 
 | Script | Descricao | Usa Licenca? |
 |--------|-----------|--------------|
-| `start-infra.ps1` | Sobe **apenas** Postgres + MinIO | Nao |
-| `start-generators.ps1` | Sobe **apenas** ShadowTraffic | Sim |
-| `start-all.ps1` | Sobe **tudo** (Infra + Geradores) | Sim |
-| `start-airbyte.ps1` | Liga o Airbyte (abctl) sob demanda -- nao faz parte de `start-all.ps1` | Nao |
+| `start-infra.ps1` | Sobe **apenas** os bancos (Postgres, Oracle, MinIO, Mongo) | Nao |
+| `toggle-ingestion.ps1 on/off/status` | Liga/desliga Redpanda + Kafka Connect (connector Debezium Oracle) + Airbyte | Nao |
+| `start-generators.ps1` | Sobe ShadowTraffic **do zero** (so seguro em ambiente sem dado previo -- ver aviso abaixo) | Sim |
+| `start-all.ps1` | Sobe **tudo** (bancos + `toggle-ingestion.ps1` + `toggle-shadowtraffic.ps1`) | Sim |
+| `start-airbyte.ps1` | Liga o Airbyte (abctl) sob demanda -- usado internamente por `toggle-ingestion.ps1 on` | Nao |
 
 ### Scripts de Parada
 
@@ -56,17 +57,24 @@ Esta pasta contem todos os scripts PowerShell para orquestracao da infraestrutur
 ---
 
 ### `start-generators.ps1` - Apenas Geradores
+
+> ⚠️ **So use este script em ambiente 100% novo** (sem dado previo nas tabelas). Se `gen-unified`
+> ja gerou dado antes e voce so quer ligar/desligar sob demanda, use
+> **`.\scripts\toggle-shadowtraffic.ps1 on`/`off`** -- ele recalcula os IDs (`startingFrom`) a
+> partir do que ja existe no banco antes de subir; `start-generators.ps1` nao faz isso e ja
+> travou o pipeline inteiro por colisao de PK (ver
+> `.claude/kb/shadowtraffic/patterns/restart-seguro-startingFrom.md`).
+
 **Use quando:**
 - A infra **ja esta rodando** (`start-infra.ps1`)
-- Precisa popular mais dados
-- Quer ligar/desligar geradores sob demanda
+- Ambiente **recem-criado** (`docker-compose down -v` + infra, tabelas vazias)
 
 **Exemplo:**
 ```powershell
 # 1. Suba a infra primeiro
 .\scripts\start-infra.ps1
 
-# 2. Depois suba os geradores
+# 2. Depois suba os geradores (so em ambiente novo -- senao, toggle-shadowtraffic.ps1 on)
 .\scripts\start-generators.ps1
 ```
 
