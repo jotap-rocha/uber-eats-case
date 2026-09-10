@@ -1,32 +1,33 @@
 # Modelo Conceitual do Domínio — Uber Eats
 
-> Fonte: ciclo SDD arquivado em `.claude/sdd/archive/MODELO_CONCEITUAL_UBER_EATS/` (modelagem inicial), `.claude/sdd/features/*_INTEGRIDADE_REFERENCIAL_SHADOW_TRAFFIC.md` (correção estrutural, Onda 1) e `.claude/sdd/features/*_UNIFICACAO_IDENTIDADE_POSTGRES_MINIO.md` (unificação de identidade, Onda 2).
+> Fonte: ciclo SDD arquivado em `.claude/sdd/archive/MODELO_CONCEITUAL_UBER_EATS/` (modelagem inicial), `.claude/sdd/features/*_INTEGRIDADE_REFERENCIAL_SHADOW_TRAFFIC.md` (correção estrutural, Onda 1), `.claude/sdd/features/*_UNIFICACAO_IDENTIDADE_POSTGRES_MINIO.md` (unificação de identidade, Onda 2) e `.claude/sdd/features/*_DIVERSIFICACAO_FONTES_UBEREATS.md` (diversificação de fontes + mutação real, Onda 3).
 >
 > Reaproveitado sem alteração nas 3 arquiteturas (Warehouse, Lakehouse, Kappa) × 3 clouds (Azure, AWS, GCP) do roadmap em [`docs/ROADMAP_ARQUITETURA_MULTICLOUD.md`](ROADMAP_ARQUITETURA_MULTICLOUD.md) — Fase 0.
 >
-> Fonte única de dados: `gen/unified/uber-eats.json` — gerador único (Postgres real + MinIO no mesmo processo): 2 tabelas Postgres (`users`, `drivers`) + 17 streams MinIO (MySQL, MongoDB, Kafka simulados).
+> Fonte de dados: `gen/unified/uber-eats.json` — gerador único (Postgres + Oracle no mesmo processo) + satélite MongoDB (seed estático) + MinIO (streams remanescentes). 4 sistemas ao todo: **Postgres** (`users`, `drivers` — mutação real de linha), **Oracle** (`restaurants`, `products`, `inventory`, `orders`, `payments`, `order_items`, `receipts` — insert-only e mutação real, capturado via Debezium/Kafka Connect/Redpanda), **MongoDB** (`restaurant_profile`, satélite estático, sem CDC) e **MinIO** (streams remanescentes: Entrega, Avaliação, Turno, Incidente e os fora-do-modelo-core).
 >
-> **Estado:** todos os bugs mecânicos e gaps estruturais identificados no modelo estão **resolvidos** (Onda 1 + Onda 2). Nenhuma pendência conhecida — ver seção "Estado da implementação" ao final.
+> **Estado:** todos os bugs mecânicos e gaps estruturais identificados no modelo estão **resolvidos** (Onda 1 + Onda 2 + Onda 3). Nenhuma pendência conhecida no modelo em si — ver seção "Estado da implementação" ao final (a Onda 3 tem pendências de *validação em Databricks real*, fora do escopo deste documento).
 
 ---
 
-## Entidades (13)
+## Entidades (14)
 
 | Entidade | Stream de origem | Por que é entidade |
 |----------|-------------------|---------------------|
 | Usuário | Postgres real, tabela `users` (fonte única desde a Onda 2) | Identidade própria, referenciado como pai por Pedido e Incidente |
-| Restaurante | `mysql/restaurants` | Identidade própria, referenciado por Produto, Pedido, Avaliação, Estoque |
-| Produto | `mysql/products` | Identidade própria, referenciado por Item de Pedido, Estoque |
-| Motorista | Postgres real, tabela `drivers` (fonte única desde a Onda 2) | Identidade própria, referenciado por Turno e Entrega (não estava na lista original de 8 entidades do `plan.md` — incluído por decisão explícita, já que a lista era planejamento, não fechada) |
-| Pedido | `kafka/orders` | Entidade central da transação |
-| Item de Pedido | `mongodb/items` | Entidade fraca — só existe no contexto de um Pedido |
-| Pagamento | `kafka/payments` | Identidade própria, referenciado por Recibo |
+| Restaurante | Oracle real, tabela `restaurants` (migrado de `mysql/restaurants` na Onda 3, Etapa 2) | Identidade própria, referenciado por Produto, Pedido, Avaliação, Estoque, Perfil de Restaurante |
+| Produto | Oracle real, tabela `products` (migrado de `mysql/products` na Onda 3, Etapa 2) | Identidade própria, referenciado por Item de Pedido, Estoque |
+| Motorista | Postgres real, tabela `drivers` (fonte única desde a Onda 2; ganha mutação real de linha — `status`/`total_deliveries`/`total_earnings`/`average_rating` — na Onda 3, Etapa 1) | Identidade própria, referenciado por Turno e Entrega (não estava na lista original de 8 entidades do `plan.md` — incluído por decisão explícita, já que a lista era planejamento, não fechada) |
+| Pedido | Oracle real, tabela `orders` (migrado de `kafka/orders` na Onda 3, Etapa 3; mutação real de linha nas 9 fases do ciclo de vida, substitui o histórico append-only `kafka/status`) | Entidade central da transação |
+| Item de Pedido | Oracle real, tabela `order_items` (migrado de `mongodb/items` na Onda 3, Etapa 3) | Entidade fraca — só existe no contexto de um Pedido |
+| Pagamento | Oracle real, tabela `payments` (migrado de `kafka/payments` na Onda 3, Etapa 3; mutação real de linha nos 4 estados finais, substitui o histórico append-only `kafka/events`) | Identidade própria, referenciado por Recibo |
 | Entrega | `kafka/route` | Identidade própria, liga Pedido + Motorista |
 | Avaliação | `mysql/ratings` | Identidade própria — entidade incompleta hoje (ver gap estrutural) |
-| Recibo | `kafka/receipts` | Documento com identidade própria (`receipt_id`); conteúdo derivado do pedido/pagamento não desqualifica entidade |
-| Estoque | `postgres/inventory` | Entidade associativa entre Restaurante e Produto, com atributo próprio (quantidade) |
+| Recibo | Oracle real, tabela `receipts` (migrado de `kafka/receipts` na Onda 3, Etapa 3) | Documento com identidade própria (`receipt_id`); conteúdo derivado do pedido/pagamento não desqualifica entidade |
+| Estoque | Oracle real, tabela `inventory` (migrado de `postgres/inventory` na Onda 3, Etapa 2) | Entidade associativa entre Restaurante e Produto, com atributo próprio (quantidade) |
 | Turno | `kafka/shift` | Entidade fraca de Motorista — motorista tem vários turnos ao longo do tempo, embarcar como atributo perderia histórico |
 | Incidente | `mongodb/support` | Reclamação/ocorrência ligada a um pedido específico (categorias: atraso, item errado, item faltando, pagamento — `order_id` obrigatório em todo registro); não é atendimento genérico |
+| Perfil de Restaurante | MongoDB satélite, coleção `restaurant_profile` (seed estático, Onda 3, Etapa 2 — nova entidade) | Entidade fraca de Restaurante — menu + horários de funcionamento; população determinística (`restaurant_id: 1..N`, mesmo `RESTAURANT_COUNT` do gerador Oracle), sem sink de escrita no ShadowTraffic e sem CDC (satélite estático, não mutável em runtime) |
 
 ### Critério de classificação
 
@@ -38,20 +39,27 @@
 
 | Stream | Categoria | Motivo |
 |--------|-----------|--------|
-| `kafka/status` | Histórico de estado | Subentidade de Pedido — evolução de status ao longo do tempo, não objeto novo |
-| `kafka/events` | Histórico de estado | Subentidade de Pagamento — state machine `created→authorized→captured→(succeeded\|refunded)→settled/closed` |
 | `mysql/menu` | Construção de apresentação | Agrupamento de exibição de Produto, sem identidade de negócio própria |
 | `kafka/gps` | Telemetria de alta frequência | Já corretamente vinculado à Entrega (fork key = order_id via `kafka/route`); cardinalidade altíssima, sem identidade de negócio |
 | `mongodb/recommendations` | Evento comportamental | Log de interação (view/click/add_to_cart), não entidade de negócio |
 | `kafka/search` | Evento comportamental | Log de busca, mesma lógica |
 
-### Streams aposentados (Onda 1 e 2)
+### Streams aposentados (Onda 1, 2 e 3)
 
 | Stream | Motivo | Onda |
 |--------|--------|------|
 | `mongodb/users` | Fonte secundária da mesma entidade Usuário — absorvida | 1 |
 | `mssql/users` | Substituída pela tabela `users` do Postgres real (fonte única de Usuário) | 2 |
 | `postgres/drivers` | Substituída pela tabela `drivers` do Postgres real (fonte única de Motorista) | 2 |
+| `mysql/restaurants` | Substituída pela tabela `restaurants` do Oracle real | 3 |
+| `mysql/products` | Substituída pela tabela `products` do Oracle real | 3 |
+| `postgres/inventory` | Substituída pela tabela `inventory` do Oracle real | 3 |
+| `kafka/orders` | Substituída pela tabela `orders` do Oracle real, com mutação de linha | 3 |
+| `kafka/payments` | Substituída pela tabela `payments` do Oracle real, com mutação de linha | 3 |
+| `mongodb/items` | Substituída pela tabela `order_items` do Oracle real | 3 |
+| `kafka/receipts` | Substituída pela tabela `receipts` do Oracle real | 3 |
+| `kafka/status` | **Removido por completo** — histórico append-only de status do Pedido vira mutação real de linha em `orders` (não é mais modelado como stream separado nem como subentidade) | 3 |
+| `kafka/events` | **Removido por completo** — histórico append-only de eventos do Pagamento vira mutação real de linha em `payments` | 3 |
 
 ---
 
@@ -73,10 +81,11 @@
 | Pedido | Recibo | 1:1 | `order_id` | |
 | Pedido | Entrega | 1:1 | `order_id` | ✅ corrigido — origem (restaurante) e destino (usuário, Postgres real) usam coordenada real |
 | Pedido | Incidente | 1:N | `order_id` | |
-| Pedido | *(histórico) Status do Pedido* | 1:N | `order_id` | subentidade, não linha própria |
 | Pagamento | Recibo | 1:1 | `payment_id` | |
-| Pagamento | *(histórico) Eventos do Pagamento* | 1:N | `payment_id` | subentidade |
 | Avaliação | Pedido | 1:1 (opcional) | `order_id` | ✅ corrigido — Usuário/Restaurante obtidos transitivamente via Pedido |
+| Restaurante | Perfil de Restaurante | 1:1 | `restaurant_id` | ✅ novo (Onda 3) — satélite MongoDB, população determinística por range de `restaurant_id` |
+
+**Nota (Onda 3):** as linhas *(histórico) Status do Pedido* e *(histórico) Eventos do Pagamento*, que existiam aqui como subentidades 1:N, foram **removidas do modelo** — não existem mais como stream separado nem como registro histórico append-only. `status` (Pedido) e o estado de `payments` (Pagamento) agora são **mutação real da própria linha** em `orders`/`payments` no Oracle, capturada via CDC (Debezium) como uma sequência de `UPDATE`s reais, não mais como uma tabela de eventos à parte.
 
 ---
 
@@ -111,7 +120,7 @@ CPF, CNPJ e license_number **não são eliminados** — continuam existindo como
 | Entrega — coordenada de destino (Usuário) | `kafka/route.end_lat/end_lon` faz lookup real em `users.lat/lon` (Postgres) | 2 |
 | `silver_drivers_profile` (MinIO) vs. `silver_drivers_performance` (Postgres real) | Reconciliadas numa única tabela `silver_drivers`, incluindo `vehicle_make`/`vehicle_model`/`vehicle_year`/`license_number`/`city` adicionados ao Postgres real para não perder atributos | 2 |
 
-**Limitação conhecida, não bloqueante:** a origem da Entrega (`start_lat/lon`) aponta para *um* restaurante real via lookup simples, não necessariamente o do mesmo pedido — amarrar ao restaurante exato exigiria lookup encadeado (pedido→restaurante→coordenada), não confirmado como suportado pelo ShadowTraffic. Possível refinamento futuro (Onda 3), não um gap de integridade referencial.
+**Limitação conhecida, não bloqueante:** a origem da Entrega (`start_lat/lon`) aponta para *um* restaurante real via lookup simples, não necessariamente o do mesmo pedido — amarrar ao restaurante exato exigiria lookup encadeado (pedido→restaurante→coordenada), não confirmado como suportado pelo ShadowTraffic. Não endereçado na Onda 3 (fora do escopo entregue — a Onda 3 focou em diversificação de fontes e mutação real, não em refinar esta lookup); possível refinamento futuro, não é um gap de integridade referencial.
 
 ---
 
@@ -138,8 +147,44 @@ CPF, CNPJ e license_number **não são eliminados** — continuam existindo como
 
 **Pendente de execução manual** (fora do que o Build de código cobre): a migração de PK exige recriar o volume Postgres (`docker-compose down -v`) para que `sql/*.sql` rode de novo; depois regenerar os dados e rodar o pipeline Databricks completo (Bronze→Silver→Gold) para confirmar 0 registros órfãos — ver `BUILD_REPORT_UNIFICACAO_IDENTIDADE_POSTGRES_MINIO.md` para o checklist exato.
 
+### Onda 3 — Diversificação de fontes + mutação real (Postgres/Oracle/MongoDB)
+
+Três etapas sequenciais, cada uma validada em ambiente real (Docker local) ponta a ponta antes de avançar para a próxima — ver `.claude/sdd/reports/BUILD_REPORT_DIVERSIFICACAO_FONTES_UBEREATS_ETAPA{1,2,3}.md` para o detalhe completo de cada Build, incluindo os bugs reais encontrados e corrigidos em cada etapa.
+
+| Etapa | Componente | Mudança |
+|-------|------------|---------|
+| 1 — Motorista/Postgres | Gerador | `drivers` ganha `fork.key=driver_id` + `stateMachine`: `INSERT` inicial, depois `op:update` na mesma linha para `status`/`total_deliveries`/`total_earnings`/`average_rating` — primeira prova real do mecanismo de mutação de linha (mesmo padrão reaproveitado nas Etapas 2/3) |
+| 2 — Restaurante/Produto/Estoque/Oracle | Infraestrutura | `docker-compose.yml` ganha `oracle-ubereats` (`gvenzl/oracle-free:23.4-full`, ARCHIVELOG+LogMiner), `redpanda` (broker Kafka-compatível), `kafka-connect` (`quay.io/debezium/connect:3.0`), `mongo-ubereats` (seed estático) |
+| 2 | Gerador | `restaurants`/`products`/`inventory` migram de `bucket`/`data` (MinIO) para `table`/`row` (Oracle), insert-only; conector Debezium Oracle registrado via REST API |
+| 2 | Bronze/Silver | `ingest_oracle_{restaurants,products,inventory}.sql` (Kafka→Structured Streaming, contrato canônico de CDC) e `ingestion_oracle_{restaurants,products,inventory}.sql` (substituem `ingestion_mysql_restaurants`/`ingestion_mysql_products`/`ingestion_postgres_inventory`) |
+| 2 | Satélite | `mongo/init/01_perfil_restaurante.js` — seed de `RESTAURANT_COUNT` documentos (`restaurant_id: 1..N`, menu + horários); `ingestion_mongo_perfil_restaurante.sql` produz `silver_restaurant_profile` |
+| 3 — Pedido/Pagamento/Oracle | Gerador | `orders`/`payments` migram de `bucket`/`data`+`fork`(→S3) para `table`/`row`+`fork`+`stateMachine`(→`op:update` no Oracle), mesmo padrão da Etapa 1; `order_items`/`receipts` seguem para Oracle; `kafka/status` e `kafka/events` **removidos** do gerador |
+| 3 | Schema real | `sql/oracle/03_create_tables_pedido_pagamento.sh` — `orders`, `payments`, `order_items`, `receipts`; `order_id`/`payment_id` migram de `uuid` para `sequentialInteger` (mesmo critério de chave canônica já aplicado a Usuário/Restaurante/Motorista) |
+| 3 | Bronze/Silver | `ingest_oracle_{orders,payments,order_items,receipts}.sql` e `ingestion_oracle_{orders,payments,order_items,receipts}.sql` (substituem `ingestion_kafka_orders`/`ingestion_kafka_payments`/`ingestion_mongodb_items`/`ingestion_kafka_receipts`); `ingestion_kafka_status.sql`/`ingestion_kafka_events.sql` **removidos** |
+| 3 | Gold | `load_order_unit_economics.sql`, `load_restaurant_performance.sql` — referências de Silver atualizadas para os nomes por domínio |
+| Transversal | Nomenclatura | Convenção de nomear Silver por domínio de negócio (não por sistema de origem) aplicada a **todo** o projeto no commit `817dade`, não só às tabelas desta Onda — ver tabela de nomenclatura abaixo |
+
+**Tabela de nomenclatura antiga → nova (Silver, por causa da migração de origem):**
+
+| Silver antiga (por sistema) | Silver nova (por domínio) | Origem antiga → nova |
+|---|---|---|
+| `silver_mysql_restaurants` | `silver_restaurants` | `mysql/restaurants` (MinIO) → `restaurants` (Oracle) |
+| `silver_mysql_products` | `silver_products` | `mysql/products` (MinIO) → `products` (Oracle) |
+| `silver_postgres_inventory` | `silver_inventory` | `postgres/inventory` (MinIO) → `inventory` (Oracle) |
+| `silver_kafka_orders` | `silver_orders` | `kafka/orders` (MinIO) → `orders` (Oracle, mutação real) |
+| `silver_kafka_payments` | `silver_payments` | `kafka/payments` (MinIO) → `payments` (Oracle, mutação real) |
+| `silver_mongodb_items` | `silver_order_items` | `mongodb/items` (MinIO) → `order_items` (Oracle) |
+| `silver_kafka_receipts` | `silver_receipts` | `kafka/receipts` (MinIO) → `receipts` (Oracle) |
+| `silver_kafka_status` | *(removida)* | Histórico append-only aposentado — vira mutação de linha em `silver_orders` |
+| `silver_kafka_events` | *(removida)* | Histórico append-only aposentado — vira mutação de linha em `silver_payments` |
+| *(inexistente)* | `silver_restaurant_profile` | Nova (Onda 3) — satélite MongoDB `restaurant_profile` |
+
+**Pendente de execução manual** (registrado nos 3 `BUILD_REPORT_*`, não bloqueante para o modelo conceitual em si):
+1. Pipeline Bronze→Silver→Gold completo não foi executado num workspace Databricks real — validação local cobriu Oracle/ShadowTraffic/CDC (Debezium/Redpanda), não a leitura via `read_kafka()` dentro do Lakeflow real.
+2. Lakehouse Federation para MongoDB não validada (depende de conexão Unity Catalog criada manualmente na plataforma).
+
 ---
 
 ## Histórico do processo
 
-Modelagem inicial: ciclo SDD arquivado em `.claude/sdd/archive/MODELO_CONCEITUAL_UBER_EATS/`. Correção estrutural (Onda 1): `.claude/sdd/features/*_INTEGRIDADE_REFERENCIAL_SHADOW_TRAFFIC.md`. Unificação de identidade (Onda 2): `.claude/sdd/features/*_UNIFICACAO_IDENTIDADE_POSTGRES_MINIO.md`.
+Modelagem inicial: ciclo SDD arquivado em `.claude/sdd/archive/MODELO_CONCEITUAL_UBER_EATS/`. Correção estrutural (Onda 1): `.claude/sdd/features/*_INTEGRIDADE_REFERENCIAL_SHADOW_TRAFFIC.md`. Unificação de identidade (Onda 2): `.claude/sdd/features/*_UNIFICACAO_IDENTIDADE_POSTGRES_MINIO.md`. Diversificação de fontes + mutação real (Onda 3): `.claude/sdd/features/*_DIVERSIFICACAO_FONTES_UBEREATS.md` (BRAINSTORM/DEFINE/DESIGN) e `.claude/sdd/reports/BUILD_REPORT_DIVERSIFICACAO_FONTES_UBEREATS_ETAPA{1,2,3}.md`.
