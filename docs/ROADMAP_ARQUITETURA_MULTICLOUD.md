@@ -2,7 +2,7 @@
 
 **Documento de planejamento**
 
-**Versão:** 1.3
+**Versão:** 1.6
 
 **Data:** Setembro/2026
 
@@ -29,8 +29,8 @@ Implementar as arquiteturas **Warehouse**, **Lakehouse** e **Kappa**, reaproveit
 | Abertura de conta cloud | Somente no início de cada fase correspondente, dado que os créditos de free tier têm validade curta (Azure: 30 dias; AWS: até 6 meses; GCP: 90 dias) |
 | IaC / CI-CD | **Terraform** como ferramenta única de provisionamento de infraestrutura, reaproveitada nas 3 clouds. **DAB** (Databricks Asset Bundles) usado especificamente para deploy de jobs/pipelines Databricks — aplicável somente na Fase 1 (Azure) |
 | Uso do Databricks | Restrito à Azure. Em AWS e GCP, o objetivo é praticar a stack de dados nativa de cada cloud (Glue/Iceberg/Athena na AWS; BigLake/Dataproc/BigQuery no GCP) |
-| Portabilidade de motor por camada (v1.2) | O **modelo de domínio** (13+ entidades, `docs/MODELO_CONCEITUAL_UBER_EATS.md`) e a **mecânica de CDC** (replication slot/log, PK obrigatória, soft delete) são fixos e reaproveitados nas 3 clouds. A **implementação física** não é: Oracle e MinIO são específicos da Fase 0/1 (Azure). Nas Fases 2/3, os papéis equivalentes são servidos pelo motor relacional e pelo object storage nativos de cada cloud (ex.: AWS = banco relacional gerenciado da AWS + S3; GCP = banco relacional gerenciado do GCP + GCS) — o motor exato de cada fase é decidido no `/define` daquela fase, não aqui |
-| Ingestão/CDC por fase (v1.2) | Fases 0/1: **Airbyte** (Postgres→Databricks) + **Debezium/Kafka Connect** (Oracle→Databricks) — ver Onda 3. Fases 2/3: ingestão nativa da cloud (ex.: AWS DMS e/ou MSK Connect; GCP Datastream) em vez de Airbyte/Debezium — decisão tomada em brainstorm (`/intake`), detalhamento fica para o `/define` de cada fase. Para não reescrever a Silver a cada fase, a Bronze deve expor um **contrato canônico de metadados de CDC** (`cdc_operation`, `cdc_commit_ts`, `cdc_sequence`, `cdc_source_system`) — cada ferramenta de ingestão emite um formato próprio (`_ab_cdc_*` no Airbyte, `op`/`before`/`after` no Debezium, etc.) e a Silver nunca deve ler o formato nativo diretamente |
+| Portabilidade de motor por camada (v1.2, **revisto na v1.6 para a Fase 2**) | O **modelo de domínio** (13+ entidades, `docs/MODELO_CONCEITUAL_UBER_EATS.md`) e a **mecânica de CDC** (replication slot/log, PK obrigatória, soft delete) são fixos e reaproveitados nas 3 clouds. A v1.2 previa que Oracle e MinIO seriam substituídos por motores nativos de cada cloud nas Fases 2/3 — **decisão revista no `/define` da Fase 2/AWS (v1.6): os mesmos sistemas self-hosted da Fase 0 (Oracle, MinIO, Postgres, MongoDB, rodando em Docker/ShadowTraffic) são reaproveitados como fonte, com a AWS ingerindo deles via rede** (DMS/DataSync), em vez de recriar motores nativos equivalentes. Motivo: manter o dado gerado por `gen-unified` como fonte única entre as 3 clouds ("reaproveitando o dado do projeto pessoal", Seção 1), evitando duplicar geração/seed por cloud. Exige conectividade de rede da AWS até os containers locais (VPN, IP público ou túnel) — ver `BRAINSTORM_INGESTAO_AWS_FASE2.md`/`DEFINE_INGESTAO_AWS_FASE2.md`. Fase 3 (GCP) ainda não tem essa decisão revista — permanece com a redação original da v1.2 até seu próprio `/define` |
+| Ingestão/CDC por fase (v1.4) | Fase 1/Azure: **dois trilhos deliberadamente separados**, não uma ferramenta única — ver subseção "Fase 1 — Arquitetura de Ingestão" abaixo para o desenho completo (real-time via Airbyte OSS/Debezium→Event Hub; batch via Airbyte→ADLS Gen2 só para o Synapse). Fases 2/3: ingestão nativa da cloud (AWS DMS; GCP Datastream) em vez de Airbyte/Debezium — **sob avaliação**, decisão de alto nível tomada em brainstorm (`/intake`), detalhamento e pendências identificadas ficam para o `/define` de cada fase (ver notas "🔶 Em avaliação" nas seções de Fase 2 e Fase 3). Para não reescrever a Silver a cada fase, a Bronze deve expor um **contrato canônico de metadados de CDC** (`cdc_operation`, `cdc_commit_ts`, `cdc_sequence`, `cdc_source_system`) — cada ferramenta de ingestão emite um formato próprio (`_ab_cdc_*` no Airbyte, `op`/`before`/`after` no Debezium, metadados próprios no DMS/Datastream) e a Silver nunca deve ler o formato nativo diretamente. **Pendência transversal:** o mapeamento de metadados de ordenação (LSN/SCN do Debezium vs. metadados do DMS vs. do Datastream) para o campo canônico `cdc_sequence` ainda não foi desenhado — fica para o `/define` de cada fase 2/3 |
 | Gestão de custo | Responsabilidade do usuário — priorizar sempre serviços serverless/on-demand (Redshift Serverless, Synapse Serverless SQL Pool, BigQuery on-demand, Databricks com auto-termination agressivo) para evitar cobrança de recurso ligado sem uso |
 
 ---
@@ -78,29 +78,77 @@ Implementar as arquiteturas **Warehouse**, **Lakehouse** e **Kappa**, reaproveit
 
 | Ordem | Arquitetura | Ferramenta principal | Observação |
 |---|---|---|---|
-| 1ª | Warehouse | Synapse (Serverless SQL Pool) | Modelagem dimensional (schema estrela + SCD tipo 2) — foco principal de aprendizado da fase |
-| 2ª | Lakehouse | Databricks (reaproveitado do projeto já existente) + ADLS Gen2 | Migração leve: troca de storage (MinIO → ADLS Gen2); processamento e camadas do medalhão mantidos como já implementados |
+| 1ª | Warehouse | Synapse (**Dedicated SQL Pool**, v1.4 — não Serverless, não Fabric) | Modelagem dimensional (schema estrela + SCD tipo 2) — foco principal de aprendizado da fase. Serverless SQL Pool não suporta DML/`MERGE` (não é possível fazer SCD2 nele); Fabric foi avaliado e descartado — critério é "o que o mercado pede em vaga hoje", não "o que a Microsoft direciona agora" |
+| 2ª | Lakehouse | Databricks (reaproveitado do projeto já existente, **Free Edition**) + ADLS Gen2 | Migração leve: troca de storage (MinIO → ADLS Gen2); processamento e camadas do medalhão mantidos como já implementados. Free Edition: workspace hospedado fora da subscription Azure (Terraform não o provisiona); DAB **confirmado funcionando** via Service Principal ou PAT |
 | 3ª | Kappa | Event Hubs + Stream Analytics (ou Spark Structured Streaming) | Streaming em ambiente já conhecido, reduzindo o risco de aprender conceito novo (Kappa) e cloud nova ao mesmo tempo |
 
-**IaC/CI-CD:** Terraform (workspace Databricks, ADLS Gen2, Synapse, Event Hubs) + DAB (jobs/pipelines do Lakehouse) + pipeline CI/CD (ex: GitHub Actions). Padrão estabelecido nesta fase, reaproveitado nas seguintes.
+**IaC/CI-CD:** Terraform (ADLS Gen2, Synapse, Event Hubs — **não** o workspace Databricks Free Edition, que fica fora da subscription) + DAB (jobs/pipelines do Lakehouse, validado no Free Edition) + pipeline CI/CD (ex: GitHub Actions). Padrão estabelecido nesta fase, reaproveitado nas seguintes.
+
+---
+
+#### Fase 1 — Arquitetura de Ingestão (Azure, validada em rodada adversarial)
+
+> Decisões tomadas via múltiplas rodadas de `/intake` com verificação técnica externa e revisão adversarial (registro de trabalho em `adversarial-reply.md`, na raiz do repo — não é doc oficial, é log da conversa). Cobre como cada fonte (Postgres, Oracle, MongoDB, MinIO) alimenta os 3 destinos da fase (Databricks/Lakehouse, Synapse/Warehouse, Event Hub+Stream Analytics/Kappa).
+
+**Dois trilhos deliberadamente separados — real-time e batch não compartilham ferramenta:**
+
+| Trilho | Fonte | Ferramenta | Destino | Motivo |
+|---|---|---|---|---|
+| Real-time (Lakehouse + Kappa) | Postgres | Airbyte OSS (CDC, replication slot) | Event Hub | CDC do Airbyte pra Postgres é gratuito/OSS — mantém o mecanismo já validado na Fase 0 |
+| Real-time (Lakehouse + Kappa) | Oracle | Debezium/Kafka Connect (LogMiner) | Event Hub | **Confirmado nesta rodada:** o Airbyte não lê o log de transação (redo log) do Oracle na versão open-source — o conector CDC Oracle do Airbyte é Enterprise/pago. Debezium via LogMiner é a única via gratuita, e já foi validada localmente na Fase 0 |
+| Real-time (Kappa) | MinIO | Notificação de bucket nativa do MinIO (destino Kafka) | Event Hub | MinIO publica evento de objeto (create/delete) direto num tópico Kafka — sem ferramenta de ingestão adicional; Debezium não se aplica (não existe connector Debezium para object storage genérico) |
+| Batch (Warehouse) | Postgres | Airbyte, 2ª conexão, modo Standard (não-CDC) | ADLS Gen2 (CSV) | Evita abrir um 2º replication slot só para alimentar o Synapse — Warehouse não precisa de real-time |
+| Batch (Warehouse) | Oracle | Airbyte, conector "Standard" open-source (não-CDC) | ADLS Gen2 (CSV) | Sem custo de Enterprise — aqui não precisamos de CDC, só carga periódica agendada pro Synapse |
+| Batch (Warehouse) | MongoDB | Airbyte, snapshot/full-refresh | ADLS Gen2 (CSV) | Fonte estática (~500 documentos, sem alteração ao longo da carga) — CDC seria decorativo aqui |
+
+**Consumidores:**
+- **Databricks (Lakehouse):** lê do Event Hub via Structured Streaming — mesmo padrão `STREAM(kafka.\`...\`)` já validado localmente com Redpanda na Fase 0, só troca o broker.
+- **Synapse Dedicated (Warehouse):** `COPY INTO` (CSV, formato suportado nativamente) a partir do ADLS Gen2, seguido de `MERGE` para SCD2.
+- **Stream Analytics (Kappa):** lê **só** do Event Hub (trilho real-time) — deliberadamente não lê o ADLS Gen2 do trilho batch nesta fase, para não descaracterizar o Kappa como um Lambda architecture disfarçado (batch layer + speed layer) nas 3 fontes relacionais/documentais.
+
+**Decisão explicitamente avaliada e descartada:** unificar tudo (Oracle incluso) num único trilho Airbyte-batch→ADLS Gen2, alimentando Databricks e Kappa a partir de arquivo, com Event Hub lendo do ADLS Gen2. Economizaria uma ferramenta (Debezium), mas anularia a lacuna de conhecimento declarada da Onda 3 ("CDC real multi-motor... Oracle como fonte", Seção 5) e faria o Kappa não ser Kappa de fato para 3 das 4 fontes.
 
 ---
 
 ### Fase 2 — AWS (3 arquiteturas, stack 100% nativa)
 
+> ✅ **Brainstorm de ingestão concluído (v1.5)** — `.claude/sdd/features/BRAINSTORM_INGESTAO_AWS_FASE2.md`. A escolha de ferramenta por arquitetura abaixo está fechada; o desenho fino de ingestão também já foi decidido nesta rodada (equivalente à subseção "Fase 1 — Arquitetura de Ingestão"), faltando só o `/define` desta fase para detalhar implementação.
+
+**Fase 2 — Arquitetura de Ingestão (dois trilhos, mesmo princípio da Fase 1):**
+
+| Trilho | Fonte | Ferramenta | Destino | Motivo |
+|---|---|---|---|---|
+| Real-time (Kappa) | Postgres | AWS DMS, ongoing replication/CDC (task dedicada) | Kinesis Data Streams | Kinesis como target nativo do DMS — sem passar pelo S3, para o Kappa não virar micro-lote disfarçado |
+| Real-time (Kappa) | Oracle | AWS DMS, ongoing replication/CDC (task dedicada) | Kinesis Data Streams | Mesmo motivo do Postgres |
+| Real-time (Kappa) | MinIO | Notificação de bucket nativa (destino Webhook) → Lambda ponte (`PutRecord`) | Kinesis Data Streams | Kinesis não fala protocolo Kafka; MSK foi cogitado e descartado por não ser serverless (brokers sempre ligados) |
+| Batch (Warehouse + Lakehouse) | Postgres | AWS DMS, 2ª task, ongoing replication/CDC | S3 (Bronze) | Mesmo padrão da Fase 1 (2ª conexão dedicada ao trilho batch) |
+| Batch (Warehouse + Lakehouse) | Oracle | AWS DMS, 2ª task, ongoing replication/CDC | S3 (Bronze) | Idem |
+| Batch (Warehouse + Lakehouse) | MongoDB | AWS DMS, task única, full load/snapshot (sem CDC) | S3 (Bronze) | Fonte estática por decisão já fechada na Onda 3 — CDC seria decorativo |
+| Batch (Warehouse + Lakehouse) | MinIO | AWS DataSync, location "Self-managed object storage", sync agendado | S3 (Bronze) | DMS não tem conector para object storage genérico — MinIO não é um motor de banco de dados |
+
+**Consumidores:** Redshift Serverless faz `COPY`/`MERGE` a partir do S3 (Bronze) — sem target DMS nativo direto no Redshift; Glue+Iceberg+Athena leem o mesmo S3; Kinesis (modo on-demand) é o único destino do trilho real-time, consumido pelo Kappa (Flink ou Lambda, decisão pendente do `/define`) — o consumidor faz **lookup/enriquecimento contra a cópia do MongoDB no S3/Bronze** (menu/horário do restaurante) sem que o MongoDB entre pelo Kinesis.
+
+**Decisão explicitamente avaliada e descartada:** usar o S3 como fronteira única também para o trilho real-time (DMS/DataSync → S3 → evento `ObjectCreated` → Lambda → Kinesis). Mais barato (uma só leitura de log por fonte), mas o Kappa herdaria o intervalo de entrega do DMS/DataSync ao S3 antes de disparar o evento — o usuário priorizou fidelidade ao Kappa "de verdade" sobre essa economia, mesmo padrão de decisão já tomado na Fase 1.
+
 | Ordem | Arquitetura | Ferramenta principal |
 |---|---|---|
 | 1ª | Warehouse | Redshift Serverless |
 | 2ª | Lakehouse | Glue + Iceberg + Athena |
-| 3ª | Kappa | Kinesis (ou MSK) + Flink/Lambda |
+| 3ª | Kappa | Kinesis Data Streams (on-demand) + Flink/Lambda |
 
-**Fontes e ingestão (v1.2):** Oracle e MinIO da Fase 0 são substituídos pelos papéis equivalentes em serviços nativos AWS (banco relacional gerenciado + S3 — motor exato a decidir no `/define` da fase). Ingestão/CDC via **AWS DMS** (fontes com CDC compatível) e/ou **MSK Connect** rodando o mesmo Debezium aprendido na Fase 0 (útil se alguma fonte não tiver CDC suportado no DMS) — não via Airbyte.
+**Fontes e ingestão (v1.2):** Oracle e MinIO da Fase 0 são substituídos pelos papéis equivalentes em serviços nativos AWS (banco relacional gerenciado + S3 — motor exato a decidir no `/define` da fase). Ingestão/CDC via **AWS DMS** (Postgres, Oracle, MongoDB) e **AWS DataSync** (MinIO) — não via Airbyte/Debezium/MSK.
 
 **IaC/CI-CD:** Terraform (sem DAB — não há Databricks nesta fase).
 
 ---
 
 ### Fase 3 — GCP (3 arquiteturas, stack 100% nativa)
+
+> 🔶 **Sob avaliação (v1.4).** Mesma situação da Fase 2: ferramenta por arquitetura fechada, desenho fino de ingestão pendente do `/define`. Achados já levantados:
+> - **Datastream confirmado** cobrindo Postgres + Oracle + MongoDB → **BigQuery** (merge automático via Storage Write API) e → **BigLake Iceberg tables** diretamente (destino nativo — simplifica o que a v1.2/1.3 assumia, que previa um hop manual via GCS + Dataproc/Dataflow para materializar Iceberg).
+> - **Pendência real:** Datastream **não tem Pub/Sub como destino** (só BigQuery, Cloud Storage e BigLake Iceberg). Para o Kappa GCP, a via correta é **Debezium Server → Pub/Sub direto** (conectividade nativa documentada, sem Kafka no meio) — única exceção deliberada à regra "só ferramenta nativa da cloud" nesta fase; decisão a confirmar no `/define`.
+> - Datastream não garante ordenação nativamente, mas entrega metadados por evento suficientes para reconstruir ordem — mapear esses metadados para o `cdc_sequence` canônico é trabalho de design ainda não feito.
+> - Datastream ignora delete em cascata e `TRUNCATE` — se o ShadowTraffic gerar delete cascateando pedido→itens, isso não propaga automaticamente; fica registrado como risco a mitigar no `/define`.
 
 | Ordem | Arquitetura | Ferramenta principal |
 |---|---|---|
@@ -161,3 +209,6 @@ Implementar as arquiteturas **Warehouse**, **Lakehouse** e **Kappa**, reaproveit
 | 1.1 | Setembro/2026 | Renomeado para `docs/ROADMAP_ARQUITETURA_MULTICLOUD.md`. Fase 0 detalhada com status real (Ondas 1-2 concluídas) e nova subseção "Onda 3 — Diversificação de fontes" capturando o brainstorm de expansão para Postgres+Oracle+MongoDB+MinIO com CDC real. Estimativa de norte temporal e lacunas de conhecimento atualizadas de acordo |
 | 1.2 | Setembro/2026 | Esclarecido que a topologia de 4 sistemas e Airbyte+Debezium são específicos da Fase 0/1 (Azure). Novos princípios "Portabilidade de motor por camada" e "Ingestão/CDC por fase": nas Fases 2/3, Oracle e MinIO são substituídos pelos motores relacionais e object storage nativos de cada cloud, e a ingestão passa a ser nativa (AWS DMS/MSK Connect; GCP Datastream) em vez de Airbyte/Debezium. Adicionado requisito de contrato canônico de metadados de CDC na Bronze, para a Silver não depender do formato específico de cada ferramenta de ingestão |
 | 1.3 | Setembro/2026 | Brainstorm da Onda 3 formalizado (`/brainstorm` → `.claude/sdd/features/BRAINSTORM_DIVERSIFICACAO_FONTES_UBEREATS.md`). Alocação final: Pedido, Pagamento, Item de Pedido e Recibo migram para o Oracle (não ficam no MinIO como cogitado inicialmente), porque os logs append-only `kafka/status`/`kafka/events` são aposentados em favor de mutação real capturada por CDC. Segundo MinIO descartado definitivamente. Adicionado sequenciamento em 3 etapas (Postgres/Motorista → Oracle plumbing → Oracle/Pedido+Pagamento) para isolar o risco do mecanismo de mutação, nunca testado neste projeto |
+| 1.4 | Setembro/2026 | Rodada de revisão adversarial da Fase 1/Azure fechada (log em `adversarial-reply.md`). Decisões: Synapse **Dedicated SQL Pool** (não Serverless — não suporta DML/MERGE/SCD2; não Fabric — critério de mercado). Databricks **Free Edition** confirmado (Terraform não provisiona o workspace; DAB validado via Service Principal/PAT). Nova subseção "Fase 1 — Arquitetura de Ingestão": dois trilhos deliberados — real-time (Airbyte OSS CDC/Postgres + Debezium-LogMiner/Oracle + notificação Kafka nativa/MinIO, tudo via Event Hub, alimentando Databricks Structured Streaming e Stream Analytics) e batch (Airbyte modo Standard/snapshot → ADLS Gen2 CSV, só para o Synapse). Decisão explícita de **não** unificar tudo num trilho batch único, para preservar a lacuna de conhecimento da Onda 3 (CDC real multi-motor) e a legitimidade do Kappa. Fases 2 (AWS) e 3 (GCP) marcadas como **🔶 sob avaliação**, com achados preliminares registrados (DMS unifica Postgres/Oracle/Mongo→Redshift/S3/Kinesis, mas Kinesis não fala protocolo Kafka; Datastream unifica Postgres/Oracle/Mongo→BigQuery/BigLake Iceberg diretamente, mas não alcança Pub/Sub) — desenho fino de ingestão de cada fase permanece pendente do respectivo `/define` |
+| 1.5 | Setembro/2026 | Brainstorm de ingestão da Fase 2/AWS formalizado (`/brainstorm` → `.claude/sdd/features/BRAINSTORM_INGESTAO_AWS_FASE2.md`), fechando a pendência "🔶 sob avaliação" da v1.4. Decisões: dois trilhos separados (mesmo princípio da Fase 1) — real-time via **DMS ongoing replication → Kinesis Data Streams nativo** (Postgres/Oracle) e **notificação de bucket do MinIO (Webhook) → Lambda ponte → Kinesis**; batch via **DMS → S3** (2ª task para Postgres/Oracle, task única full load para MongoDB estático) e **AWS DataSync** (MinIO, via location "Self-managed object storage" — DMS não tem conector para object storage genérico). Redshift e Glue/Athena passam a ler só do S3 (sem target DMS nativo direto no Redshift), mesmo padrão `COPY INTO` da Fase 1. **MSK descartado explicitamente** por não ser serverless (contraria o princípio de custo da Seção 2). MongoDB (estático) não entra pelo Kinesis, mas **é consumido pelo Kappa via lookup/enriquecimento** do consumidor (Flink/Lambda) contra a cópia já aterrissada no S3/Bronze — sem 2ª cópia nem caminho de ingestão dedicado |
+| 1.6 | Setembro/2026 | `/define` da Fase 2/AWS resolveu uma ambiguidade entre o brainstorm (v1.5) e o princípio "Portabilidade de motor por camada" (v1.2): decidido que a Fase 2 **reaproveita os mesmos sistemas self-hosted da Fase 0** (Oracle, MinIO, Postgres, MongoDB em Docker/ShadowTraffic) como fonte via ingestão de rede (DMS/DataSync), em vez de substituí-los por motores nativos AWS (RDS/S3 direto) como a v1.2 previa originalmente. Princípio da Seção 2 atualizado para refletir essa decisão, explicitamente escopada à Fase 2 — a Fase 3 (GCP) mantém a redação original da v1.2 até seu próprio `/define`. Nova exigência registrada: conectividade de rede da AWS até os containers locais (VPN/IP público/túnel) |

@@ -1,0 +1,7 @@
+# Dependências de desenvolvimento/teste das Lambdas da Fase 2 (AWS) — ver
+# .claude/sdd/features/DESIGN_INGESTAO_AWS_FASE2.md. boto3 já vem embutido no
+# runtime do AWS Lambda (não precisa ir no zip de deploy); aqui serve só para
+# rodar os testes locais (tests/aws/) com moto mockando os serviços AWS.
+boto3==1.43.92
+moto==5.2.3
+pytest==9.1.1

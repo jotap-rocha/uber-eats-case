@@ -243,3 +243,17 @@ output/
 # a regra generica "lib/" (Python packaging, topo do arquivo) engole o diretorio inteiro.
 !scripts/lib/
 !scripts/lib/**
+
+# Terraform (infra/aws/, e futuras fases Azure/GCP) — binários de provider e state
+# nunca versionados; .terraform.lock.hcl fica versionado (não ignorado).
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+
+# Artefatos de build das Lambdas (zips gerados por data "archive_file")
+infra/**/.build/
+
