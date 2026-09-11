@@ -5,7 +5,7 @@
 | **Feature** | INGESTAO_AWS_FASE2 |
 | **Fase do roadmap** | Fase 2 — AWS (`docs/ROADMAP_ARQUITETURA_MULTICLOUD.md`) |
 | **Depende de** | Fase 0 (4 sistemas de origem: Postgres, Oracle, MongoDB, MinIO — `BRAINSTORM_DIVERSIFICACAO_FONTES_UBEREATS.md`), Fase 1/Azure (padrão de referência: dois trilhos separados) |
-| **Status** | ✅ Brainstorm concluído |
+| **Status** | ✅ Shipped |
 | **Data** | 2026-09-10 |
 
 ---
@@ -149,6 +149,6 @@ MinIO    ──AWS DataSync (sync agendado)────────────�
 
 ---
 
-## Status: ✅ Brainstorm concluído
+## Status: ✅ Shipped
 
-**Revisão:** Brainstorm conduzido nesta sessão via `/brainstorm`, resolvendo a pendência "🔶 sob avaliação" registrada em `docs/ROADMAP_ARQUITETURA_MULTICLOUD.md` (Fase 2 — AWS). Próximo passo: `/define .claude/sdd/features/BRAINSTORM_INGESTAO_AWS_FASE2.md`.
+**Revisão:** Brainstorm conduzido nesta sessão via `/brainstorm`, resolvendo a pendência "🔶 sob avaliação" registrada em `docs/ROADMAP_ARQUITETURA_MULTICLOUD.md` (Fase 2 — AWS). Shipped e arquivado — ver `SHIPPED_2026-09-10.md` nesta mesma pasta.

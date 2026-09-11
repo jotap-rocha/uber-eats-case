@@ -10,7 +10,9 @@ Pipeline completo de engenharia de dados construido como portfolio profissional,
 
 | Componente | Descricao | Observacao |
 |------------|-----------|------------|
-| `src/` | Codigo-fonte principal | Ajuste conforme a estrutura real do projeto |
+| `src/` | Codigo-fonte principal | `src/aws/` — Lambdas da ingestao Fase 2 (ver `infra/aws/`) |
+| `infra/` | Infraestrutura como codigo (Terraform) | `infra/aws/fase2-ingestao/` — DMS, Kinesis, DataSync, Redshift, Glue, Lambdas |
+| `tests/` | Testes automatizados | `tests/aws/` — testes das Lambdas (`pytest`, `moto`); ver `requirements-aws.txt` |
 | `scripts/` | Scripts auxiliares | Validacoes, automacoes e utilitarios |
 | `docs/` | Documentacao complementar | Indice em `docs/00-INDEX.md` |
 | `.cursor/` | Agentes, KB, comandos e SDD | Fonte canonica do formato agentic |

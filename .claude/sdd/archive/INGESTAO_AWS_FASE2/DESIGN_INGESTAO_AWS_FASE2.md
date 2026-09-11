@@ -4,7 +4,7 @@
 |-------|-------|
 | **Feature** | INGESTAO_AWS_FASE2 |
 | **Input** | `.claude/sdd/features/DEFINE_INGESTAO_AWS_FASE2.md` |
-| **Status** | ✅ Complete (Built) |
+| **Status** | ✅ Shipped |
 | **Data** | 2026-09-10 |
 
 ---
@@ -427,8 +427,8 @@ resource "aws_datasync_task" "minio_to_s3" {
 
 ---
 
-## Status: ✅ Complete (Built)
+## Status: ✅ Shipped
 
-**Build report:** `.claude/sdd/reports/BUILD_REPORT_INGESTAO_AWS_FASE2.md` — manifesto completo implementado; `terraform validate` não executou por limitação do ambiente de build (não do código, ver relatório).
+**Build report:** `BUILD_REPORT_INGESTAO_AWS_FASE2.md` (nesta pasta) — manifesto completo implementado; `terraform validate` não executou por limitação do ambiente de build (não do código, ver relatório).
 
-**Próximo passo:** `/ship .claude/sdd/features/DEFINE_INGESTAO_AWS_FASE2.md`
+**Próximo passo:** ✅ SHIPPED — ver `SHIPPED_2026-09-10.md` nesta mesma pasta.

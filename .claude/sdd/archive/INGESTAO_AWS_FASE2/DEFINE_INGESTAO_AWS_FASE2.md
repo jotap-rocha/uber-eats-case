@@ -5,7 +5,7 @@
 | **Feature** | INGESTAO_AWS_FASE2 |
 | **Fase do roadmap** | Fase 2 — AWS (`docs/ROADMAP_ARQUITETURA_MULTICLOUD.md`) |
 | **Input** | `.claude/sdd/features/BRAINSTORM_INGESTAO_AWS_FASE2.md` |
-| **Status** | ✅ Complete (Built) |
+| **Status** | ✅ Shipped |
 | **Data** | 2026-09-10 |
 
 ---
@@ -160,9 +160,10 @@ Esta feature introduz ingestão nova para o medalhão (Bronze via S3) e um trilh
 | 1.1 | 2026-09-10 | Adicionado sequenciamento em 3 etapas (Warehouse → Lakehouse → Kappa), a pedido do usuário, para não sobrecarregar os bancos on-premise com leituras de CDC concorrentes. A 2ª task DMS por fonte (target Kinesis) passa a existir só na Etapa 3 — Assumption A-003 atualizada para refletir que essa janela de risco é temporária, não permanente |
 | 1.2 | 2026-09-10 | `/design` concluído (`DESIGN_INGESTAO_AWS_FASE2.md`). A-001 (conectividade de rede) resolvida com a decisão de migrar temporariamente os sistemas da Fase 0 para uma EC2 dentro da VPC da Fase 2; A-002 (metadados de ordenação do DMS) recebeu uma proposta técnica a confirmar no `/build`; escolhido AWS Lambda (não Flink gerenciado) como consumidor do Kappa |
 | 1.3 | 2026-09-10 | `/build` concluído (`BUILD_REPORT_INGESTAO_AWS_FASE2.md`). Manifesto completo implementado (Terraform, 2 Lambdas, SQL, docs); 10/10 testes unitários passaram (moto mockando Kinesis/S3); `terraform validate` não executou por limitação do ambiente sandboxado (handshake TLS local), não do código — pendente rodar num ambiente normal antes do `apply` real |
+| 1.4 | 2026-09-10 | `/ship` concluído. Shipped com validação de infraestrutura real **pendente** — a conta AWS ainda não foi aberta, diferente das Ondas 1-3 que só foram shipadas após validação contra sistemas rodando de verdade. Decisão explícita do usuário: arquivar o código/design agora, documentando a limitação, em vez de segurar o `/ship` até a abertura da conta |
 
 ---
 
-## Status: ✅ Complete (Defined)
+## Status: ✅ Shipped
 
-**Próximo passo:** `/ship .claude/sdd/features/DEFINE_INGESTAO_AWS_FASE2.md`
+**Próximo passo:** ✅ SHIPPED — ver `SHIPPED_2026-09-10.md` nesta mesma pasta. Validação contra AWS real fica para quando a conta for aberta (início efetivo da Fase 2).
