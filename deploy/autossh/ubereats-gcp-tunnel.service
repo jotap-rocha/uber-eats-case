@@ -1,0 +1,20 @@
+[Unit]
+Description=Tunel SSH reverso Fase 3/GCP (Postgres/Oracle/MongoDB -> bastion GCE)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Environment=AUTOSSH_GATETIME=0
+ExecStart=/usr/bin/autossh -M 0 -N \
+  -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" \
+  -o "ExitOnForwardFailure yes" \
+  -R 15432:localhost:5432 \
+  -R 11521:localhost:1521 \
+  -R 27017:localhost:27017 \
+  -i /etc/ubereats-gcp/bastion_key \
+  tunnel-user@BASTION_PUBLIC_IP
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

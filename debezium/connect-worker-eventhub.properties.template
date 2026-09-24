@@ -1,0 +1,26 @@
+# Worker config de um cluster Kafka Connect DEDICADO para a Fase 1/Azure,
+# separado do "kafka-connect" existente (que continua apontado para o
+# Redpanda local, usado pela Fase 0/Onda 3 -- nao deve ser reaproveitado
+# diretamente, ou quebraria pipeline/bronze/ingest_oracle_orders.sql hoje).
+# Ver BUILD_REPORT_INGESTAO_AZURE_FASE1.md, "Desvios do DESIGN".
+
+bootstrap.servers=REPLACE_EVENTHUB_NAMESPACE.servicebus.windows.net:9093
+security.protocol=SASL_SSL
+sasl.mechanism=PLAIN
+sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="$ConnectionString" password="REPLACE_EVENTHUB_NAMESPACE_CONNECTION_STRING";
+
+group.id=ubereats-fase1-connect-cluster
+offset.storage.topic=connect-offsets-azure
+config.storage.topic=connect-configs-azure
+status.storage.topic=connect-status-azure
+offset.storage.replication.factor=1
+config.storage.replication.factor=1
+status.storage.replication.factor=1
+
+key.converter=org.apache.kafka.connect.json.JsonConverter
+value.converter=org.apache.kafka.connect.json.JsonConverter
+key.converter.schemas.enable=false
+value.converter.schemas.enable=false
+
+rest.port=8084
+plugin.path=/kafka/connect

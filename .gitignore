@@ -257,3 +257,6 @@ crash.*.log
 # Artefatos de build das Lambdas (zips gerados por data "archive_file")
 infra/**/.build/
 
+
+# Worktrees criados por sessoes do Claude Code
+.claude/worktrees/

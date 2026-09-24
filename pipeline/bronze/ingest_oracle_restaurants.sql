@@ -1,12 +1,14 @@
--- 1. Le o topico Kafka (Debezium publica o envelope sem wrapper de schema --
---    value.converter.schemas.enable=false no connector)
+-- 1. Le os arquivos gravados pelo Kafka Connect Sink Connector no ADLS
+--    Gen2/Bronze (Debezium publica o envelope sem wrapper de schema --
+--    value.converter.schemas.enable=false no connector). Fase 1/Azure:
+--    fonte trocada de read_kafka()/Redpanda para read_files() -- ver
+--    DESIGN_INGESTAO_AZURE_FASE1.md, Decisao 1/3.
 CREATE TEMPORARY STREAMING LIVE VIEW view_oracle_restaurants_raw AS
 SELECT
   CAST(value AS STRING) AS json_value
-FROM STREAM read_kafka(
-  bootstrapServers => 'redpanda:9092',
-  subscribe => 'oracle.UBEREATS.RESTAURANTS',
-  startingOffsets => 'earliest'
+FROM STREAM read_files(
+  path => 'abfss://bronze@REPLACE_STORAGE_ACCOUNT.dfs.core.windows.net/oracle/oracle.UBEREATS.RESTAURANTS/',
+  format => 'text'
 );
 
 -- =================================================================

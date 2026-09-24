@@ -3,6 +3,8 @@ services:
   postgres-ubereats:
     image: postgres:15
     container_name: postgres-ubereats
+    mem_limit: 768m
+    cpus: 0.5
     ports:
       - "5432:5432"
     env_file: ./gen/.env
@@ -27,6 +29,8 @@ services:
   minio-ubereats:
     image: minio/minio:latest
     container_name: minio-ubereats
+    mem_limit: 512m
+    cpus: 0.5
     ports:
       - "9000:9000" # API
       - "9001:9001" # Console
@@ -47,6 +51,8 @@ services:
   minio-setup:
     image: minio/mc
     container_name: minio-setup
+    mem_limit: 128m
+    cpus: 0.25
     # Espera o MinIO ficar "saudável"
     depends_on:
       minio-ubereats:
@@ -65,6 +71,8 @@ services:
   gen-unified:
     image: shadowtraffic/shadowtraffic:latest
     container_name: gen-unified
+    mem_limit: 1.5g
+    cpus: 1.0
     depends_on:
       postgres-ubereats:
         condition: service_healthy
@@ -82,6 +90,8 @@ services:
   oracle-ubereats:
     image: gvenzl/oracle-free:23.4-full
     container_name: oracle-ubereats
+    mem_limit: 3g
+    cpus: 1.5
     ports:
       - "1521:1521"
     env_file: ./gen/.env
@@ -135,6 +145,8 @@ services:
   mongo-ubereats:
     image: mongo:7
     container_name: mongo-ubereats
+    mem_limit: 512m
+    cpus: 0.5
     ports:
       - "27017:27017"
     env_file: ./gen/.env
@@ -142,8 +154,87 @@ services:
       - mongo_data:/data/db
       - ./mongo/init:/docker-entrypoint-initdb.d:ro
 
+  # --- 8. DEBEZIUM SERVER (Fase 3/GCP, Etapa 3 — trilho real-time -> Pub/Sub)
+  #        Decisao 2 do DESIGN_INGESTAO_GCP_FASE3.md: uma instancia por fonte,
+  #        ja que o Debezium Server so suporta 1 conector por processo. ---
+  debezium-server-postgres:
+    image: debezium/server:3.0
+    container_name: debezium-server-postgres
+    depends_on:
+      postgres-ubereats:
+        condition: service_healthy
+    env_file: ./gen/.env
+    volumes:
+      - ./src/gcp/debezium_server_postgres/application.properties:/debezium/conf/application.properties:ro
+      - ./gen/gcp-credentials.json:/debezium/gcp-credentials.json:ro
+      - debezium_postgres_data:/debezium/data
+
+  debezium-server-oracle:
+    image: debezium/server:3.0
+    container_name: debezium-server-oracle
+    depends_on:
+      oracle-ubereats:
+        condition: service_healthy
+    env_file: ./gen/.env
+    volumes:
+      - ./src/gcp/debezium_server_oracle/application.properties:/debezium/conf/application.properties:ro
+      - ./gen/gcp-credentials.json:/debezium/gcp-credentials.json:ro
+      - debezium_oracle_data:/debezium/data
+
+  # --- 9. STORAGE TRANSFER SERVICE AGENT (Fase 3/GCP, Etapa 1 — MinIO -> GCS)
+  #        Decisao 3 do DESIGN_INGESTAO_GCP_FASE3.md: agente containerizado
+  #        local, sem VM GCP dedicada (diferente da AMI do AWS DataSync). ---
+  sts-agent:
+    image: gcr.io/cloud-ingest/tsops-agent:latest
+    container_name: sts-agent
+    depends_on:
+      minio-setup:
+        condition: service_completed_successfully
+    env_file: ./gen/.env
+    volumes:
+      - ./gen/gcp-credentials.json:/gcp-credentials.json:ro
+    command: >
+      --project-id=${STS_PROJECT_ID}
+      --agent-pool=${STS_AGENT_POOL_ID}
+      --creds-file=/gcp-credentials.json
+
+  # --- 10. KAFKA CONNECT DEDICADO (Fase 1/Azure, Etapas 2/4 -- Event Hub como
+  #         broker). Cluster SEPARADO do "kafka-connect" (item 6), que continua
+  #         apontado para o Redpanda local -- nao reaproveitado diretamente
+  #         para nao quebrar pipeline/bronze/ingest_oracle_orders.sql hoje.
+  #         Ver DESIGN_INGESTAO_AZURE_FASE1.md, Decisao 1/2, e
+  #         BUILD_REPORT_INGESTAO_AZURE_FASE1.md, "Desvios do DESIGN". ---
+  kafka-connect-azure:
+    image: quay.io/debezium/connect:3.0
+    container_name: kafka-connect-azure
+    depends_on:
+      - oracle-ubereats
+    env_file: ./gen/.env
+    environment:
+      - BOOTSTRAP_SERVERS=${AZURE_EVENTHUB_NAMESPACE}.servicebus.windows.net:9093
+      - GROUP_ID=ubereats-fase1-connect-cluster
+      - CONFIG_STORAGE_TOPIC=connect-configs-azure
+      - OFFSET_STORAGE_TOPIC=connect-offsets-azure
+      - STATUS_STORAGE_TOPIC=connect-status-azure
+      - REST_PORT=8084
+      - CONNECT_SECURITY_PROTOCOL=SASL_SSL
+      - CONNECT_SASL_MECHANISM=PLAIN
+      - CONNECT_SASL_JAAS_CONFIG=org.apache.kafka.common.security.plain.PlainLoginModule required username="$$ConnectionString" password="${AZURE_EVENTHUB_CONNECTION_STRING}";
+      - CONNECT_PRODUCER_SECURITY_PROTOCOL=SASL_SSL
+      - CONNECT_PRODUCER_SASL_MECHANISM=PLAIN
+      - CONNECT_PRODUCER_SASL_JAAS_CONFIG=org.apache.kafka.common.security.plain.PlainLoginModule required username="$$ConnectionString" password="${AZURE_EVENTHUB_CONNECTION_STRING}";
+      - CONNECT_CONSUMER_SECURITY_PROTOCOL=SASL_SSL
+      - CONNECT_CONSUMER_SASL_MECHANISM=PLAIN
+      - CONNECT_CONSUMER_SASL_JAAS_CONFIG=org.apache.kafka.common.security.plain.PlainLoginModule required username="$$ConnectionString" password="${AZURE_EVENTHUB_CONNECTION_STRING}";
+    ports:
+      - "8084:8084"
+    volumes:
+      - ./debezium/hadoop-conf:/etc/kafka-connect-azure/hadoop-conf:ro
+
 volumes:
   postgres_data:
   minio_data:
   oracle_data:
   mongo_data:
+  debezium_postgres_data:
+  debezium_oracle_data:

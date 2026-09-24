@@ -1,10 +1,14 @@
+-- Fase 1/Azure: fonte trocada de read_kafka()/Redpanda para read_files()
+-- sobre o ADLS Gen2/Bronze (Kafka Connect Sink Connector consumindo o mesmo
+-- topico Event Hub que a captura real-time publica -- DESIGN_INGESTAO_AZURE_FASE1.md,
+-- Decisao 1/3). format=>'text' preserva a coluna `value` e o parsing
+-- `json_value:after.X` abaixo inalterados. Pipeline roda em modo Triggered.
 CREATE TEMPORARY STREAMING LIVE VIEW view_oracle_orders_raw AS
 SELECT
   CAST(value AS STRING) AS json_value
-FROM STREAM read_kafka(
-  bootstrapServers => 'redpanda:9092',
-  subscribe => 'oracle.UBEREATS.ORDERS',
-  startingOffsets => 'earliest'
+FROM STREAM read_files(
+  path => 'abfss://bronze@REPLACE_STORAGE_ACCOUNT.dfs.core.windows.net/oracle/oracle.UBEREATS.ORDERS/',
+  format => 'text'
 );
 
 -- =================================================================

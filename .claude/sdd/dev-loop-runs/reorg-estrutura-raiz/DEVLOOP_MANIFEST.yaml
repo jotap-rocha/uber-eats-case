@@ -1,0 +1,23 @@
+schema_version: "1.0"
+run_id: "reorg-estrutura-raiz"
+created_at: "2026-09-21T04:23:12Z"
+branch_or_feature: ""
+quality_tier: production
+development_level: L2
+gate_decision: escalate_sdd
+prompt_file: ".claude/dev/tasks/PROMPT_reorg-estrutura-raiz.md"
+round: 0
+
+artifacts:
+  requirements: "artifacts/reorg-estrutura-raiz_requirements.md"
+  design: "artifacts/reorg-estrutura-raiz_design.md"
+
+# pending | in_progress | pass | fail | blocked | waived
+phases:
+  gate: { status: blocked, updated_at: "2026-09-21T04:23:12Z" }
+  requirements: { status: pending, updated_at: null }
+  design: { status: pending, updated_at: null }
+  craft: { status: pending, updated_at: null }
+  prompt_review: { status: pending, updated_at: null }
+  execute: { status: pending, updated_at: null }
+  reflect: { status: pending, updated_at: null }

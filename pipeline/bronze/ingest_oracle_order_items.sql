@@ -1,10 +1,10 @@
+-- Fase 1/Azure: ver ingest_oracle_orders.sql (mesma mudanca de fonte, Decisao 1/3)
 CREATE TEMPORARY STREAMING LIVE VIEW view_oracle_order_items_raw AS
 SELECT
   CAST(value AS STRING) AS json_value
-FROM STREAM read_kafka(
-  bootstrapServers => 'redpanda:9092',
-  subscribe => 'oracle.UBEREATS.ORDER_ITEMS',
-  startingOffsets => 'earliest'
+FROM STREAM read_files(
+  path => 'abfss://bronze@REPLACE_STORAGE_ACCOUNT.dfs.core.windows.net/oracle/oracle.UBEREATS.ORDER_ITEMS/',
+  format => 'text'
 );
 
 -- =================================================================

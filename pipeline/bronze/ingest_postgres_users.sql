@@ -1,4 +1,6 @@
 -- 1. Cria uma VIEW de preparação
+-- Fase 1/Azure: mesma mudanca de fonte de ingest_postgres_drivers.sql --
+-- ver DESIGN_INGESTAO_AZURE_FASE1.md, Decisao 1/3.
 CREATE TEMPORARY STREAMING LIVE VIEW view_pre_processed_users AS
 SELECT
   *,
@@ -7,7 +9,10 @@ SELECT
   'postgres ubereats'                   AS source_system,
   'public.drivers'                      AS source_table
 FROM
-  STREAM(uber_eats.raw.users);
+  STREAM read_files(
+    path => 'abfss://bronze@REPLACE_STORAGE_ACCOUNT.dfs.core.windows.net/postgres/users/',
+    format => 'json'
+  );
 
 -- =================================================================
 

@@ -1,4 +1,9 @@
--- 1. Cria uma VIEW de preparação 
+-- 1. Cria uma VIEW de preparação
+-- Fase 1/Azure: fonte trocada do sync direto Airbyte->Databricks (Fase 0)
+-- para o landing consolidado no ADLS Gen2/Bronze (Kafka Connect Sink
+-- Connector consumindo o topico Event Hub que o Airbyte real-time publica --
+-- ver DESIGN_INGESTAO_AZURE_FASE1.md, Decisao 1/3). Pipeline roda em modo
+-- Triggered (batch), nao Continuous -- APPLY CHANGES/SEQUENCE BY inalterados.
 CREATE TEMPORARY STREAMING LIVE VIEW view_drivers_pre_processed AS
 SELECT
   *,
@@ -14,7 +19,10 @@ SELECT
   CAST(_ab_cdc_lsn AS STRING) AS cdc_sequence,
   'postgres-ubereats' AS cdc_source_system
 FROM
-  STREAM(uber_eats.raw.drivers);
+  STREAM read_files(
+    path => 'abfss://bronze@REPLACE_STORAGE_ACCOUNT.dfs.core.windows.net/postgres/drivers/',
+    format => 'json'
+  );
 
 -- =================================================================
 
