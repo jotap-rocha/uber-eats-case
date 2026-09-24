@@ -1,0 +1,9 @@
+# Dependências de desenvolvimento/teste do código da Fase 3 (GCP) — ver
+# DESIGN_INGESTAO_GCP_FASE3.md. functions-framework/google-cloud-pubsub já vem
+# no runtime da Cloud Function (não precisa ir no zip de deploy); aqui serve
+# só para rodar os testes locais (tests/gcp/) com mocks dos clientes GCP.
+functions-framework==3.*
+google-cloud-pubsub==2.*
+google-cloud-bigquery==3.*
+apache-beam==2.*
+pytest==9.1.1
