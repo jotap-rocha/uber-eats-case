@@ -1,0 +1,31 @@
+{
+  "name": "oracle-ubereats-connector-azure",
+  "config": {
+    "connector.class": "io.debezium.connector.oracle.OracleConnector",
+    "tasks.max": "1",
+    "database.hostname": "oracle-ubereats",
+    "database.port": "1521",
+    "database.user": "c##dbzuser",
+    "database.password": "REPLACE_ORACLE_DBZ_PASSWORD",
+    "database.dbname": "FREE",
+    "database.pdb.name": "FREEPDB1",
+    "topic.prefix": "oracle",
+    "schema.include.list": "UBEREATS",
+    "table.include.list": "UBEREATS.RESTAURANTS,UBEREATS.PRODUCTS,UBEREATS.INVENTORY,UBEREATS.ORDERS,UBEREATS.PAYMENTS,UBEREATS.ORDER_ITEMS,UBEREATS.RECEIPTS",
+    "log.mining.strategy": "online_catalog",
+    "snapshot.mode": "initial",
+    "decimal.handling.mode": "double",
+    "schema.history.internal.kafka.bootstrap.servers": "REPLACE_EVENTHUB_NAMESPACE.servicebus.windows.net:9093",
+    "schema.history.internal.kafka.topic": "schema-changes.oracle-ubereats-azure",
+    "schema.history.internal.producer.security.protocol": "SASL_SSL",
+    "schema.history.internal.producer.sasl.mechanism": "PLAIN",
+    "schema.history.internal.producer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$ConnectionString\" password=\"REPLACE_EVENTHUB_NAMESPACE_CONNECTION_STRING\";",
+    "schema.history.internal.consumer.security.protocol": "SASL_SSL",
+    "schema.history.internal.consumer.sasl.mechanism": "PLAIN",
+    "schema.history.internal.consumer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$ConnectionString\" password=\"REPLACE_EVENTHUB_NAMESPACE_CONNECTION_STRING\";",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter.schemas.enable": "false"
+  }
+}

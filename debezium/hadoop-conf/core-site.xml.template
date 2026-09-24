@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Autenticacao OAuth via Service Principal (DESIGN, Decisao 4), montado no
+  container kafka-connect-azure em /etc/kafka-connect-azure/hadoop-conf/,
+  usado pelo HDFS 2 Sink Connector (debezium/adls-sink-connector.json.template)
+  para escrever em abfss:// (ADLS Gen2 implementa a interface Hadoop FileSystem).
+-->
+<configuration>
+  <property>
+    <name>fs.azure.account.auth.type</name>
+    <value>OAuth</value>
+  </property>
+  <property>
+    <name>fs.azure.account.oauth.provider.type</name>
+    <value>org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider</value>
+  </property>
+  <property>
+    <name>fs.azure.account.oauth2.client.id</name>
+    <value>REPLACE_AZURE_SP_CLIENT_ID</value>
+  </property>
+  <property>
+    <name>fs.azure.account.oauth2.client.secret</name>
+    <value>REPLACE_AZURE_SP_CLIENT_SECRET</value>
+  </property>
+  <property>
+    <name>fs.azure.account.oauth2.client.endpoint</name>
+    <value>https://login.microsoftonline.com/REPLACE_AZURE_TENANT_ID/oauth2/token</value>
+  </property>
+</configuration>

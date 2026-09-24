@@ -1,0 +1,19 @@
+{
+  "name": "adls-bronze-sink-connector",
+  "config": {
+    "connector.class": "io.confluent.connect.hdfs.HdfsSinkConnector",
+    "tasks.max": "2",
+    "topics": "postgres.public.drivers,postgres.public.users,oracle.UBEREATS.ORDERS,oracle.UBEREATS.PAYMENTS,oracle.UBEREATS.RECEIPTS,oracle.UBEREATS.ORDER_ITEMS,oracle.UBEREATS.INVENTORY,oracle.UBEREATS.PRODUCTS,oracle.UBEREATS.RESTAURANTS",
+    "store.url": "abfss://bronze@REPLACE_STORAGE_ACCOUNT.dfs.core.windows.net/",
+    "format.class": "io.confluent.connect.hdfs.json.JsonFormat",
+    "flush.size": "100",
+    "rotate.interval.ms": "60000",
+    "hadoop.conf.dir": "/etc/kafka-connect-azure/hadoop-conf",
+    "topics.dir": "",
+    "logs.dir": "/tmp/adls-sink-wal",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter.schemas.enable": "false"
+  }
+}
