@@ -19,4 +19,4 @@ Write-Host ""
 Write-Host "[OK] Airbyte iniciado." -ForegroundColor Green
 Write-Host "   -> UI: http://localhost:8000" -ForegroundColor White
 Write-Host "   -> Pode levar 1-2 minutos ate a UI responder." -ForegroundColor Gray
-Write-Host "   -> Para desligar: .\scripts\stop-airbyte.ps1" -ForegroundColor Gray
+Write-Host "   -> Para desligar: .\scripts\infra\stop-airbyte.ps1" -ForegroundColor Gray

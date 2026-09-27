@@ -21,7 +21,7 @@ Pipeline completo de engenharia de dados construido como portfolio profissional,
 Este projeto não possui hoje uma suite de testes de aplicação na raiz. Use os comandos abaixo como verificação padrão:
 
 ```bash
-python3 scripts/validate-agent-router.py
+python3 scripts/tooling/validate-agent-router.py
 python3 install_dev_loop/install_dev_loop.py --dry-run --target .
 ```
 
@@ -69,5 +69,5 @@ Leia `.claude/dev/_index.md` para detalhes de uso, recuperação de sessão e op
 - Responder em português brasileiro, salvo pedido explícito em outro idioma.
 - Manter mudanças pequenas, focadas e alinhadas ao padrão existente.
 - Não commitar segredos, `.env` real nem inventário local de infraestrutura.
-- Ao alterar agentes, comandos ou roteamento, validar com `python3 scripts/validate-agent-router.py`.
+- Ao alterar agentes, comandos ou roteamento, validar com `python3 scripts/tooling/validate-agent-router.py`.
 - Quando a mudança afetar fluxo de uso, atualizar documentação em `CONTEXT.md`, `docs/00-INDEX.md` ou `.claude/dev/_index.md`, conforme o escopo.

@@ -7,7 +7,7 @@
 
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 CURSOR="${REPO_ROOT}/.cursor"
 BUNDLE="${REPO_ROOT}/install_dev_loop/workflow_bundle/cursor"
 ASSETS="${REPO_ROOT}/install_dev_loop/assets"
@@ -172,5 +172,5 @@ log "sync-workflow-bundle: sincronização concluída"
 
 if [[ "${RUN_VALIDATE}" -eq 1 ]]; then
   log "sync-workflow-bundle: validando paridade..."
-  python3 "${REPO_ROOT}/scripts/validate-workflow-bundle.py"
+  python3 "${REPO_ROOT}/scripts/tooling/validate-workflow-bundle.py"
 fi

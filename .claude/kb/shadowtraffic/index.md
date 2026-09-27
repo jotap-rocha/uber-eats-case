@@ -28,7 +28,7 @@ Base de conhecimento específica do ShadowTraffic **como usado neste repositóri
 
 ## Fontes de verdade
 
-- `scripts/toggle-shadowtraffic.ps1` — liga/desliga `gen-unified` manualmente sem colidir PK (ver `patterns/restart-seguro-startingFrom.md`)
+- `scripts/shadowtraffic/toggle-shadowtraffic.ps1` — liga/desliga `gen-unified` manualmente sem colidir PK (ver `patterns/restart-seguro-startingFrom.md`)
 - `gen/unified/uber-eats.json.template` — config real (17 geradores, 3 connections)
 - `gen/.env.template` — variáveis de ambiente reais (licença, credenciais)
 - `docs/shadowtraffic/README.md` — howto operacional humano (start/stop, troubleshooting) — **não** é fonte de decisão de agente, ver `concepts/licenciamento-e-env.md`

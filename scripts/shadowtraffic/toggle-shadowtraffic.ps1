@@ -34,7 +34,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot  = Split-Path -Parent $PSScriptRoot
+. "$PSScriptRoot\..\lib\shadowtraffic-common.ps1"
+
+$repoRoot  = Get-RepoRoot
 $jsonPath  = "$repoRoot\gen\unified\uber-eats.json"
 $RESTAURANT_TARGET = 500
 
@@ -42,8 +44,6 @@ $logDir      = "$repoRoot\logs"
 $logFile     = "$logDir\shadowtraffic-report.log"
 $reportPid   = "$logDir\report.pid"
 $reportLoop  = "$PSScriptRoot\shadowtraffic-report-loop.ps1"
-
-. "$PSScriptRoot\lib\shadowtraffic-common.ps1"
 
 # ------------------------------------------------------------------------------
 # Helpers proprios deste script

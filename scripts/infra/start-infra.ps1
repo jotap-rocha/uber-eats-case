@@ -104,6 +104,6 @@ Write-Host "   -> Bucket 'uber-eats': Criado automaticamente" -ForegroundColor G
 Write-Host "   -> Mongo: localhost:27017 (satelite Perfil de Restaurante, seed unico)" -ForegroundColor White
 Write-Host ""
 Write-Host "Proximos passos (escolha conforme o que voce vai fazer agora):" -ForegroundColor White
-Write-Host "   -> Gerar dados:        .\scripts\toggle-shadowtraffic.ps1 on" -ForegroundColor Gray
-Write-Host "   -> Rodar CDC/ingestao: .\scripts\toggle-ingestion.ps1 on" -ForegroundColor Gray
+Write-Host "   -> Gerar dados:        .\scripts\shadowtraffic\toggle-shadowtraffic.ps1 on" -ForegroundColor Gray
+Write-Host "   -> Rodar CDC/ingestao: .\scripts\infra\toggle-ingestion.ps1 on" -ForegroundColor Gray
 Write-Host "   -> Ver logs: docker-compose logs -f" -ForegroundColor Gray

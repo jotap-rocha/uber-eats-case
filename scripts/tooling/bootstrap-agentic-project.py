@@ -53,7 +53,7 @@ def parse_args() -> argparse.Namespace:
 def source_root(args: argparse.Namespace) -> Path:
     if args.source:
         return Path(args.source).resolve()
-    return Path(__file__).resolve().parents[1]
+    return Path(__file__).resolve().parents[2]
 
 
 def variables(args: argparse.Namespace) -> dict[str, str]:

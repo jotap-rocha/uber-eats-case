@@ -52,7 +52,7 @@ is ready for day-to-day use by a developer unfamiliar with the project.
 
 ## Exit Criteria
 
-- [x] PROMPT_TEMPLATE.md uses this project's actual test command: `rg "python3 scripts/validate-agent-router.py" .claude/dev/templates/PROMPT_TEMPLATE.md`
+- [x] PROMPT_TEMPLATE.md uses this project's actual test command: `rg "python3 scripts/tooling/validate-agent-router.py" .claude/dev/templates/PROMPT_TEMPLATE.md`
 - [x] A project-specific PROMPT exists in tasks/: `test -f .claude/dev/tasks/PROMPT_HELLO_WORLD.md`
 - [x] CLAUDE.md references Dev Loop: `rg "Dev Loop|/dev" CLAUDE.md`
 - [x] Both agent files present: `test -f .claude/agents/dev/prompt-crafter.md && test -f .claude/agents/dev/dev-loop-executor.md`

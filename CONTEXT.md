@@ -24,7 +24,7 @@ Pipeline completo de engenharia de dados construido como portfolio profissional,
 .\scripts\start-all.ps1
 
 # Validar o projeto
-python3 scripts/validate-agent-router.py
+python3 scripts/tooling/validate-agent-router.py
 ```
 
 ## Ambientes

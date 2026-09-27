@@ -27,9 +27,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot = Split-Path -Parent $PSScriptRoot
+. "$PSScriptRoot\..\lib\shadowtraffic-common.ps1"
 
-. "$PSScriptRoot\lib\shadowtraffic-common.ps1"
+$repoRoot = Get-RepoRoot
 
 function Test-AirbyteRunning {
     $c = docker ps -a --filter "name=airbyte-abctl-control-plane" --format "{{.Names}}"

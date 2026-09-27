@@ -61,7 +61,7 @@ Use `.claude/commands/core/router.md` como ponto de partida. Para assuntos espec
 
 ```bash
 .\scripts\start-all.ps1
-python3 scripts/validate-agent-router.py
+python3 scripts/tooling/validate-agent-router.py
 ```
 
 ## SDD

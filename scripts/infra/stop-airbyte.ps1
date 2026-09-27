@@ -12,4 +12,4 @@ docker stop airbyte-abctl-control-plane
 Write-Host ""
 Write-Host "[OK] Airbyte parado." -ForegroundColor Green
 Write-Host "   -> Configuracao de sources/destinations/connections e preservada." -ForegroundColor Gray
-Write-Host "   -> Para religar: .\scripts\start-airbyte.ps1" -ForegroundColor Gray
+Write-Host "   -> Para religar: .\scripts\infra\start-airbyte.ps1" -ForegroundColor Gray

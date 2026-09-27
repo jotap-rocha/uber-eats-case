@@ -12,7 +12,7 @@ docker-compose stop gen-unified
 Write-Host ""
 Write-Host "[OK] Geradores parados."
 Write-Host "   -> A infraestrutura (Postgres + MinIO) permanece ativa."
-Write-Host "   -> Para reiniciar geradores: .\scripts\start-generators.ps1"
+Write-Host "   -> Para reiniciar geradores: .\scripts\shadowtraffic\start-generators.ps1"
 Write-Host ""
 Write-Host "Motivos para parar geradores:"
 Write-Host "   -> Economizar licenca ShadowTraffic"

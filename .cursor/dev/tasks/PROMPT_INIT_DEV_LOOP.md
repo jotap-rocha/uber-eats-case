@@ -51,7 +51,7 @@ is ready for day-to-day use by a developer unfamiliar with the project.
 
 ## Exit Criteria
 
-- [x] PROMPT_TEMPLATE.md uses this project's actual test command: `rg "python3 scripts/validate-agent-router.py" .cursor/dev/templates/PROMPT_TEMPLATE.md`
+- [x] PROMPT_TEMPLATE.md uses this project's actual test command: `rg "python3 scripts/tooling/validate-agent-router.py" .cursor/dev/templates/PROMPT_TEMPLATE.md`
 - [x] A project-specific PROMPT exists in tasks/: `test -f .cursor/dev/tasks/PROMPT_HELLO_WORLD.md`
 - [x] Cursor context references Dev Loop: `rg "Dev Loop|/dev" .cursor/CURSOR.md`
 - [x] Both agent files present: `test -f .cursor/agents/dev/prompt-crafter.md && test -f .cursor/agents/dev/dev-loop-executor.md`
@@ -79,7 +79,7 @@ max_retries: 2
 circuit_breaker: 3
 small_steps: true
 feedback_loops:
-  - python3 scripts/validate-agent-router.py
+  - python3 scripts/tooling/validate-agent-router.py
   - python3 install_dev_loop/install_dev_loop.py --dry-run --target .
 ```
 

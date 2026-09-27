@@ -98,7 +98,7 @@ This repository now includes a project-specific first PROMPT:
 Expected outcome: create `.claude/dev/examples/HELLO_WORLD_RUN.md` and validate the native repository checks:
 
 ```bash
-python3 scripts/validate-agent-router.py
+python3 scripts/tooling/validate-agent-router.py
 python3 install_dev_loop/install_dev_loop.py --dry-run --target .
 ```
 

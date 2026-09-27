@@ -4,11 +4,21 @@
 #            shadowtraffic-report-loop.ps1 (leitura de .env, contagem por
 #            tabela via Postgres/Oracle). Dot-source, nao executa nada sozinho.
 #
-# Uso:
-#   . "$PSScriptRoot\lib\shadowtraffic-common.ps1"
+# Uso (a partir de um script em scripts/<subpasta>/):
+#   . "$PSScriptRoot\..\lib\shadowtraffic-common.ps1"
 #   $envVars = Get-EnvVars -RepoRoot $repoRoot
 #   $snap = Get-GeneratorSnapshot -EnvVars $envVars
 # ==============================================================================
+
+function Get-RepoRoot {
+    # Resolve a raiz do repo via git (funciona em qualquer profundidade de
+    # scripts/<subpasta>/), com fallback fixo caso git nao esteja no PATH.
+    $root = (git rev-parse --show-toplevel 2>$null)
+    if (-not $root) {
+        $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+    }
+    return $root
+}
 
 function Get-EnvVars {
     param([Parameter(Mandatory = $true)][string]$RepoRoot)
@@ -148,7 +158,7 @@ function Get-GeneratorSnapshot {
 # Chamado por toggle-ingestion.ps1 e start-all.ps1 (nao por start-infra.ps1 --
 # esse fica so nos bancos).
 function Register-OracleConnectorIfNeeded {
-    param([string]$RegisterScript = "$PSScriptRoot\..\..\debezium\register-oracle-connector.ps1")
+    param([string]$RegisterScript = "$PSScriptRoot\..\ingestion\register-oracle-connector.ps1")
 
     Write-Host "[CDC] Verificando connector Debezium Oracle..." -ForegroundColor Cyan
     $connectReady = $false

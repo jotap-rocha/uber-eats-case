@@ -11,7 +11,7 @@
 # ==============================================================================
 
 $scriptFolder = $PSScriptRoot
-$envFile = "$scriptFolder\..\gen\.env"
+$envFile = "$scriptFolder\..\..\gen\.env"
 
 if (-not (Test-Path $envFile)) {
     Write-Host "[ERRO] gen/.env nao encontrado." -ForegroundColor Red
@@ -20,7 +20,7 @@ if (-not (Test-Path $envFile)) {
 
 $envVars = Get-Content $envFile | Where-Object { $_ -match '=' -and $_ -notmatch '^\s*#' } | ConvertFrom-StringData
 
-$template = "$scriptFolder\adls-sink-connector.json.template"
+$template = "$scriptFolder\..\..\debezium\adls-sink-connector.json.template"
 $connectorJson = (Get-Content $template -Raw) -replace "REPLACE_STORAGE_ACCOUNT", $envVars.AZURE_STORAGE_ACCOUNT_NAME
 
 Write-Host "[INFO] Registrando sink connector ADLS no Kafka Connect (http://localhost:8084)..." -ForegroundColor Cyan

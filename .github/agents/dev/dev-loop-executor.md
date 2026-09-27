@@ -143,7 +143,7 @@ Status: ✅ VALID
    - @test-generator (1 task)
 
 ✓ Verification Commands:
-   1. python3 scripts/validate-agent-router.py
+   1. python3 scripts/tooling/validate-agent-router.py
    2. python3 install_dev_loop/install_dev_loop.py --dry-run --target .
    3. test -f path/to/expected/file
 
@@ -528,7 +528,7 @@ Action:
 Use these commands as the default verification loop for this repository:
 
 ```bash
-python3 scripts/validate-agent-router.py
+python3 scripts/tooling/validate-agent-router.py
 python3 install_dev_loop/install_dev_loop.py --dry-run --target .
 ```
 

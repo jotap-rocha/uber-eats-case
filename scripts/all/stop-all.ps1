@@ -19,4 +19,4 @@ if ($LASTEXITCODE -eq 0) {
 }
 
 Write-Host ""
-Write-Host "Para reiniciar: .\scripts\start-all.ps1" -ForegroundColor Gray
+Write-Host "Para reiniciar: .\scripts\all\start-all.ps1" -ForegroundColor Gray

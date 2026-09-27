@@ -11,7 +11,7 @@
       (postgres-ubereats, minio-ubereats, minio-setup, gen-unified, oracle-ubereats, mongo-ubereats)
       -- confirmado: 6 ocorrencias de "mem_limit:" no arquivo.
 - [x] Alerta de estagnacao (+0 em 2 snapshots seguidos, ~2h) no
-      scripts/shadowtraffic-report-loop.ps1 -- feito no worktree, ainda nao aplicado aqui no
+      scripts/shadowtraffic/shadowtraffic-report-loop.ps1 -- feito no worktree, ainda nao aplicado aqui no
       checkout principal (nao ha WIP conflitante nesse arquivo, pode copiar direto do worktree).
 - [x] scripts/README.md documentado: start-infra.ps1 + toggle-shadowtraffic.ps1 on como fluxo
       oficial de geracao economica; risco dos 4 servicos Azure/GCP sem script dedicado -- feito
@@ -28,12 +28,12 @@
        git add docker-compose.yml
        git commit -m "PERF: aplica mem_limit/cpus aos servicos essenciais"
 
-2. [ ] Copiar as mudancas de scripts/shadowtraffic-report-loop.ps1 e scripts/README.md do
+2. [ ] Copiar as mudancas de scripts/shadowtraffic/shadowtraffic-report-loop.ps1 e scripts/README.md do
        worktree (branch worktree-abstract-riding-quill) para ca -- ainda so existem la.
 
 3. [ ] TESTAR DE VERDADE: ligar o Docker Desktop e rodar
-       .\scripts\start-infra.ps1
-       .\scripts\toggle-shadowtraffic.ps1 on
+       .\scripts\infra\start-infra.ps1
+       .\scripts\shadowtraffic\toggle-shadowtraffic.ps1 on
        Atencao especial ao oracle-ubereats (mem_limit: 3g) -- se o healthcheck falhar por
        memoria, subir para 4g em docker-compose.yml.
 

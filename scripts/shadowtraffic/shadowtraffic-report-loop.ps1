@@ -15,15 +15,15 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot = Split-Path -Parent $PSScriptRoot
+. "$PSScriptRoot\..\lib\shadowtraffic-common.ps1"
+
+$repoRoot = Get-RepoRoot
 $logDir   = "$repoRoot\logs"
 $logFile  = "$logDir\shadowtraffic-report.log"
 
 if (-not (Test-Path $logDir)) {
     New-Item -ItemType Directory -Path $logDir -Force | Out-Null
 }
-
-. "$PSScriptRoot\lib\shadowtraffic-common.ps1"
 
 function Write-Snapshot {
     param($Snapshot, $Previous, [datetime]$Now, $PreviousTime)

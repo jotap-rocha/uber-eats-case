@@ -20,7 +20,7 @@ Criar uma nota de smoke test em `.cursor/dev/examples/HELLO_WORLD_RUN.md` e vali
 
 Este repositório é um template/kit de agentes e workflows para Cursor, Claude Code e GitHub Copilot. A raiz não possui manifesto de aplicação (`pyproject.toml`, `package.json`, `Makefile`) nem suite de testes própria; os comandos de verificação disponíveis hoje são:
 
-- `python3 scripts/validate-agent-router.py` para validar o roteador de agentes.
+- `python3 scripts/tooling/validate-agent-router.py` para validar o roteador de agentes.
 - `python3 install_dev_loop/install_dev_loop.py --dry-run --target .` para validar o instalador do Dev Loop sem alterar o projeto.
 
 ---
@@ -39,7 +39,7 @@ Este repositório é um template/kit de agentes e workflows para Cursor, Claude 
 
 ### 🔴 RISKY (Do First)
 
-- [ ] `@.cursor/agents/dev/dev-loop-executor.md` — Confirmar que o repositório continua sem suite de teste de aplicação e usar apenas verificações nativas do kit. Verify: `python3 scripts/validate-agent-router.py`
+- [ ] `@.cursor/agents/dev/dev-loop-executor.md` — Confirmar que o repositório continua sem suite de teste de aplicação e usar apenas verificações nativas do kit. Verify: `python3 scripts/tooling/validate-agent-router.py`
 
 ### 🟡 CORE
 
@@ -48,14 +48,14 @@ Este repositório é um template/kit de agentes e workflows para Cursor, Claude 
 
 ### 🟢 POLISH (Do Last)
 
-- [ ] `@.cursor/agents/code-quality/code-reviewer.md` — Revisar se a nota criada usa caminhos relativos corretos e não introduz segredo, dependência ou comando destrutivo. Verify: `python3 scripts/validate-agent-router.py`
+- [ ] `@.cursor/agents/code-quality/code-reviewer.md` — Revisar se a nota criada usa caminhos relativos corretos e não introduz segredo, dependência ou comando destrutivo. Verify: `python3 scripts/tooling/validate-agent-router.py`
 
 ---
 
 ## Exit Criteria
 
 - [ ] Nota de smoke test existe: `test -f .cursor/dev/examples/HELLO_WORLD_RUN.md`
-- [ ] Roteador de agentes valida: `python3 scripts/validate-agent-router.py`
+- [ ] Roteador de agentes valida: `python3 scripts/tooling/validate-agent-router.py`
 - [ ] Instalador Dev Loop valida em dry-run: `python3 install_dev_loop/install_dev_loop.py --dry-run --target .`
 
 ---
@@ -80,7 +80,7 @@ max_retries: 2
 circuit_breaker: 3
 small_steps: true
 feedback_loops:
-  - python3 scripts/validate-agent-router.py
+  - python3 scripts/tooling/validate-agent-router.py
   - python3 install_dev_loop/install_dev_loop.py --dry-run --target .
 ```
 

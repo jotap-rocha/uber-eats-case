@@ -141,7 +141,7 @@ CPF, CNPJ e license_number **não são eliminados** — continuam existindo como
 | Infraestrutura | `docker-compose.yml` | 3 containers (`gen-drivers`, `gen-users`, `gen-minio`) → 1 (`gen-unified`) |
 | Gerador | `gen/unified/uber-eats.json(.template)` (novo, substitui `gen/postgres/*` e `gen/minio/uber-eats.json`) | `connections: postgres + minio`; `users`/`drivers` no Postgres real; todo consumidor MinIO redirecionado |
 | Schema real | `sql/create_users_table.sql`, `create_drivers_table.sql` | PK `uuid`→`int`; `drivers` ganha `vehicle_make`, `vehicle_model`, `vehicle_year`, `license_number`, `city` |
-| Automação | `gen/setup-configs.ps1`, `scripts/start-generators.ps1`, `stop-generators.ps1`, `start-all.ps1`, `reset-all.ps1` | Apontam para o gerador único |
+| Automação | `gen/setup-configs.ps1`, `scripts/shadowtraffic/start-generators.ps1`, `stop-generators.ps1`, `scripts/all/start-all.ps1`, `scripts/infra/reset-all.ps1` | Apontam para o gerador único |
 | Silver | `ingestion_kafka_orders.sql` (renomeia `cpf_usuario`→`id_usuario`); `ingestion_postgres_drivers.sql` (novo, substitui os 2 scripts antigos de motorista) | Dimensão única de motorista |
 | Documentação | Este arquivo | Zero pendências |
 

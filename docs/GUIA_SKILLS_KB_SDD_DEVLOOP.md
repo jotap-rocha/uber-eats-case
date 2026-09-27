@@ -237,7 +237,7 @@ Roteiro reutilizável — o mesmo que orientou a criação da `git-boas-praticas
        path: .claude/skills/<nome>/SKILL.md
        used_by_agent_ids: [...]   # ou used_by_roster_groups: [...]
    ```
-6. **Valide:** `python3 scripts/validate-agent-router.py`
+6. **Valide:** `python3 scripts/tooling/validate-agent-router.py`
 7. **Ligue a Skill aos fluxos que realmente vão usá-la** — se for para SDD e/ou Dev Loop, edite os
    agentes relevantes (`build-agent`, `ship-agent`, `dev-loop-executor`, `devloop-fixer`, etc.) para
    referenciar o path literal `.claude/skills/<nome>/SKILL.md` no ponto certo do processo deles —

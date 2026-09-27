@@ -125,7 +125,7 @@ Syncs executam automaticamente conforme frequencia configurada.
 
 ## Ligar/Desligar sob demanda
 
-O Airbyte **nao** faz parte do `docker-compose.yml` deste projeto nem do `scripts/start-all.ps1` — e um cluster `abctl` (kind/k8s) a parte, e o container `airbyte-abctl-control-plane` sozinho costuma consumir alguns GB de RAM e CPU relevante. Mantenha-o desligado por padrao e ligue so quando for configurar ou rodar um sync:
+O Airbyte **nao** faz parte do `docker-compose.yml` deste projeto nem do `scripts/all/start-all.ps1` — e um cluster `abctl` (kind/k8s) a parte, e o container `airbyte-abctl-control-plane` sozinho costuma consumir alguns GB de RAM e CPU relevante. Mantenha-o desligado por padrao e ligue so quando for configurar ou rodar um sync:
 
 ```powershell
 .\scripts\start-airbyte.ps1   # liga

@@ -12,7 +12,7 @@ $minioRunning = docker ps --filter "name=minio-ubereats" --filter "status=runnin
 
 if (-not $postgresRunning -or -not $minioRunning) {
     Write-Host "[ERRO] A infraestrutura nao esta rodando!"
-    Write-Host "   Execute primeiro: .\scripts\start-infra.ps1"
+    Write-Host "   Execute primeiro: .\scripts\infra\start-infra.ps1"
     exit 1
 }
 
@@ -36,6 +36,6 @@ Write-Host "   -> gen-unified: Populando 'users'/'drivers' no Postgres e eventos
 Write-Host ""
 Write-Host "Monitoramento:"
 Write-Host "   -> Ver logs: docker-compose logs -f gen-unified"
-Write-Host "   -> Parar gerador: .\scripts\stop-generators.ps1"
+Write-Host "   -> Parar gerador: .\scripts\shadowtraffic\stop-generators.ps1"
 
 

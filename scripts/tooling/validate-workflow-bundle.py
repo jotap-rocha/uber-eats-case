@@ -6,7 +6,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CURSOR = REPO_ROOT / ".cursor"
 BUNDLE = REPO_ROOT / "install_dev_loop" / "workflow_bundle" / "cursor"
 ASSETS_INDEX = REPO_ROOT / "install_dev_loop" / "assets" / "dev" / "_index.md"

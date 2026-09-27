@@ -9,7 +9,7 @@
 # ==============================================================================
 
 $scriptFolder = $PSScriptRoot
-$envFile = "$scriptFolder\..\gen\.env"
+$envFile = "$scriptFolder\..\..\gen\.env"
 
 if (-not (Test-Path $envFile)) {
     Write-Host "[ERRO] gen/.env nao encontrado." -ForegroundColor Red
@@ -18,7 +18,7 @@ if (-not (Test-Path $envFile)) {
 
 $envVars = Get-Content $envFile | Where-Object { $_ -match '=' -and $_ -notmatch '^\s*#' } | ConvertFrom-StringData
 
-$template = "$scriptFolder\oracle-connector-azure.json.template"
+$template = "$scriptFolder\..\..\debezium\oracle-connector-azure.json.template"
 $connectorJson = (Get-Content $template -Raw) `
     -replace "REPLACE_ORACLE_DBZ_PASSWORD", $envVars.ORACLE_DBZ_PASSWORD `
     -replace "REPLACE_EVENTHUB_NAMESPACE_CONNECTION_STRING", $envVars.AZURE_EVENTHUB_CONNECTION_STRING `

@@ -63,7 +63,7 @@ Add verification with: Verify: `command`
 <!-- Main feature implementation -->
 
 - [ ] `@.claude/agents/...` — [Main feature task]
-- [ ] [Task with verification]: Verify: `python3 scripts/validate-agent-router.py`
+- [ ] [Task with verification]: Verify: `python3 scripts/tooling/validate-agent-router.py`
 
 ### 🟢 POLISH (Do Last)
 <!-- Cleanup, optimization, nice-to-haves -->
@@ -79,7 +79,7 @@ List OBJECTIVE, VERIFIABLE conditions that indicate completion.
 Each criterion should be checkable with a command.
 -->
 
-- [ ] Agent router validates: `python3 scripts/validate-agent-router.py`
+- [ ] Agent router validates: `python3 scripts/tooling/validate-agent-router.py`
 - [ ] Dev Loop installer dry-run succeeds: `python3 install_dev_loop/install_dev_loop.py --dry-run --target .`
 - [ ] File exists: `test -f path/to/expected/file`
 - [ ] [Custom criterion]: `[verification command]`
@@ -111,7 +111,7 @@ max_retries: 3            # Retry failed tasks N times
 circuit_breaker: 3        # Stop if no progress for N loops
 small_steps: true         # One logical change per task
 feedback_loops:           # Commands to run between tasks
-  - python3 scripts/validate-agent-router.py
+  - python3 scripts/tooling/validate-agent-router.py
   - python3 install_dev_loop/install_dev_loop.py --dry-run --target .
 ```
 
