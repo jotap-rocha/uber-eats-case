@@ -150,6 +150,6 @@ Sinal `medalhão bronze silver gold` de `PIPELINE_MANDATORY_PRACTICES.yaml` disp
 
 ---
 
-## Status: ✅ Complete (Defined)
+## Status: ✅ Shipped
 
-**Próximo passo:** `/design .claude/sdd/features/DEFINE_REORGANIZACAO_ESTRUTURA_RAIZ.md`
+**Shipped and archived** em 2026-09-27 — ver `SHIPPED_2026-09-27.md` neste mesmo diretório. Todos os goals MUST e acceptance tests foram cobertos pelo `/build` (branch `refactor/reorganizacao-estrutura-raiz`, ver `BUILD_REPORT_REORGANIZACAO_ESTRUTURA_RAIZ.md`).

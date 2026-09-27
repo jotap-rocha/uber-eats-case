@@ -324,3 +324,7 @@ grep -rl "scripts/validate-agent-router.py" .githooks/ agentspec/ install_dev_lo
 ## 8. Próximo passo
 
 `/build .claude/sdd/features/DESIGN_REORGANIZACAO_ESTRUTURA_RAIZ.md` — em **branch dedicada** (quality tier `production`, blast radius confirmado ~40 arquivos de referência de conteúdo + ~90 arquivos movidos), com PR revisável antes de mergear em `main`, conforme Constraint do DEFINE.
+
+## Status: ✅ Shipped
+
+**Shipped and archived** em 2026-09-27 — ver `SHIPPED_2026-09-27.md` neste mesmo diretório. Build executado na branch `refactor/reorganizacao-estrutura-raiz` (pushed, ainda não mergeada em `main`).

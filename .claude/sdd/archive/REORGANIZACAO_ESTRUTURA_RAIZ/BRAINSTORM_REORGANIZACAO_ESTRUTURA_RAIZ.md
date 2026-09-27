@@ -3,7 +3,7 @@
 **Data:** 2026-09-21
 **Origem:** Pedido direto do usuário via `/devloop-phase` → gate decidiu `escalate_sdd` (ver
 `.claude/sdd/dev-loop-runs/reorg-estrutura-raiz/phases/gate.md`) → `/brainstorm`.
-**Status:** ✅ Ready for Define
+**Status:** ✅ Shipped
 
 ---
 
@@ -135,6 +135,8 @@ não commitado atual (Azure Fase 1 / GCP Fase 3, visível no `git status`) for c
 
 ---
 
-## Status: ✅ Ready for Define
+## Status: ✅ Shipped
+
+**Shipped and archived** em 2026-09-27 — ver `SHIPPED_2026-09-27.md` e `DEFINE_REORGANIZACAO_ESTRUTURA_RAIZ.md` v1.1 neste mesmo diretório.
 
 **Próximo comando:** `/define .claude/sdd/features/BRAINSTORM_REORGANIZACAO_ESTRUTURA_RAIZ.md`
