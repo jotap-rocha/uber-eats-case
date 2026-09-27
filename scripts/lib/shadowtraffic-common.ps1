@@ -98,15 +98,23 @@ function Get-OracleScalar {
     # servico FREEPDB1 para conexoes TCP externas (gap conhecido da imagem
     # gvenzl/oracle-free) -- ORA-12514 nesse instante e transitorio, nao erro
     # real. Por isso tenta de novo em vez de confiar so no healthcheck do Docker.
+    # ORA-01109 (database/PDB montado mas ainda nao aberto) entra na mesma
+    # categoria -- observado em producao local mesmo com o container ja
+    # "healthy" ha dias, provavelmente por contencao de CPU/memoria
+    # (mem_limit: 3g / cpus: 1.5) atrasando a abertura da PDB no instante
+    # exato da consulta. "-L" evita que uma falha de logon jogue sqlplus no
+    # prompt interativo "Enter user-name:", que consumiria as linhas do
+    # heredoc (SET PAGESIZE 0 etc.) como respostas erradas e produziria
+    # "SP2-0306"/"SP2-0157" no lugar do erro real do Oracle.
     for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
-        $lines = $script | docker exec -i oracle-ubereats sqlplus -s $conn
+        $lines = $script | docker exec -i oracle-ubereats sqlplus -s -L $conn
         $value = ($lines | Where-Object { $_.Trim() -match '^\d+$' } | Select-Object -First 1)
         if ($value) {
             return [int]($value.Trim())
         }
 
         $output = ($lines -join "`n")
-        $isTransient = $output -match 'ORA-12514|ORA-12541|ORA-12528|ORA-01034|ORA-12537'
+        $isTransient = $output -match 'ORA-12514|ORA-12541|ORA-12528|ORA-01034|ORA-12537|ORA-01109'
         if ($isTransient -and $attempt -lt $MaxRetries) {
             Write-Host "   [AVISO] Oracle ainda nao aceita conexoes (tentativa $attempt/$MaxRetries) -- aguardando ${RetryDelaySeconds}s..." -ForegroundColor Yellow
             Start-Sleep -Seconds $RetryDelaySeconds
