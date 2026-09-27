@@ -12,7 +12,7 @@
 |-------|--------|
 | **Domínio** | Ingestão AWS — Fase 2 (`docs/ROADMAP_ARQUITETURA_MULTICLOUD.md`) |
 | **Dataset** | Todas as tabelas replicadas via AWS DMS (Postgres, Oracle, MongoDB) para o S3/Bronze e/ou Kinesis |
-| **Pipeline** | `infra/aws/fase2-ingestao/` (DMS batch + real-time) |
+| **Pipeline** | `aws/infra/fase2-ingestao/` (DMS batch + real-time) |
 
 ## 2. Mapeamento das 4 colunas canônicas
 

@@ -8,7 +8,7 @@ PostgreSQL 15 com dados transacionais (drivers e users), executado no container 
 
 ## Credenciais
 
-As credenciais são definidas no arquivo `gen/.env`. Consulte o README principal para configuração.
+As credenciais são definidas no arquivo `shared/gen/.env`. Consulte o README principal para configuração.
 
 ```
 Host: localhost
@@ -63,7 +63,7 @@ CREATE TABLE users (
 
 1. Instale: https://dbeaver.io/download/
 2. Nova conexão → **PostgreSQL**
-3. Host `localhost`, porta `5432`, database/usuário/senha conforme `gen/.env`
+3. Host `localhost`, porta `5432`, database/usuário/senha conforme `shared/gen/.env`
 4. Test connection → Finish
 5. Navegue até `drivers` e `users` no Database Navigator
 

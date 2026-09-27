@@ -6,7 +6,7 @@
 --
 -- Diferente das demais Silver deste projeto, esta tabela e um LIVE TABLE
 -- em lote (nao STREAMING) -- o satelite "Perfil de Restaurante" e cadastro
--- estatico (seed unico via mongo/init/), sem CDC, sem stream de mudancas.
+-- estatico (seed unico via shared/mongo/init/), sem CDC, sem stream de mudancas.
 
 CREATE OR REFRESH LIVE TABLE silver.silver_restaurant_profile
 COMMENT "Satélite documental do Restaurante (menu + horários de funcionamento). Origem MongoDB, cadastro estático (Onda 3, Etapa 2) — entidade nova, complementa silver_restaurants via restaurant_id."

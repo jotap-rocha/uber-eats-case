@@ -48,7 +48,7 @@ LICENSE_SIGNATURE=<assinatura_da_licenca>
 
 ## Gerador
 
-Um único processo unificado (`gen-unified`) gera tudo — necessário para o lookup cruzado entre a conexão Postgres real e a conexão MinIO no mesmo config (`gen/unified/uber-eats.json`).
+Um único processo unificado (`gen-unified`) gera tudo — necessário para o lookup cruzado entre a conexão Postgres real e a conexão MinIO no mesmo config (`shared/gen/unified/uber-eats.json`).
 
 | Destino | Taxa | Limite |
 |---------|------|--------|
@@ -94,7 +94,7 @@ docker exec minio-ubereats mc ls local/uber-eats/ --recursive
 
 ## Ajustar Velocidade
 
-Edite `gen/unified/uber-eats.json.template`:
+Edite `shared/gen/unified/uber-eats.json.template`:
 
 ```json
 {
@@ -125,7 +125,7 @@ Só use `.\gen\setup-configs.ps1` + `stop-generators.ps1`/`start-generators.ps1`
 
 ```powershell
 # 1. Renove em https://shadowtraffic.io
-# 2. Atualize gen/.env (LICENSE_ID, LICENSE_EMAIL, LICENSE_ORGANIZATION,
+# 2. Atualize shared/gen/.env (LICENSE_ID, LICENSE_EMAIL, LICENSE_ORGANIZATION,
 #    LICENSE_EDITION, LICENSE_EXPIRATION, LICENSE_SIGNATURE)
 # 3. Religue com seguranca (tabelas ja tem dados na maioria dos casos):
 .\scripts\toggle-shadowtraffic.ps1 off

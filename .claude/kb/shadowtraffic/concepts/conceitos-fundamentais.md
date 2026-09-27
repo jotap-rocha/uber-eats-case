@@ -1,6 +1,6 @@
 # Conceitos fundamentais do ShadowTraffic
 
-> **Purpose**: Vocabulário mínimo para ler/editar `gen/unified/uber-eats.json.template` sem depender de tentativa e erro.
+> **Purpose**: Vocabulário mínimo para ler/editar `shared/gen/unified/uber-eats.json.template` sem depender de tentativa e erro.
 > **Confidence**: 0.95
 > **MCP Validated**: 2026-09-07 — fonte: https://docs.shadowtraffic.io/overview/ e https://docs.shadowtraffic.io/cheatsheet/
 
@@ -8,7 +8,7 @@
 
 ShadowTraffic é uma ferramenta em container que gera dados sintéticos "de produção" para múltiplos backends (Kafka, Postgres, MySQL, Oracle, S3/MinIO, SQL Server, Databricks, webhooks, etc.) a partir de **um único arquivo de configuração JSON**. Em vez de escrever código, o usuário substitui valores concretos por funções marcadas com a chave `_gen` — "replace concrete values with functions. That is all that's happening here" (doc oficial).
 
-Neste repositório existe **um config unificado** (`gen/unified/uber-eats.json.template`), não um por conexão, porque os `lookup`s cruzam Postgres ↔ Oracle ↔ MinIO no mesmo processo (ver `concepts/lookup-semantica-e-limites.md`).
+Neste repositório existe **um config unificado** (`shared/gen/unified/uber-eats.json.template`), não um por conexão, porque os `lookup`s cruzam Postgres ↔ Oracle ↔ MinIO no mesmo processo (ver `concepts/lookup-semantica-e-limites.md`).
 
 ## Os três blocos de um config
 

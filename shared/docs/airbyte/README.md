@@ -41,7 +41,7 @@ Abra: `http://localhost:8000`
 ### PostgreSQL
 
 1. Sources > + New source > Postgres
-2. Preencha com as credenciais do seu `gen/.env`:
+2. Preencha com as credenciais do seu `shared/gen/.env`:
    - **Host**: `host.docker.internal`
    - **Port**: `5432`
    - **Database**: `<seu_database>`
@@ -53,7 +53,7 @@ Abra: `http://localhost:8000`
 ### MinIO/S3
 
 1. Sources > + New source > S3
-2. Preencha com as credenciais do seu `gen/.env`:
+2. Preencha com as credenciais do seu `shared/gen/.env`:
    - **Bucket**: `uber-eats`
    - **Access Key**: `<seu_usuario>`
    - **Secret Key**: `<sua_senha>`

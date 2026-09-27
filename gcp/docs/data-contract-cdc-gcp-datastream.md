@@ -1,6 +1,6 @@
 # Contrato de CDC — extensão para o Datastream e o Debezium Server (GCP, Fase 3)
 
-> Extensão do contrato canônico de CDC definido na Onda 3 (`DESIGN_DIVERSIFICACAO_FONTES_UBEREATS.md`) e já estendido para o DMS na Fase 2/AWS (`docs/data-contract-cdc-aws-dms.md`). Ver `DESIGN_INGESTAO_GCP_FASE3.md` para o desenho completo.
+> Extensão do contrato canônico de CDC definido na Onda 3 (`DESIGN_DIVERSIFICACAO_FONTES_UBEREATS.md`) e já estendido para o DMS na Fase 2/AWS (`../../aws/docs/data-contract-cdc-aws-dms.md`). Ver `DESIGN_INGESTAO_GCP_FASE3.md` para o desenho completo.
 
 A Silver/consumo (BigQuery, Dataproc, Dataflow) **nunca** lê os campos nativos do Datastream ou do Debezium Server diretamente — só as 4 colunas canônicas abaixo.
 
@@ -9,7 +9,7 @@ A Silver/consumo (BigQuery, Dataproc, Dataflow) **nunca** lê os campos nativos 
 | `cdc_operation` | `_metadata_change_type` (`INSERT`/`UPDATE`/`DELETE`/`UPSERT`) | `payload.op` (`c`/`u`/`d`) — mesmo envelope do Debezium Connect já usado na Onda 3 (Oracle) |
 | `cdc_commit_ts` | `_metadata_source_timestamp` | `payload.source.ts_ms` |
 | `cdc_sequence` | `_metadata_source.lsn` (Postgres) / `_metadata_source.scn` (Oracle) | `payload.source.lsn` (Postgres) / `payload.source.scn` (Oracle) |
-| `cdc_source_system` | `postgres-datastream-gcp` / `oracle-datastream-gcp` / `mongo-datastream-gcp` (constante por stream) | `postgres-debezium-server-gcp` / `oracle-debezium-server-gcp` (constante por instância, injetada via SMT `InsertField$Value`, ver `src/gcp/debezium_server_*/application.properties`) |
+| `cdc_source_system` | `postgres-datastream-gcp` / `oracle-datastream-gcp` / `mongo-datastream-gcp` (constante por stream) | `postgres-debezium-server-gcp` / `oracle-debezium-server-gcp` (constante por instância, injetada via SMT `InsertField$Value`, ver `config/gcp/debezium-server/{oracle,postgres}/application.properties`) |
 
 ## 🔶 Risco não confirmado (A-002 do DEFINE)
 

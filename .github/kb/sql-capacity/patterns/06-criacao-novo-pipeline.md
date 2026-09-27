@@ -395,7 +395,7 @@ Após criar todos os arquivos, validar:
 ### Documentação:
 - [ ] `CONTEXT.md` - adicionar na tabela de jobs
 - [ ] `.github/kb/sql-capacity/02-jobs-reference.md` - adicionar seção do novo job
-- [ ] `docs/00-INDEX.md` - se necessário
+- [ ] `shared/docs/00-INDEX.md` - se necessário
 
 ---
 

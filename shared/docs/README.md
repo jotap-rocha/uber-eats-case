@@ -41,7 +41,7 @@ notepad gen\.env
 # 4. Verifique o status
 docker-compose ps
 
-# 5. Conecte no Postgres via DBeaver (localhost:5432, credenciais do gen/.env)
+# 5. Conecte no Postgres via DBeaver (localhost:5432, credenciais do shared/gen/.env)
 ```
 
 ---

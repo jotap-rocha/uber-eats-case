@@ -37,7 +37,7 @@
 
 `vars` roda uma vez por evento gerado (valor fresco a cada iteração); `varsOnce` roda uma única vez para a vida do generator. Múltiplas referências ao **mesmo** `var` dentro do mesmo evento são garantidamente consistentes — ao contrário de múltiplas chamadas de `lookup`.
 
-**Nota:** este exemplo é ilustrativo (reescreve o padrão correto para o caso de `kafka/route.start_lat/start_lon` descrito em `concepts/lookup-semantica-e-limites.md`). Não foi aplicado automaticamente ao `gen/unified/uber-eats.json.template` — decidir a correção do generator real é uma tarefa separada, não desta KB.
+**Nota:** este exemplo é ilustrativo (reescreve o padrão correto para o caso de `kafka/route.start_lat/start_lon` descrito em `concepts/lookup-semantica-e-limites.md`). Não foi aplicado automaticamente ao `shared/gen/unified/uber-eats.json.template` — decidir a correção do generator real é uma tarefa separada, não desta KB.
 
 ## Configuration
 

@@ -8,7 +8,7 @@ resource "azurerm_stream_analytics_job" "kappa" {
   output_error_policy                     = "Drop"
   events_out_of_order_max_delay_in_seconds = 5
   events_late_arrival_max_delay_in_seconds = 60
-  transformation_query                    = file("${path.module}/../../../sql/azure/stream_analytics_query.sql")
+  transformation_query                    = file("${path.module}/../../../azure/sql/stream_analytics_query.sql")
 
   streaming_units = 1 # ajustar no build real conforme volume (Open Question do DEFINE)
 }

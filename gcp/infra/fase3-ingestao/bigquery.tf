@@ -12,7 +12,7 @@ resource "google_bigquery_dataset" "warehouse" {
   location   = var.gcp_region
 }
 
-# Scheduled query — dispara o LOAD/MERGE (sql/gcp/bigquery_load_merge.sql)
+# Scheduled query — dispara o LOAD/MERGE (gcp/sql/bigquery_load_merge.sql)
 # periodicamente. Nota: LOAD DATA + MERGE como 2 statements num script só é
 # suportado pela Data Transfer Service a partir de multi-statement scripts;
 # confirmar no /build se o job precisa ser dividido em duas scheduled queries
@@ -25,6 +25,6 @@ resource "google_bigquery_data_transfer_config" "load_merge_restaurants" {
   destination_dataset_id = google_bigquery_dataset.warehouse.dataset_id
 
   params = {
-    query = file("${path.module}/../../../sql/gcp/bigquery_load_merge.sql")
+    query = file("${path.module}/../../../gcp/sql/bigquery_load_merge.sql")
   }
 }

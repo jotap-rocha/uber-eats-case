@@ -2,7 +2,7 @@
 
 > Extensão do contrato canônico de CDC definido na Onda 3 (`DESIGN_DIVERSIFICACAO_FONTES_UBEREATS.md`). Ver `DESIGN_INGESTAO_AZURE_FASE1.md` para o desenho completo.
 
-**Achado favorável desta fase:** ao contrário da AWS (`docs/data-contract-cdc-aws-dms.md`) e da GCP (`docs/data-contract-cdc-gcp-datastream.md`), que precisaram mapear os metadados proprietários de ferramentas novas (DMS, Datastream), a Fase 1 **reaproveita as mesmas ferramentas já mapeadas na Onda 3** — Airbyte para Postgres, Debezium/Kafka Connect para Oracle. O mapeamento abaixo é **idêntico** ao que já roda em produção local (`pipeline/bronze/ingest_postgres_drivers.sql`, `pipeline/bronze/ingest_oracle_orders.sql`); só o meio físico muda.
+**Achado favorável desta fase:** ao contrário da AWS (`../../aws/docs/data-contract-cdc-aws-dms.md`) e da GCP (`../../gcp/docs/data-contract-cdc-gcp-datastream.md`), que precisaram mapear os metadados proprietários de ferramentas novas (DMS, Datastream), a Fase 1 **reaproveita as mesmas ferramentas já mapeadas na Onda 3** — Airbyte para Postgres, Debezium/Kafka Connect para Oracle. O mapeamento abaixo é **idêntico** ao que já roda em produção local (`shared/pipeline/bronze/ingest_postgres_drivers.sql`, `shared/pipeline/bronze/ingest_oracle_orders.sql`); só o meio físico muda.
 
 | Coluna canônica | Postgres (Airbyte) | Oracle (Debezium) |
 |---|---|---|

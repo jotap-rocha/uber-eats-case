@@ -5,7 +5,7 @@
 
 data "archive_file" "cloud_function_bridge" {
   type        = "zip"
-  source_dir  = "${path.module}/../../../src/gcp/cloud_function_minio_pubsub_bridge"
+  source_dir  = "${path.module}/../../../gcp/src/cloud_function_minio_pubsub_bridge"
   output_path = "${path.module}/.build/cloud_function_minio_pubsub_bridge.zip"
 }
 

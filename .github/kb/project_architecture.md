@@ -7,7 +7,7 @@ Motor: ShadowTraffic rodando em containers Docker.
 
 Fluxo A (Relacional): Dados transacionais (drivers, users) são injetados diretamente no banco PostgreSQL.
 
-Fluxo B (Eventos/NoSQL): Dados de eventos (pedidos, gps, pagamentos) e de outras fontes lógicas (MySQL, MongoDB, Kafka) são gerados como arquivos JSON e salvos no MinIO (S3-Compatible). **Não há containers Docker separados para MySQL, MongoDB ou Kafka** — o ShadowTraffic grava tudo no bucket `uber-eats` usando prefixos de pasta que simulam cada sistema (`kafka/orders/`, `mysql/restaurants/`, `mongodb/items/`, etc.). Os scripts Silver em `pipeline/silver/` usam nomes como `ingestion_kafka_*` ou `ingestion_mysql_*` para refletir a **origem lógica** dos dados, não serviços adicionais na máquina local.
+Fluxo B (Eventos/NoSQL): Dados de eventos (pedidos, gps, pagamentos) e de outras fontes lógicas (MySQL, MongoDB, Kafka) são gerados como arquivos JSON e salvos no MinIO (S3-Compatible). **Não há containers Docker separados para MySQL, MongoDB ou Kafka** — o ShadowTraffic grava tudo no bucket `uber-eats` usando prefixos de pasta que simulam cada sistema (`kafka/orders/`, `mysql/restaurants/`, `mongodb/items/`, etc.). Os scripts Silver em `shared/pipeline/silver/` usam nomes como `ingestion_kafka_*` ou `ingestion_mysql_*` para refletir a **origem lógica** dos dados, não serviços adicionais na máquina local.
 
 3. Camada de Ingestão & Landing (Raw Zone)
 Ferramenta: Airbyte OSS (Self-hosted).

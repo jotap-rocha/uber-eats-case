@@ -1,13 +1,13 @@
 ---
 name: shadowtraffic-ajustar-geracao
-description: Ajusta a velocidade/volume de geração de dados do ShadowTraffic (throttleMs, maxEvents em gen/unified/uber-eats.json.template) e religa o gerador (gen-unified) de forma segura, sem colidir PK e sem travar o pipeline inteiro. Use quando o pedido for "gerar mais rápido/devagar", "aumentar/diminuir volume de dados", "religar o shadowtraffic", "reiniciar gen-unified", ou qualquer restart do gerador quando as tabelas (users/drivers/orders/payments/restaurants) já têm dados de uma execução anterior. NÃO use `scripts/start-generators.ps1`/`stop-generators.ps1` diretos nesse caso — eles não recalculam startingFrom e já causaram travamento total do pipeline em produção local.
+description: Ajusta a velocidade/volume de geração de dados do ShadowTraffic (throttleMs, maxEvents em shared/gen/unified/uber-eats.json.template) e religa o gerador (gen-unified) de forma segura, sem colidir PK e sem travar o pipeline inteiro. Use quando o pedido for "gerar mais rápido/devagar", "aumentar/diminuir volume de dados", "religar o shadowtraffic", "reiniciar gen-unified", ou qualquer restart do gerador quando as tabelas (users/drivers/orders/payments/restaurants) já têm dados de uma execução anterior. NÃO use `scripts/shadowtraffic/start-generators.ps1`/`stop-generators.ps1` diretos nesse caso — eles não recalculam startingFrom e já causaram travamento total do pipeline em produção local.
 ---
 
 # ShadowTraffic — Ajustar Geração e Religar com Segurança
 
 ## Quando usar
 
-- Mudar `throttleMs` (velocidade) ou `maxEvents` (volume) de qualquer generator em `gen/unified/uber-eats.json.template`.
+- Mudar `throttleMs` (velocidade) ou `maxEvents` (volume) de qualquer generator em `shared/gen/unified/uber-eats.json.template`.
 - Religar `gen-unified` depois de parado, **quando as tabelas já contêm dados** de uma execução anterior.
 - Qualquer pedido de "gerar mais dados", "acelerar/desacelerar o gerador", "reiniciar o ShadowTraffic".
 
@@ -23,7 +23,7 @@ Esses dois scripts continuam válidos **apenas** logo após um ambiente 100% nov
    ```powershell
    .\scripts\toggle-shadowtraffic.ps1 off
    ```
-2. **Edite** `gen/unified/uber-eats.json.template` — ajuste `localConfigs.throttleMs`/`localConfigs.maxEvents` do(s) generator(s) alvo.
+2. **Edite** `shared/gen/unified/uber-eats.json.template` — ajuste `localConfigs.throttleMs`/`localConfigs.maxEvents` do(s) generator(s) alvo.
 3. **Religue** com o script seguro (não use `start-generators.ps1` aqui):
    ```powershell
    .\scripts\toggle-shadowtraffic.ps1 on
@@ -42,4 +42,4 @@ Esses dois scripts continuam válidos **apenas** logo após um ambiente 100% nov
 
 - `.claude/kb/shadowtraffic/patterns/restart-seguro-startingFrom.md` — incidente completo e causa raiz
 - `.claude/kb/shadowtraffic/concepts/mutacao-real-fork-statemachine.md` — semântica de `fork`/`maxForks`
-- `scripts/toggle-shadowtraffic.ps1` — implementação
+- `scripts/shadowtraffic/toggle-shadowtraffic.ps1` — implementação

@@ -9,7 +9,7 @@ Pipeline completo de engenharia de dados construido como portfolio profissional,
 | Recurso | Caminho | Uso |
 |---------|---------|-----|
 | Contexto rápido | `CONTEXT.md` | Onboarding mínimo e comandos principais |
-| Índice de documentação | `docs/00-INDEX.md` | Navegação dos guias do projeto |
+| Índice de documentação | `shared/docs/00-INDEX.md` | Navegação dos guias do projeto |
 | Contexto Claude Code completo | `.claude/CURSOR.md` | Agentes, KBs, comandos e roteamento no ecossistema `.claude/` |
 | Roteador de agentes | `.claude/commands/core/router.md` | Escolha de agente e escopo por intenção |
 | Arquitetura do roteador | `.claude/sdd/architecture/AGENT_ROUTER.yaml` | Fonte estruturada dos agentes e hints |
@@ -70,4 +70,4 @@ Leia `.claude/dev/_index.md` para detalhes de uso, recuperação de sessão e op
 - Manter mudanças pequenas, focadas e alinhadas ao padrão existente.
 - Não commitar segredos, `.env` real nem inventário local de infraestrutura.
 - Ao alterar agentes, comandos ou roteamento, validar com `python3 scripts/tooling/validate-agent-router.py`.
-- Quando a mudança afetar fluxo de uso, atualizar documentação em `CONTEXT.md`, `docs/00-INDEX.md` ou `.claude/dev/_index.md`, conforme o escopo.
+- Quando a mudança afetar fluxo de uso, atualizar documentação em `CONTEXT.md`, `shared/docs/00-INDEX.md` ou `.claude/dev/_index.md`, conforme o escopo.

@@ -2,13 +2,13 @@
 
 Data Lake local para eventos JSON (~20 streams).
 
-> **Nota sobre “fontes” no pipeline:** MySQL, MongoDB e Kafka **não rodam como containers** neste projeto. O ShadowTraffic simula todas essas origens gravando JSONL no bucket `uber-eats`, organizado por prefixos (`mysql/`, `mongodb/`, `kafka/`). Os scripts DLT em `pipeline/silver/` usam esses nomes apenas para indicar a **origem lógica** dos dados — tudo já está embarcado no MinIO após `.\scripts\start-all.ps1`.
+> **Nota sobre “fontes” no pipeline:** MySQL, MongoDB e Kafka **não rodam como containers** neste projeto. O ShadowTraffic simula todas essas origens gravando JSONL no bucket `uber-eats`, organizado por prefixos (`mysql/`, `mongodb/`, `kafka/`). Os scripts DLT em `shared/pipeline/silver/` usam esses nomes apenas para indicar a **origem lógica** dos dados — tudo já está embarcado no MinIO após `.\scripts\start-all.ps1`.
 
 ---
 
 ## Credenciais
 
-As credenciais são definidas no arquivo `gen/.env`. Consulte o README principal para configuração.
+As credenciais são definidas no arquivo `shared/gen/.env`. Consulte o README principal para configuração.
 
 ```
 Console: http://localhost:9001
@@ -42,7 +42,7 @@ uber-eats/
 ### Console Web
 
 1. Abra: `http://localhost:9001`
-2. Login com as credenciais do seu arquivo `gen/.env`
+2. Login com as credenciais do seu arquivo `shared/gen/.env`
 3. Navegue pelo bucket `uber-eats`
 
 ### MinIO Client (mc)

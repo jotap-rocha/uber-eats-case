@@ -450,7 +450,7 @@ intake_hints:
   primary_agent_id: pipeline-architect
   context_paths:
   - .github/sdd/architecture/PIPELINE_MANDATORY_PRACTICES.yaml
-  - docs/MANDATOS_PIPELINE_DADOS.md
+  - shared/docs/MANDATOS_PIPELINE_DADOS.md
   - .github/kb/data-engineering-practices/index.md
 - signals_pt: schema drift, _rescued_data, coluna extra CSV, evolução contrato
   primary_agent_id: databricks-data-engineer

@@ -27,7 +27,7 @@ licença do ShadowTraffic.
 
 | Script | O que faz |
 |--------|-----------|
-| `infra/start-infra.ps1` | Liga o Docker Desktop se necessário, copia `gen/.env` para a raiz e sobe `postgres-ubereats`, `oracle-ubereats`, `minio-ubereats`, `mongo-ubereats`. Base obrigatória antes de qualquer outro script desta lista. |
+| `infra/start-infra.ps1` | Liga o Docker Desktop se necessário, copia `shared/gen/.env` para a raiz e sobe `postgres-ubereats`, `oracle-ubereats`, `minio-ubereats`, `mongo-ubereats`. Base obrigatória antes de qualquer outro script desta lista. |
 | `infra/stop-infra.ps1` | Para os 4 bancos (`docker-compose stop`), preservando os volumes. Avisa que ShadowTraffic e ingestão/CDC vão falhar se ainda estiverem rodando sem os bancos — desligue-os antes com os scripts da seção 2 e 3. |
 
 ```powershell
@@ -61,7 +61,7 @@ nem no gerador. Requer a infra (seção 1) já de pé.
 ## 3. Geração de dados — ShadowTraffic
 
 > ⚠️ **Use sempre `toggle-shadowtraffic.ps1`, exceto em ambiente 100% novo.** As tabelas usam IDs
-> sequenciais fixos no template (`gen/unified/uber-eats.json.template`). Religar do zero com dado
+> sequenciais fixos no template (`shared/gen/unified/uber-eats.json.template`). Religar do zero com dado
 > já existente colide PK (`ORA-00001`/`duplicate key`) e **já travou o pipeline inteiro** (17
 > streams, 99% CPU, zero linhas novas) — ver
 > `.claude/kb/shadowtraffic/patterns/restart-seguro-startingFrom.md` e a skill
@@ -83,7 +83,7 @@ nem no gerador. Requer a infra (seção 1) já de pé.
 .\scripts\shadowtraffic\toggle-shadowtraffic.ps1 off
 ```
 
-Licença expirada? Veja a skill `shadowtraffic-renovar-licenca` (atualiza `gen/.env` e religa sem
+Licença expirada? Veja a skill `shadowtraffic-renovar-licenca` (atualiza `shared/gen/.env` e religa sem
 colidir PK — não use `reset-all.ps1` só por causa da licença).
 
 ---
@@ -107,7 +107,7 @@ colidir PK — não use `reset-all.ps1` só por causa da licença).
 
 | Script | O que faz |
 |--------|-----------|
-| `infra/reset-all.ps1` | **Apaga tudo.** Força a parada de containers zumbis, roda `docker-compose down -v` (destrói os volumes `postgres_data`/`minio_data`/etc.) e remove o `gen/unified/uber-eats.json` gerado (continha segredos). **Não tem volta.** Use só para recomeçar do zero ou quando algo travou de vez (ex.: colisão de PK que nem o `toggle-shadowtraffic.ps1` resolve). |
+| `infra/reset-all.ps1` | **Apaga tudo.** Força a parada de containers zumbis, roda `docker-compose down -v` (destrói os volumes `postgres_data`/`minio_data`/etc.) e remove o `shared/gen/unified/uber-eats.json` gerado (continha segredos). **Não tem volta.** Use só para recomeçar do zero ou quando algo travou de vez (ex.: colisão de PK que nem o `toggle-shadowtraffic.ps1` resolve). |
 
 ```powershell
 .\scripts\infra\reset-all.ps1
@@ -171,7 +171,7 @@ ciclo diário de ligar/desligar dados.
 
 - Windows 10/11, Docker Desktop rodando (`start-infra.ps1` tenta iniciá-lo sozinho).
 - PowerShell 5.1+ (ou `pwsh` 7+).
-- `gen/.env` preenchido a partir de `gen/.env.template` (credenciais Postgres/Oracle/Mongo e
+- `shared/gen/.env` preenchido a partir de `shared/gen/.env.template` (credenciais Postgres/Oracle/Mongo e
   licença ShadowTraffic).
 - Scripts Python (seção 6/7) precisam de `pyyaml` (`pip install pyyaml`).
 
@@ -191,7 +191,7 @@ docker-compose logs -f postgres-ubereats       # log de um serviço específico
 |---------|-----------------|------|
 | `ORA-12514`/`ORA-01109` logo após religar | Healthcheck do Oracle passou "healthy" antes do listener/PDB estarem realmente prontos para conexão — condição transitória, já tratada com retry em `lib/shadowtraffic-common.ps1`. | Normal ver 1–3 avisos de retry; se persistir, `docker logs oracle-ubereats`. |
 | `ORA-00001`/`duplicate key` e pipeline travado (17 streams, CPU alta, zero linhas novas) | `start-generators.ps1` foi usado com dado já existente, religando com `startingFrom` desatualizado. | `toggle-shadowtraffic.ps1 off` → `on` (recalcula os IDs). Se não resolver: `reset-all.ps1`. |
-| "License expired" nos logs do `gen-unified` | Licença trial do ShadowTraffic venceu (`gen/.env`). | Skill `shadowtraffic-renovar-licenca`. |
+| "License expired" nos logs do `gen-unified` | Licença trial do ShadowTraffic venceu (`shared/gen/.env`). | Skill `shadowtraffic-renovar-licenca`. |
 | "Port already in use" | Containers de uma execução anterior ainda de pé. | `docker ps` para conferir, depois `stop-all.ps1` → `start-all.ps1`. |
 | Containers "zumbis" que não param | Estado inconsistente do compose. | `reset-all.ps1` (destrutivo). |
 

@@ -17,4 +17,4 @@ Padrões operacionais mandatórios para pipelines Databricks/Spark.
 
 **Referência de implementação:** repositório `databricks-varonis-dataflow-prd`.
 
-**Guia humano:** [`docs/MANDATOS_PIPELINE_DADOS.md`](../../../docs/MANDATOS_PIPELINE_DADOS.md)
+**Guia humano:** [`shared/docs/MANDATOS_PIPELINE_DADOS.md`](../../../shared/docs/MANDATOS_PIPELINE_DADOS.md)

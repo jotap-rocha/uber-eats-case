@@ -1,6 +1,6 @@
 -- Queries de validação de integridade — Etapa 2 (Lakehouse), mesma disciplina
 -- das Ondas 1/2/3 e da Fase 2/AWS: 0 órfãos entre as tabelas Iceberg do
--- BigLake materializadas pelo job Dataproc (src/gcp/dataproc_iceberg_merge).
+-- BigLake materializadas pelo job Dataproc (gcp/src/dataproc_iceberg_merge).
 
 -- 1. Contagem por tabela (smoke test pós-MERGE)
 SELECT 'restaurants' AS tabela, COUNT(*) AS total FROM `biglake_iceberg.restaurants`

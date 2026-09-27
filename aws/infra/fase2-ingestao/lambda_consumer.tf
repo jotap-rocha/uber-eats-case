@@ -3,7 +3,7 @@
 
 data "archive_file" "lambda_consumer" {
   type        = "zip"
-  source_dir  = "${path.module}/../../../src/aws/lambda_kappa_consumer"
+  source_dir  = "${path.module}/../../../aws/src/lambda_kappa_consumer"
   output_path = "${path.module}/.build/lambda_kappa_consumer.zip"
 }
 

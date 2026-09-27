@@ -3,7 +3,7 @@
 
 data "archive_file" "lambda_bridge" {
   type        = "zip"
-  source_dir  = "${path.module}/../../../src/aws/lambda_minio_kinesis_bridge"
+  source_dir  = "${path.module}/../../../aws/src/lambda_minio_kinesis_bridge"
   output_path = "${path.module}/.build/lambda_minio_kinesis_bridge.zip"
 }
 
@@ -28,7 +28,7 @@ resource "aws_lambda_function" "bridge" {
 # MinIO não assina requisições com SigV4 — o destino "webhook" nativo dele só
 # suporta um header Authorization estático (MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN no
 # lado do MinIO). Por isso a Function URL fica pública (NONE) e a validação do
-# token acontece dentro do handler (ver src/aws/lambda_minio_kinesis_bridge/handler.py).
+# token acontece dentro do handler (ver aws/src/lambda_minio_kinesis_bridge/handler.py).
 resource "aws_lambda_function_url" "bridge" {
   function_name      = aws_lambda_function.bridge.function_name
   authorization_type = "NONE"

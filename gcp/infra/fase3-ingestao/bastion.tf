@@ -30,7 +30,7 @@ resource "google_compute_instance" "bastion" {
   }
 
   # Nenhum outro serviço roda aqui — o bastion só existe para encaminhar o
-  # túnel reverso que a máquina local abre (ver deploy/autossh/ e
+  # túnel reverso que a máquina local abre (ver config/gcp/deploy/autossh/ e
   # docs/gcp/bastion-ssh-tunnel-setup.md).
 }
 

@@ -15,7 +15,7 @@ resource "aws_glue_crawler" "bronze" {
   }
 
   # Tabela Iceberg: criada explicitamente por fonte no /build (não pelo crawler,
-  # que gera schema Hive por padrão) — ver sql/aws/athena_queries.sql para o DDL
+  # que gera schema Hive por padrão) — ver aws/sql/athena_queries.sql para o DDL
   # `CREATE TABLE ... TBLPROPERTIES ('table_type'='ICEBERG')` de cada entidade.
   schedule = "cron(0 * * * ? *)" # a cada hora, alinhado ao datasync_schedule_expression padrão
 }

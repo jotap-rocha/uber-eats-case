@@ -246,7 +246,7 @@ output/
 !scripts/lib/
 !scripts/lib/**
 
-# Terraform (infra/aws/, e futuras fases Azure/GCP) — binários de provider e state
+# Terraform (aws/infra/, e futuras fases Azure/GCP) — binários de provider e state
 # nunca versionados; .terraform.lock.hcl fica versionado (não ignorado).
 **/.terraform/
 *.tfstate

@@ -5,7 +5,7 @@
 resource "google_storage_bucket_object" "merge_job_script" {
   name   = "dataproc/merge_job.py"
   bucket = google_storage_bucket.bronze.name
-  source = "${path.module}/../../../src/gcp/dataproc_iceberg_merge/merge_job.py"
+  source = "${path.module}/../../../gcp/src/dataproc_iceberg_merge/merge_job.py"
 }
 
 resource "google_dataproc_batch" "iceberg_merge" {

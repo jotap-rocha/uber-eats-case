@@ -4,7 +4,7 @@
 # assume que o template já foi publicado no GCS antes do apply.
 
 variable "dataflow_flex_template_gcs_path" {
-  description = "Caminho GCS do Flex Template já construído (gcloud dataflow flex-template build) para o pipeline em src/gcp/dataflow_kappa_consumer/pipeline.py"
+  description = "Caminho GCS do Flex Template já construído (gcloud dataflow flex-template build) para o pipeline em gcp/src/dataflow_kappa_consumer/pipeline.py"
   type        = string
   default     = ""
 }

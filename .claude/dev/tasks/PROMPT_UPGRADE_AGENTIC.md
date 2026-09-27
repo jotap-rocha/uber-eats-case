@@ -43,7 +43,7 @@ Fundir, arquivo a arquivo, o que o instalador deixou em conflito: manter regras 
 ### 🟢 POLISH
 
 - [ ] Rodar `python3 scripts/tooling/validate-agent-router.py`
-- [ ] Atualizar `docs/00-INDEX.md` só se novos guias/workflows foram incorporados
+- [ ] Atualizar `shared/docs/00-INDEX.md` só se novos guias/workflows foram incorporados
 - [ ] Remover `.agentic-upgrade/incoming/` após merge aceito (manter `UPGRADE_REPORT.md` até commit)
 
 ---

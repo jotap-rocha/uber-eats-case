@@ -1,5 +1,5 @@
 # Synapse Dedicated SQL Pool (nao Serverless -- suporta DML/MERGE/SCD2, ver
-# roadmap v1.4). Le do ADLS Gen2/Bronze via COPY INTO (sql/azure/synapse_copy_merge.sql).
+# roadmap v1.4). Le do ADLS Gen2/Bronze via COPY INTO (azure/sql/synapse_copy_merge.sql).
 resource "azurerm_synapse_workspace" "fase1" {
   name                                 = "ubereats-fase1-synapse"
   resource_group_name                 = azurerm_resource_group.fase1.name

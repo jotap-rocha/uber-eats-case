@@ -8,7 +8,7 @@ A fonte canonica do formato agentic e `.cursor/`. Use `.github/` como espelho pa
 
 - `CONTEXT.md`
 - `README.md`
-- `docs/00-INDEX.md`
+- `shared/docs/00-INDEX.md`
 - `.cursor/CURSOR.MD`
 
 ## Agente principal

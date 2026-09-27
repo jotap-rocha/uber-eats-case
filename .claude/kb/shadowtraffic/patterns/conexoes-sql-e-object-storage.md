@@ -1,6 +1,6 @@
 # Configuração de conexões: Oracle/Postgres (SQL) e S3/MinIO
 
-> **Purpose**: Referência de configuração das 3 connections reais deste projeto, para editar `gen/unified/uber-eats.json.template` sem adivinhar chaves.
+> **Purpose**: Referência de configuração das 3 connections reais deste projeto, para editar `shared/gen/unified/uber-eats.json.template` sem adivinhar chaves.
 > **MCP Validated**: 2026-09-07 — fonte: docs.shadowtraffic.io/connections/{s3,oracle}/
 
 ## When to Use

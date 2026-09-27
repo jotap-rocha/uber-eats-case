@@ -1,6 +1,6 @@
 # Indice da documentacao - Pipeline de Dados Uber Eats - Portfolio
 
-Este arquivo faz parte do triangulo de contexto: `CONTEXT.md` + `.cursorrules` + `docs/00-INDEX.md`.
+Este arquivo faz parte do triangulo de contexto: `CONTEXT.md` + `.cursorrules` + `shared/docs/00-INDEX.md`.
 
 ## Inicio rapido
 

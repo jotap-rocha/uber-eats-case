@@ -1,7 +1,7 @@
 // Seed estatico do satelite documental "Perfil de Restaurante" (Onda 3, Etapa 2).
 // restaurant_id vai de 1 a RESTAURANT_COUNT, espelhando o range sequencial que o
 // gerador `restaurants` do gen-unified produz no Oracle (mesma variavel de
-// populacao usada nos dois lugares -- ver gen/.env RESTAURANT_COUNT).
+// populacao usada nos dois lugares -- ver shared/gen/.env RESTAURANT_COUNT).
 // MongoDB nao tem sink de escrita no ShadowTraffic, entao este satelite eh
 // cadastro estatico (seed unico), nunca gerado de forma continua/independente.
 

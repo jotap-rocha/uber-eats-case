@@ -25,4 +25,4 @@ Reaproveita o mesmo destino "Azure Blob Storage" configurado em `docs/azure/airb
 
 1. Rodar a sync manualmente ("Sync now").
 2. Confirmar que os objetos aparecem em `abfss://bronze@<storage-account>.dfs.core.windows.net/minio/<stream>/`.
-3. Confirmar que os scripts Silver atualizados (`pipeline/silver/ingestion_kafka_*.sql`, `ingestion_mysql_menu.sql`) conseguem ler do novo path ADLS — ver `DESIGN_INGESTAO_AZURE_FASE1.md`, item 27 do manifesto.
+3. Confirmar que os scripts Silver atualizados (`shared/pipeline/silver/ingestion_kafka_*.sql`, `ingestion_mysql_menu.sql`) conseguem ler do novo path ADLS — ver `DESIGN_INGESTAO_AZURE_FASE1.md`, item 27 do manifesto.

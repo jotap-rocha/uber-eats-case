@@ -1,6 +1,6 @@
 ---
 name: shadowtraffic-adicionar-generator-seguro
-description: Checklist para criar ou editar um generator em gen/unified/uber-eats.json.template (ShadowTraffic) sem repetir 3 classes de bug já ocorridas neste projeto — nome de campo divergente da coluna SQL real (ORA-00904), múltiplas chamadas de lookup inconsistentes entre si, e startingFrom desatualizado travando o pipeline no próximo restart. Use quando o pedido for "adicionar tabela/generator no shadowtraffic", "novo campo com lookup", "gerar dado sintético para uma nova entidade", ou revisão de PR que mexe em gen/unified/uber-eats.json.template.
+description: Checklist para criar ou editar um generator em shared/gen/unified/uber-eats.json.template (ShadowTraffic) sem repetir 3 classes de bug já ocorridas neste projeto — nome de campo divergente da coluna SQL real (ORA-00904), múltiplas chamadas de lookup inconsistentes entre si, e startingFrom desatualizado travando o pipeline no próximo restart. Use quando o pedido for "adicionar tabela/generator no shadowtraffic", "novo campo com lookup", "gerar dado sintético para uma nova entidade", ou revisão de PR que mexe em shared/gen/unified/uber-eats.json.template.
 ---
 
 # ShadowTraffic — Adicionar/Editar Generator com Segurança
@@ -10,7 +10,7 @@ description: Checklist para criar ou editar um generator em gen/unified/uber-eat
 - Criar um generator novo (nova tabela Oracle/Postgres, ou novo `keyPrefix` no bucket MinIO).
 - Adicionar/renomear qualquer campo em `row`, `data` ou `where` de um generator existente.
 - Adicionar um campo que faz `lookup` de outro generator.
-- Revisar um PR que altera `gen/unified/uber-eats.json.template`.
+- Revisar um PR que altera `shared/gen/unified/uber-eats.json.template`.
 
 ## Checklist (nesta ordem)
 
@@ -32,7 +32,7 @@ Confirme que o generator alvo do `lookup` **não** depende (direta ou indiretame
 
 ### 4. O campo novo é `sequentialInteger` ou `fork.key`?
 
-Se sim, ele entra na lista de campos sensíveis a restart com dado pré-existente. **`scripts/toggle-shadowtraffic.ps1` hoje só recalcula `startingFrom` para 5 campos fixos: `users.user_id`, `drivers` fork key, `orders` fork key, `payments` fork key, `restaurants.restaurant_id`.** Um generator novo com `sequentialInteger`/`fork.key` **não é coberto automaticamente** — se não for adicionado à função `Sync-StartingPoints` do script, o próximo religamento desse generator específico pode reproduzir o mesmo incidente de colisão de PK e travamento total (ver `.claude/kb/shadowtraffic/patterns/restart-seguro-startingFrom.md`). Ao adicionar um campo desse tipo, atualize o script junto — não deixe para descobrir no próximo restart.
+Se sim, ele entra na lista de campos sensíveis a restart com dado pré-existente. **`scripts/shadowtraffic/toggle-shadowtraffic.ps1` hoje só recalcula `startingFrom` para 5 campos fixos: `users.user_id`, `drivers` fork key, `orders` fork key, `payments` fork key, `restaurants.restaurant_id`.** Um generator novo com `sequentialInteger`/`fork.key` **não é coberto automaticamente** — se não for adicionado à função `Sync-StartingPoints` do script, o próximo religamento desse generator específico pode reproduzir o mesmo incidente de colisão de PK e travamento total (ver `.claude/kb/shadowtraffic/patterns/restart-seguro-startingFrom.md`). Ao adicionar um campo desse tipo, atualize o script junto — não deixe para descobrir no próximo restart.
 
 ### 5. Validar antes de subir
 

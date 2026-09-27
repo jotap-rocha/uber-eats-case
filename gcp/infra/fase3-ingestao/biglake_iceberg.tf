@@ -1,7 +1,7 @@
 # BigLake — conexão para as tabelas Iceberg materializadas pelo job Dataproc
 # (Decisão 5). A criação da tabela Iceberg em si (CREATE TABLE ... WITH
 # CONNECTION ... OPTIONS(table_format='ICEBERG', ...)) é DDL executada pelo
-# job (src/gcp/dataproc_iceberg_merge/merge_job.py), não um resource Terraform
+# job (gcp/src/dataproc_iceberg_merge/merge_job.py), não um resource Terraform
 # — o provider google não expõe todas as opções específicas de tabela Iceberg
 # no resource google_bigquery_table na versão fixada (ver Open Question no
 # BUILD_REPORT).

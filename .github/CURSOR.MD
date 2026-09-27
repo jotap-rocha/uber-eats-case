@@ -46,7 +46,7 @@ Use `.github/commands/core/router.md` como ponto de partida. Para assuntos espec
 | SDD | `.github/sdd/` |
 | Contexto rapido | `../CONTEXT.md` |
 | README | `../README.md` |
-| Docs | `../docs/00-INDEX.md` |
+| Docs | `../shared/docs/00-INDEX.md` |
 
 ## Projeto
 

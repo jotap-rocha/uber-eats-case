@@ -2,7 +2,7 @@ schema_version: "1.0"
 domain: shadowtraffic
 file_type: spec
 last_validated: "2026-09-07"
-source: "gen/unified/uber-eats.json.template + .claude/sdd/reports/BUILD_REPORT_DIVERSIFICACAO_FONTES_UBEREATS_ETAPA3.md"
+source: "shared/gen/unified/uber-eats.json.template + .claude/sdd/reports/BUILD_REPORT_DIVERSIFICACAO_FONTES_UBEREATS_ETAPA3.md"
 
 note: >
   Mapa dos 17 generators do config unificado atual (pós Onda 3 Etapa 3).
@@ -141,5 +141,5 @@ out_of_scope:
   - name: mongo-ubereats (satelite "Perfil de Restaurante")
     reason: >
       Nao e gerado pelo ShadowTraffic. Seed estatico via
-      mongo/init/01_perfil_restaurante.js, populado uma vez no start do
+      shared/mongo/init/01_perfil_restaurante.js, populado uma vez no start do
       container mongo-ubereats.

@@ -27,11 +27,11 @@ mc event add myminio/ubereats-minio-bucket arn:minio:sqs::kinesis_bridge:webhook
 ```
 
 - `LAMBDA_BRIDGE_FUNCTION_URL` — saída `lambda_bridge_function_url` do Terraform
-  (`infra/aws/fase2-ingestao/outputs.tf`).
+  (`aws/infra/fase2-ingestao/outputs.tf`).
 - `MINIO_WEBHOOK_AUTH_TOKEN` — mesmo valor da variável Terraform
   `minio_webhook_auth_token`; o MinIO envia esse valor no header `Authorization`
   de toda chamada webhook, e a Lambda ponte valida esse header antes de processar
-  qualquer evento (`src/aws/lambda_minio_kinesis_bridge/handler.py`).
+  qualquer evento (`aws/src/lambda_minio_kinesis_bridge/handler.py`).
 
 ## 3. Formato do payload recebido pela Lambda
 

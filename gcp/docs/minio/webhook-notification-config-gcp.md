@@ -14,8 +14,8 @@ mc admin service restart local/
 mc event add local/uber-eats arn:minio:sqs::gcp_pubsub_bridge:webhook --event put
 ```
 
-- `<cloud_function_bridge_url>` vem do output `cloud_function_bridge_url` do Terraform (`infra/gcp/fase3-ingestao/outputs.tf`).
-- `<minio_webhook_auth_token>` é o mesmo valor passado na variável `minio_webhook_auth_token` — o MinIO não assina requisições com SigV4, então a Cloud Function valida esse token estático no header `Authorization` (ver `src/gcp/cloud_function_minio_pubsub_bridge/main.py`).
+- `<cloud_function_bridge_url>` vem do output `cloud_function_bridge_url` do Terraform (`gcp/infra/fase3-ingestao/outputs.tf`).
+- `<minio_webhook_auth_token>` é o mesmo valor passado na variável `minio_webhook_auth_token` — o MinIO não assina requisições com SigV4, então a Cloud Function valida esse token estático no header `Authorization` (ver `gcp/src/cloud_function_minio_pubsub_bridge/main.py`).
 
 ## Formato do payload recebido pela Cloud Function
 

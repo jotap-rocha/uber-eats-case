@@ -34,7 +34,7 @@ Cada chamada de `lookup` é uma amostragem **independente**. Duas chamadas ao me
 
 ### Gotcha real já existente neste config
 
-`gen/unified/uber-eats.json.template`, generator `kafka/route/`, campos `start_lat` e `start_lon`:
+`shared/gen/unified/uber-eats.json.template`, generator `kafka/route/`, campos `start_lat` e `start_lon`:
 
 ```json
 "start_lat": {"_gen": "lookup", "connection": "oracle", "table": "restaurants", "path": ["row", "lat"]},

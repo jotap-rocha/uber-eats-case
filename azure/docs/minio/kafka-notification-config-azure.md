@@ -19,7 +19,7 @@ mc admin service restart local/
 mc event add local/uber-eats arn:minio:sqs::eventhub:kafka --event put,delete
 ```
 
-- `AZURE_EVENTHUB_NAMESPACE` e `AZURE_EVENTHUB_CONNECTION_STRING` vêm de `gen/.env` (ver `gen/.env.template`, seção "Azure (Fase 1)") — a connection string é a do Event Hubs Namespace (não de um Event Hub individual), com permissão `Send` no mínimo (ver `azurerm_eventhub_namespace_authorization_rule.connect` em `infra/azure/fase1-ingestao/event_hubs.tf`).
+- `AZURE_EVENTHUB_NAMESPACE` e `AZURE_EVENTHUB_CONNECTION_STRING` vêm de `shared/gen/.env` (ver `shared/gen/.env.template`, seção "Azure (Fase 1)") — a connection string é a do Event Hubs Namespace (não de um Event Hub individual), com permissão `Send` no mínimo (ver `azurerm_eventhub_namespace_authorization_rule.connect` em `azure/infra/fase1-ingestao/event_hubs.tf`).
 - `sasl_username='$ConnectionString'` é literal — é o nome de usuário fixo exigido pelo endpoint Kafka do Event Hubs, não uma variável a substituir.
 
 ## Formato da mensagem publicada no tópico `minio`
@@ -40,7 +40,7 @@ MinIO publica o evento no formato nativo compatível com S3 Event Notification, 
 }
 ```
 
-O Stream Analytics (input `minio-input`, ver `infra/azure/fase1-ingestao/stream_analytics.tf`) lê esse payload diretamente do tópico — sem tradução de protocolo, sem componente intermediário.
+O Stream Analytics (input `minio-input`, ver `azure/infra/fase1-ingestao/stream_analytics.tf`) lê esse payload diretamente do tópico — sem tradução de protocolo, sem componente intermediário.
 
 ## Validação
 

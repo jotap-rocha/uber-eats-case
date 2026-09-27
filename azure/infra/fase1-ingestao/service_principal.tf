@@ -1,6 +1,6 @@
 # Service Principal usado pela storage credential do Unity Catalog (DESIGN,
 # Decisao 4) e pelo Kafka Connect Sink Connector (autenticacao OAuth contra
-# o ADLS Gen2, ver debezium/adls-sink-connector.json.template).
+# o ADLS Gen2, ver config/azure/debezium/adls-sink-connector.json.template).
 resource "azuread_application" "fase1" {
   display_name = "ubereats-fase1-adls-bronze"
 }

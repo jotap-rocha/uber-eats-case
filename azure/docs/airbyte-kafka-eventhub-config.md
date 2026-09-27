@@ -7,7 +7,7 @@
 1. Destinations → + New destination → **Kafka**
 2. Preencha:
    - **Bootstrap servers**: `<AZURE_EVENTHUB_NAMESPACE>.servicebus.windows.net:9093`
-   - **Topic pattern**: `postgres.{namespace}.{stream}` (gera `postgres.public.drivers`, `postgres.public.users` — mesmo padrão de nome de tópico esperado pelo Kafka Connect Sink Connector, ver `debezium/adls-sink-connector.json.template`)
+   - **Topic pattern**: `postgres.{namespace}.{stream}` (gera `postgres.public.drivers`, `postgres.public.users` — mesmo padrão de nome de tópico esperado pelo Kafka Connect Sink Connector, ver `config/azure/debezium/adls-sink-connector.json.template`)
    - **Protocol**: `SASL_SSL`
    - **SASL mechanism**: `PLAIN`
    - **SASL JAAS config**: `org.apache.kafka.common.security.plain.PlainLoginModule required username="$ConnectionString" password="<AZURE_EVENTHUB_CONNECTION_STRING>";`

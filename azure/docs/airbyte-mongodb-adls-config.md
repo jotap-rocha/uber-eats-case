@@ -1,6 +1,6 @@
 # Airbyte — MongoDB (snapshot) → ADLS Gen2 (Azure, Fase 1)
 
-> Substitui a Lakehouse Federation usada hoje na Fase 0 (`pipeline/silver/ingestion_mongo_perfil_restaurante.sql`) por ingestão real — decisão explícita do usuário (ver `BRAINSTORM_INGESTAO_AZURE_FASE1.md`, Decisão #6). Path particionado por data, não overwrite-in-place — necessário para o reference data input do Stream Analytics (ver `DESIGN_INGESTAO_AZURE_FASE1.md`, Decisão 6).
+> Substitui a Lakehouse Federation usada hoje na Fase 0 (`shared/pipeline/silver/ingestion_mongo_perfil_restaurante.sql`) por ingestão real — decisão explícita do usuário (ver `BRAINSTORM_INGESTAO_AZURE_FASE1.md`, Decisão #6). Path particionado por data, não overwrite-in-place — necessário para o reference data input do Stream Analytics (ver `DESIGN_INGESTAO_AZURE_FASE1.md`, Decisão 6).
 
 ## Configurar o destino "Azure Blob Storage"
 
@@ -8,7 +8,7 @@
 2. Preencha:
    - **Endpoint domain name**: `<AZURE_STORAGE_ACCOUNT_NAME>.blob.core.windows.net` (o mesmo Storage Account com hierarchical namespace habilitado — ADLS Gen2 é compatível com o endpoint Blob)
    - **Azure Blob Storage container name**: `bronze`
-   - **Azure Blob Storage account key**: chave do Storage Account (`infra/azure/fase1-ingestao/storage_account.tf`)
+   - **Azure Blob Storage account key**: chave do Storage Account (`azure/infra/fase1-ingestao/storage_account.tf`)
    - **Format**: `JSONL`
 3. Test connection → Set up
 
@@ -27,4 +27,4 @@
 
 1. Rodar a sync manualmente ("Sync now").
 2. Confirmar que o arquivo aparece em `abfss://bronze@<storage-account>.dfs.core.windows.net/mongodb/perfil_restaurante/<ano>/<mes>/<dia>/perfil_restaurante.json`.
-3. Confirmar que a Bronze do Databricks (`pipeline/bronze/ingest_mongodb_perfil_restaurante.sql`) e o Synapse (`sql/azure/synapse_copy_merge.sql`) conseguem ler o arquivo.
+3. Confirmar que a Bronze do Databricks (`shared/pipeline/bronze/ingest_mongodb_perfil_restaurante.sql`) e o Synapse (`azure/sql/synapse_copy_merge.sql`) conseguem ler o arquivo.

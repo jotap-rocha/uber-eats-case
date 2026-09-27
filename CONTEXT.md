@@ -10,18 +10,20 @@ Pipeline completo de engenharia de dados construido como portfolio profissional,
 
 | Componente | Descricao | Observacao |
 |------------|-----------|------------|
-| `src/` | Codigo-fonte principal | `src/aws/` — Lambdas da ingestao Fase 2 (ver `infra/aws/`) |
-| `infra/` | Infraestrutura como codigo (Terraform) | `infra/aws/fase2-ingestao/` — DMS, Kinesis, DataSync, Redshift, Glue, Lambdas |
-| `tests/` | Testes automatizados | `tests/aws/` — testes das Lambdas (`pytest`, `moto`); ver `requirements-aws.txt` |
-| `scripts/` | Scripts auxiliares | Validacoes, automacoes e utilitarios |
-| `docs/` | Documentacao complementar | Indice em `docs/00-INDEX.md` |
+| `aws/` | Trilha de ingestao AWS (Fase 2) | `aws/src/` (Lambdas), `aws/infra/` (Terraform: DMS, Kinesis, DataSync, Redshift, Glue), `aws/tests/`, `aws/requirements.txt` |
+| `azure/` | Trilha de ingestao Azure (Fase 1) | `azure/src/`, `azure/infra/`, `azure/tests/`, `azure/docs/` |
+| `gcp/` | Trilha de ingestao GCP (Fase 3) | `gcp/src/`, `gcp/infra/`, `gcp/tests/`, `gcp/docs/`, `gcp/requirements.txt` |
+| `shared/` | Comum as 3 nuvens | `shared/pipeline/` (Bronze/Silver/Gold Databricks), `shared/gen/` (ShadowTraffic), `shared/mongo/`, `shared/sql/`, `shared/docs/` |
+| `config/` | Dado de conexao/ambiente por nuvem | `config/{aws,azure,gcp,shared}/` — templates de connector Debezium, hadoop-conf, deploy |
+| `scripts/` | Scripts auxiliares | Subpastas por assunto: `infra/`, `shadowtraffic/`, `all/`, `ingestion/`, `tooling/`, `lib/` |
+| `docs/` | *(nao existe mais na raiz)* | Documentacao movida para `shared/docs/` (comum) e `{cloud}/docs/` (especifica); indice em `shared/docs/00-INDEX.md` |
 | `.cursor/` | Agentes, KB, comandos e SDD | Fonte canonica do formato agentic |
 
 ## Comandos de validacao
 
 ```bash
 # Instalar dependencias, se necessario
-.\scripts\start-all.ps1
+.\scripts\all\start-all.ps1
 
 # Validar o projeto
 python3 scripts/tooling/validate-agent-router.py
@@ -45,7 +47,7 @@ python3 scripts/tooling/validate-agent-router.py
 | `.cursor/commands/core/router.md` | Roteamento de agentes |
 | `.cursor/sdd/architecture/` | Contratos SDD |
 | `.cursor/sdd/architecture/PIPELINE_MANDATORY_PRACTICES.yaml` | **Mandatos pipeline** — Teams, drift, quarentena, sentinela |
-| `docs/MANDATOS_PIPELINE_DADOS.md` | Guia humano dos mandatos |
+| `shared/docs/MANDATOS_PIPELINE_DADOS.md` | Guia humano dos mandatos |
 | `.cursor/agents/domain/uber-eats-case-expert.md` | Agente especialista deste projeto |
 | `get_started/DEV_LOOP_Guia_Comandos.md` | Guia passo a passo do Dev Loop (L2): requirements → design → `/dev` |
 | `.cursor/commands/workflow-dev-loop/` | Workflow estruturado: `/devloop-init`, `/devloop-phase`, `/devloop-execute` |
@@ -68,10 +70,10 @@ python3 scripts/tooling/validate-agent-router.py
 | `CONTEXT.md` | Onboarding rapido |
 | `.cursorrules` | Regras automaticas do Cursor |
 | `.cursor/CURSOR.MD` | Contexto principal para agentes |
-| `docs/00-INDEX.md` | Indice da documentacao |
+| `shared/docs/00-INDEX.md` | Indice da documentacao |
 
 ## Proximos passos recomendados
 
-1. Completar detalhes especificos do dominio no `README.md` e em `docs/`.
+1. Completar detalhes especificos do dominio no `README.md` e em `shared/docs/`.
 2. Usar SDD para mudancas relevantes: `/brainstorm`, `/define`, `/design`, `/build`, `/ship`.
 3. Evoluir o agente `.cursor/agents/domain/uber-eats-case-expert.md` quando regras de negocio mudarem.

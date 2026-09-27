@@ -4,7 +4,7 @@
 >
 > Reaproveitado sem alteração nas 3 arquiteturas (Warehouse, Lakehouse, Kappa) × 3 clouds (Azure, AWS, GCP) do roadmap em [`docs/ROADMAP_ARQUITETURA_MULTICLOUD.md`](ROADMAP_ARQUITETURA_MULTICLOUD.md) — Fase 0.
 >
-> Fonte de dados: `gen/unified/uber-eats.json` — gerador único (Postgres + Oracle no mesmo processo) + satélite MongoDB (seed estático) + MinIO (streams remanescentes). 4 sistemas ao todo: **Postgres** (`users`, `drivers` — mutação real de linha), **Oracle** (`restaurants`, `products`, `inventory`, `orders`, `payments`, `order_items`, `receipts` — insert-only e mutação real, capturado via Debezium/Kafka Connect/Redpanda), **MongoDB** (`restaurant_profile`, satélite estático, sem CDC) e **MinIO** (streams remanescentes: Entrega, Avaliação, Turno, Incidente e os fora-do-modelo-core).
+> Fonte de dados: `shared/gen/unified/uber-eats.json` — gerador único (Postgres + Oracle no mesmo processo) + satélite MongoDB (seed estático) + MinIO (streams remanescentes). 4 sistemas ao todo: **Postgres** (`users`, `drivers` — mutação real de linha), **Oracle** (`restaurants`, `products`, `inventory`, `orders`, `payments`, `order_items`, `receipts` — insert-only e mutação real, capturado via Debezium/Kafka Connect/Redpanda), **MongoDB** (`restaurant_profile`, satélite estático, sem CDC) e **MinIO** (streams remanescentes: Entrega, Avaliação, Turno, Incidente e os fora-do-modelo-core).
 >
 > **Estado:** todos os bugs mecânicos e gaps estruturais identificados no modelo estão **resolvidos** (Onda 1 + Onda 2 + Onda 3). Nenhuma pendência conhecida no modelo em si — ver seção "Estado da implementação" ao final (a Onda 3 tem pendências de *validação em Databricks real*, fora do escopo deste documento).
 
@@ -130,7 +130,7 @@ CPF, CNPJ e license_number **não são eliminados** — continuam existindo como
 
 | Componente | Arquivo | Mudança |
 |------------|---------|---------|
-| Gerador | (então `gen/minio/uber-eats.json`, hoje parte de `gen/unified/uber-eats.json`) | `orders`: removidos `payment_key`, `rating_key`; `restaurant_key` migrado para `restaurant_id`. `mongodb/items.product_id`: lookup real. `mysql/ratings`: `+order_id`, `-restaurant_identifier`. `mysql/restaurants`: `+lat`, `+lon`. `kafka/route.start_lat/lon`: lookup real |
+| Gerador | (então `shared/gen/minio/uber-eats.json`, hoje parte de `shared/gen/unified/uber-eats.json`) | `orders`: removidos `payment_key`, `rating_key`; `restaurant_key` migrado para `restaurant_id`. `mongodb/items.product_id`: lookup real. `mysql/ratings`: `+order_id`, `-restaurant_identifier`. `mysql/restaurants`: `+lat`, `+lon`. `kafka/route.start_lat/lon`: lookup real |
 | Silver | `ingestion_kafka_orders.sql`, `ingestion_kafka_ratings.sql`, `ingestion_mysql_restaurants.sql` | Colunas renomeadas/adicionadas |
 | Gold | `load_order_unit_economics.sql`, `load_restaurant_performance.sql` | Join por `id_restaurante` em vez de `cnpj` |
 
@@ -139,9 +139,9 @@ CPF, CNPJ e license_number **não são eliminados** — continuam existindo como
 | Componente | Arquivo | Mudança |
 |------------|---------|---------|
 | Infraestrutura | `docker-compose.yml` | 3 containers (`gen-drivers`, `gen-users`, `gen-minio`) → 1 (`gen-unified`) |
-| Gerador | `gen/unified/uber-eats.json(.template)` (novo, substitui `gen/postgres/*` e `gen/minio/uber-eats.json`) | `connections: postgres + minio`; `users`/`drivers` no Postgres real; todo consumidor MinIO redirecionado |
+| Gerador | `shared/gen/unified/uber-eats.json(.template)` (novo, substitui `shared/gen/postgres/*` e `shared/gen/minio/uber-eats.json`) | `connections: postgres + minio`; `users`/`drivers` no Postgres real; todo consumidor MinIO redirecionado |
 | Schema real | `sql/create_users_table.sql`, `create_drivers_table.sql` | PK `uuid`→`int`; `drivers` ganha `vehicle_make`, `vehicle_model`, `vehicle_year`, `license_number`, `city` |
-| Automação | `gen/setup-configs.ps1`, `scripts/shadowtraffic/start-generators.ps1`, `stop-generators.ps1`, `scripts/all/start-all.ps1`, `scripts/infra/reset-all.ps1` | Apontam para o gerador único |
+| Automação | `shared/gen/setup-configs.ps1`, `scripts/shadowtraffic/start-generators.ps1`, `stop-generators.ps1`, `scripts/all/start-all.ps1`, `scripts/infra/reset-all.ps1` | Apontam para o gerador único |
 | Silver | `ingestion_kafka_orders.sql` (renomeia `cpf_usuario`→`id_usuario`); `ingestion_postgres_drivers.sql` (novo, substitui os 2 scripts antigos de motorista) | Dimensão única de motorista |
 | Documentação | Este arquivo | Zero pendências |
 
@@ -157,7 +157,7 @@ Três etapas sequenciais, cada uma validada em ambiente real (Docker local) pont
 | 2 — Restaurante/Produto/Estoque/Oracle | Infraestrutura | `docker-compose.yml` ganha `oracle-ubereats` (`gvenzl/oracle-free:23.4-full`, ARCHIVELOG+LogMiner), `redpanda` (broker Kafka-compatível), `kafka-connect` (`quay.io/debezium/connect:3.0`), `mongo-ubereats` (seed estático) |
 | 2 | Gerador | `restaurants`/`products`/`inventory` migram de `bucket`/`data` (MinIO) para `table`/`row` (Oracle), insert-only; conector Debezium Oracle registrado via REST API |
 | 2 | Bronze/Silver | `ingest_oracle_{restaurants,products,inventory}.sql` (Kafka→Structured Streaming, contrato canônico de CDC) e `ingestion_oracle_{restaurants,products,inventory}.sql` (substituem `ingestion_mysql_restaurants`/`ingestion_mysql_products`/`ingestion_postgres_inventory`) |
-| 2 | Satélite | `mongo/init/01_perfil_restaurante.js` — seed de `RESTAURANT_COUNT` documentos (`restaurant_id: 1..N`, menu + horários); `ingestion_mongo_perfil_restaurante.sql` produz `silver_restaurant_profile` |
+| 2 | Satélite | `shared/mongo/init/01_perfil_restaurante.js` — seed de `RESTAURANT_COUNT` documentos (`restaurant_id: 1..N`, menu + horários); `ingestion_mongo_perfil_restaurante.sql` produz `silver_restaurant_profile` |
 | 3 — Pedido/Pagamento/Oracle | Gerador | `orders`/`payments` migram de `bucket`/`data`+`fork`(→S3) para `table`/`row`+`fork`+`stateMachine`(→`op:update` no Oracle), mesmo padrão da Etapa 1; `order_items`/`receipts` seguem para Oracle; `kafka/status` e `kafka/events` **removidos** do gerador |
 | 3 | Schema real | `sql/oracle/03_create_tables_pedido_pagamento.sh` — `orders`, `payments`, `order_items`, `receipts`; `order_id`/`payment_id` migram de `uuid` para `sequentialInteger` (mesmo critério de chave canônica já aplicado a Usuário/Restaurante/Motorista) |
 | 3 | Bronze/Silver | `ingest_oracle_{orders,payments,order_items,receipts}.sql` e `ingestion_oracle_{orders,payments,order_items,receipts}.sql` (substituem `ingestion_kafka_orders`/`ingestion_kafka_payments`/`ingestion_mongodb_items`/`ingestion_kafka_receipts`); `ingestion_kafka_status.sql`/`ingestion_kafka_events.sql` **removidos** |

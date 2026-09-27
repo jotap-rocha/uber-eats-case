@@ -7,7 +7,7 @@ services:
     cpus: 0.5
     ports:
       - "5432:5432"
-    env_file: ./gen/.env
+    env_file: ./shared/gen/.env
     environment:
       - POSTGRES_USER=${POSTGRES_USERNAME}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -16,7 +16,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       # Monta nossos scripts SQL para dentro da pasta de inicialização do Postgres
       # Ele vai rodar CADA .sql nessa pasta AUTOMATICAMENTE na 1ª vez que o volume for criado.
-      - ./sql:/docker-entrypoint-initdb.d
+      - ./shared/sql/postgres:/docker-entrypoint-initdb.d
     command: >
       postgres
       -c wal_level=logical
@@ -34,7 +34,7 @@ services:
     ports:
       - "9000:9000" # API
       - "9001:9001" # Console
-    env_file: ./gen/.env
+    env_file: ./shared/gen/.env
     environment:
       - MINIO_ROOT_USER=${AWS_ACCESS_KEY_ID}
       - MINIO_ROOT_PASSWORD=${AWS_SECRET_ACCESS_KEY}
@@ -57,7 +57,7 @@ services:
     depends_on:
       minio-ubereats:
         condition: service_healthy
-    env_file: ./gen/.env
+    env_file: ./shared/gen/.env
     # Comandos para criar o bucket "uber-eats"
     entrypoint: >
       /bin/sh -c "
@@ -81,8 +81,8 @@ services:
       oracle-ubereats:
         condition: service_healthy
     volumes:
-      - ./gen/unified/uber-eats.json:/home/config.json:ro
-    env_file: ./gen/.env
+      - ./shared/gen/unified/uber-eats.json:/home/config.json:ro
+    env_file: ./shared/gen/.env
     command: --config /home/config.json
 
   # --- 4. ORACLE (Onda 3, Etapa 2) — recebe Restaurante/Produto/Estoque,
@@ -94,14 +94,14 @@ services:
     cpus: 1.5
     ports:
       - "1521:1521"
-    env_file: ./gen/.env
+    env_file: ./shared/gen/.env
     environment:
       - ORACLE_PASSWORD=${ORACLE_PASSWORD}
       - APP_USER=${ORACLE_APP_USERNAME}
       - APP_USER_PASSWORD=${ORACLE_APP_PASSWORD}
     volumes:
       - oracle_data:/opt/oracle/oradata
-      - ./sql/oracle:/container-entrypoint-startdb.d
+      - ./shared/sql/oracle:/container-entrypoint-startdb.d
     healthcheck:
       test: ["CMD", "healthcheck.sh"]
       interval: 20s
@@ -149,10 +149,10 @@ services:
     cpus: 0.5
     ports:
       - "27017:27017"
-    env_file: ./gen/.env
+    env_file: ./shared/gen/.env
     volumes:
       - mongo_data:/data/db
-      - ./mongo/init:/docker-entrypoint-initdb.d:ro
+      - ./shared/mongo/init:/docker-entrypoint-initdb.d:ro
 
   # --- 8. DEBEZIUM SERVER (Fase 3/GCP, Etapa 3 — trilho real-time -> Pub/Sub)
   #        Decisao 2 do DESIGN_INGESTAO_GCP_FASE3.md: uma instancia por fonte,
@@ -163,10 +163,10 @@ services:
     depends_on:
       postgres-ubereats:
         condition: service_healthy
-    env_file: ./gen/.env
+    env_file: ./shared/gen/.env
     volumes:
-      - ./src/gcp/debezium_server_postgres/application.properties:/debezium/conf/application.properties:ro
-      - ./gen/gcp-credentials.json:/debezium/gcp-credentials.json:ro
+      - ./config/gcp/debezium-server/postgres/application.properties:/debezium/conf/application.properties:ro
+      - ./shared/gen/gcp-credentials.json:/debezium/gcp-credentials.json:ro
       - debezium_postgres_data:/debezium/data
 
   debezium-server-oracle:
@@ -175,10 +175,10 @@ services:
     depends_on:
       oracle-ubereats:
         condition: service_healthy
-    env_file: ./gen/.env
+    env_file: ./shared/gen/.env
     volumes:
-      - ./src/gcp/debezium_server_oracle/application.properties:/debezium/conf/application.properties:ro
-      - ./gen/gcp-credentials.json:/debezium/gcp-credentials.json:ro
+      - ./config/gcp/debezium-server/oracle/application.properties:/debezium/conf/application.properties:ro
+      - ./shared/gen/gcp-credentials.json:/debezium/gcp-credentials.json:ro
       - debezium_oracle_data:/debezium/data
 
   # --- 9. STORAGE TRANSFER SERVICE AGENT (Fase 3/GCP, Etapa 1 — MinIO -> GCS)
@@ -190,9 +190,9 @@ services:
     depends_on:
       minio-setup:
         condition: service_completed_successfully
-    env_file: ./gen/.env
+    env_file: ./shared/gen/.env
     volumes:
-      - ./gen/gcp-credentials.json:/gcp-credentials.json:ro
+      - ./shared/gen/gcp-credentials.json:/gcp-credentials.json:ro
     command: >
       --project-id=${STS_PROJECT_ID}
       --agent-pool=${STS_AGENT_POOL_ID}
@@ -201,7 +201,7 @@ services:
   # --- 10. KAFKA CONNECT DEDICADO (Fase 1/Azure, Etapas 2/4 -- Event Hub como
   #         broker). Cluster SEPARADO do "kafka-connect" (item 6), que continua
   #         apontado para o Redpanda local -- nao reaproveitado diretamente
-  #         para nao quebrar pipeline/bronze/ingest_oracle_orders.sql hoje.
+  #         para nao quebrar shared/pipeline/bronze/ingest_oracle_orders.sql hoje.
   #         Ver DESIGN_INGESTAO_AZURE_FASE1.md, Decisao 1/2, e
   #         BUILD_REPORT_INGESTAO_AZURE_FASE1.md, "Desvios do DESIGN". ---
   kafka-connect-azure:
@@ -209,7 +209,7 @@ services:
     container_name: kafka-connect-azure
     depends_on:
       - oracle-ubereats
-    env_file: ./gen/.env
+    env_file: ./shared/gen/.env
     environment:
       - BOOTSTRAP_SERVERS=${AZURE_EVENTHUB_NAMESPACE}.servicebus.windows.net:9093
       - GROUP_ID=ubereats-fase1-connect-cluster
@@ -229,7 +229,7 @@ services:
     ports:
       - "8084:8084"
     volumes:
-      - ./debezium/hadoop-conf:/etc/kafka-connect-azure/hadoop-conf:ro
+      - ./config/azure/hadoop-conf:/etc/kafka-connect-azure/hadoop-conf:ro
 
 volumes:
   postgres_data:

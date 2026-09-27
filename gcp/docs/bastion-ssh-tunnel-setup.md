@@ -4,7 +4,7 @@
 
 ## Por que existe
 
-O Datastream é *pull-based* — precisa iniciar a conexão até Postgres/Oracle/MongoDB, que continuam rodando localmente (decisão do brainstorm: não migrar a Fase 0 para uma VM GCP, ao contrário da EC2 da Fase 2/AWS). O bastion (`infra/gcp/fase3-ingestao/bastion.tf`) é uma GCE VM mínima e pública que só encaminha SSH — a máquina local é quem abre e mantém o túnel, não o bastion.
+O Datastream é *pull-based* — precisa iniciar a conexão até Postgres/Oracle/MongoDB, que continuam rodando localmente (decisão do brainstorm: não migrar a Fase 0 para uma VM GCP, ao contrário da EC2 da Fase 2/AWS). O bastion (`gcp/infra/fase3-ingestao/bastion.tf`) é uma GCE VM mínima e pública que só encaminha SSH — a máquina local é quem abre e mantém o túnel, não o bastion.
 
 ## Passo a passo
 
@@ -16,12 +16,12 @@ O Datastream é *pull-based* — precisa iniciar a conexão até Postgres/Oracle
 
 2. **Provisionar o bastion** via Terraform, passando a chave pública em `bastion_ssh_public_key` e a privada (conteúdo do arquivo) em `bastion_ssh_private_key` — esta última também é usada pelo Datastream na "Forward SSH tunnel connectivity profile" (`datastream.tf`).
 
-3. **Copiar a chave privada** para a máquina local em `/etc/ubereats-gcp/bastion_key` (permissão `600`), e substituir `BASTION_PUBLIC_IP` em `deploy/autossh/ubereats-gcp-tunnel.service` pelo output `bastion_public_ip` do Terraform.
+3. **Copiar a chave privada** para a máquina local em `/etc/ubereats-gcp/bastion_key` (permissão `600`), e substituir `BASTION_PUBLIC_IP` em `config/gcp/deploy/autossh/ubereats-gcp-tunnel.service` pelo output `bastion_public_ip` do Terraform.
 
 4. **Instalar o `autossh`** na máquina local (`apt install autossh` / `choco install autossh` / WSL) e registrar o serviço:
 
    ```bash
-   sudo cp deploy/autossh/ubereats-gcp-tunnel.service /etc/systemd/system/
+   sudo cp config/gcp/deploy/autossh/ubereats-gcp-tunnel.service /etc/systemd/system/
    sudo systemctl daemon-reload
    sudo systemctl enable --now ubereats-gcp-tunnel.service
    ```
