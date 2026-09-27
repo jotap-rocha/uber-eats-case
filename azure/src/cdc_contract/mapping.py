@@ -3,7 +3,7 @@
 Documenta em codigo o mesmo mapeamento descrito em docs/data-contract-cdc-azure.md
 -- Postgres (Airbyte) e Oracle (Debezium), sem nenhum campo novo em relacao a
 Onda 3. Usado para validar (via teste) que o Kafka Connect Sink Connector
-(debezium/adls-sink-connector.json.template) preserva os campos necessarios
+(config/azure/debezium/adls-sink-connector.json.template) preserva os campos necessarios
 ao gravar no ADLS.
 """
 

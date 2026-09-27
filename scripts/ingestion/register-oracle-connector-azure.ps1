@@ -3,7 +3,7 @@
 # Descricao: Injeta a senha do usuario Debezium e a connection string do
 #            Event Hub (shared/gen/.env) no template do connector Oracle da Fase 1/
 #            Azure, e registra no cluster Kafka Connect DEDICADO desta fase
-#            (porta 8084 -- ver debezium/connect-worker-eventhub.properties.template
+#            (porta 8084 -- ver config/azure/debezium/connect-worker-eventhub.properties.template
 #            e docker-compose.yml, servico kafka-connect-azure).
 # Uso: rodar depois que oracle-ubereats e kafka-connect-azure estiverem saudaveis.
 # ==============================================================================
@@ -18,7 +18,7 @@ if (-not (Test-Path $envFile)) {
 
 $envVars = Get-Content $envFile | Where-Object { $_ -match '=' -and $_ -notmatch '^\s*#' } | ConvertFrom-StringData
 
-$template = "$scriptFolder\..\..\debezium\oracle-connector-azure.json.template"
+$template = "$scriptFolder\..\..\config\azure\debezium\oracle-connector-azure.json.template"
 $connectorJson = (Get-Content $template -Raw) `
     -replace "REPLACE_ORACLE_DBZ_PASSWORD", $envVars.ORACLE_DBZ_PASSWORD `
     -replace "REPLACE_EVENTHUB_NAMESPACE_CONNECTION_STRING", $envVars.AZURE_EVENTHUB_CONNECTION_STRING `

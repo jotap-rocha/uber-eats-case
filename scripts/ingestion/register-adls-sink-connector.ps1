@@ -20,7 +20,7 @@ if (-not (Test-Path $envFile)) {
 
 $envVars = Get-Content $envFile | Where-Object { $_ -match '=' -and $_ -notmatch '^\s*#' } | ConvertFrom-StringData
 
-$template = "$scriptFolder\..\..\debezium\adls-sink-connector.json.template"
+$template = "$scriptFolder\..\..\config\azure\debezium\adls-sink-connector.json.template"
 $connectorJson = (Get-Content $template -Raw) -replace "REPLACE_STORAGE_ACCOUNT", $envVars.AZURE_STORAGE_ACCOUNT_NAME
 
 Write-Host "[INFO] Registrando sink connector ADLS no Kafka Connect (http://localhost:8084)..." -ForegroundColor Cyan

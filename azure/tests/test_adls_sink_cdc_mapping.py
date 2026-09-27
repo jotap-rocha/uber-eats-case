@@ -5,7 +5,7 @@ Valida que:
 1. O mapeamento canonico de CDC (docs/data-contract-cdc-azure.md) extrai
    corretamente as 4 colunas a partir de um registro Airbyte (Postgres) e de
    um envelope Debezium (Oracle) -- mesmos campos que o Kafka Connect Sink
-   Connector (debezium/adls-sink-connector.json.template) precisa preservar
+   Connector (config/azure/debezium/adls-sink-connector.json.template) precisa preservar
    ao gravar no ADLS.
 2. Os templates JSON dos conectores Kafka Connect (source Oracle e sink ADLS)
    sao JSON valido e tem as chaves de configuracao esperadas pelo DESIGN.
@@ -84,7 +84,7 @@ def test_canonical_fields_constant_matches_mapping_output():
 
 
 def test_oracle_connector_azure_template_is_valid_json_with_expected_keys():
-    template_path = REPO_ROOT / "debezium" / "oracle-connector-azure.json.template"
+    template_path = REPO_ROOT / "config" / "azure" / "debezium" / "oracle-connector-azure.json.template"
     config = json.loads(template_path.read_text(encoding="utf-8"))["config"]
 
     assert config["connector.class"] == "io.debezium.connector.oracle.OracleConnector"
@@ -93,7 +93,7 @@ def test_oracle_connector_azure_template_is_valid_json_with_expected_keys():
 
 
 def test_adls_sink_connector_template_is_valid_json_with_expected_keys():
-    template_path = REPO_ROOT / "debezium" / "adls-sink-connector.json.template"
+    template_path = REPO_ROOT / "config" / "azure" / "debezium" / "adls-sink-connector.json.template"
     config = json.loads(template_path.read_text(encoding="utf-8"))["config"]
 
     assert config["connector.class"] == "io.confluent.connect.hdfs.HdfsSinkConnector"

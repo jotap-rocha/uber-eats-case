@@ -212,6 +212,7 @@ shared/gen/postgres/users.json
 shared/gen/unified/uber-eats.json
 shared/gen/gcp-credentials.json
 shared/mongo/init/01_perfil_restaurante.js
+config/azure/hadoop-conf/core-site.xml
 abctl-v0.30.3-windows-amd64/
 
 # --- Framework agentic (Dev Loop / SDD) ---
