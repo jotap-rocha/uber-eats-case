@@ -23,9 +23,9 @@ function Get-RepoRoot {
 function Get-EnvVars {
     param([Parameter(Mandatory = $true)][string]$RepoRoot)
 
-    $envFile = "$RepoRoot\gen\.env"
+    $envFile = "$RepoRoot\shared\gen\.env"
     if (-not (Test-Path $envFile)) {
-        Write-Host "[ERRO] gen\.env nao encontrado. Copie gen\.env.template para gen\.env e preencha as credenciais." -ForegroundColor Red
+        Write-Host "[ERRO] shared\gen\.env nao encontrado. Copie shared\gen\.env.template para shared\gen\.env e preencha as credenciais." -ForegroundColor Red
         exit 1
     }
     return (Get-Content $envFile | Where-Object { $_ -match '=' -and $_ -notmatch '^\s*#' } | ConvertFrom-StringData)

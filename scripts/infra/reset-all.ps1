@@ -15,7 +15,7 @@ Write-Host "   -> 2/3: Parando conteineres E DESTRUINDO volumes (postgres_data, 
 docker-compose down -v
 
 Write-Host "   -> 3/3: Limpando arquivos .json gerados (que continham segredos)..."
-Remove-Item -Path ".\gen\unified\uber-eats.json" -ErrorAction SilentlyContinue
+Remove-Item -Path ".\shared\gen\unified\uber-eats.json" -ErrorAction SilentlyContinue
 
 Write-Host ""
 Write-Host "[OK] Ambiente 100% limpo e formatado."

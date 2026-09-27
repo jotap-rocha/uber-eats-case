@@ -8,7 +8,7 @@
 #            shadowtraffic-report-loop.ps1) em logs/shadowtraffic-report.log.
 #
 # Por que este script existe (nao usar apenas docker-compose stop/start):
-#   O config gen/unified/uber-eats.json.template usa "startingFrom": N fixo
+#   O config shared/gen/unified/uber-eats.json.template usa "startingFrom": N fixo
 #   para os campos sequenciais (user_id, driver_id, order_id, payment_id,
 #   restaurant_id). Se o container for religado do zero com o mesmo N fixo
 #   e a tabela ja tiver linhas alem desse N, o INSERT bate em PK duplicada
@@ -37,7 +37,7 @@ $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\..\lib\shadowtraffic-common.ps1"
 
 $repoRoot  = Get-RepoRoot
-$jsonPath  = "$repoRoot\gen\unified\uber-eats.json"
+$jsonPath  = "$repoRoot\shared\gen\unified\uber-eats.json"
 $RESTAURANT_TARGET = 500
 
 $logDir      = "$repoRoot\logs"
@@ -106,8 +106,8 @@ function Sync-StartingPoints {
 
     Write-Host "   users=$maxUser drivers=$maxDriver orders=$maxOrder payments=$maxPayment restaurants=$restCount/$RESTAURANT_TARGET"
 
-    Write-Host "[2/3] Injetando segredos do .env (gen\setup-configs.ps1)..."
-    & "$repoRoot\gen\setup-configs.ps1" | Out-Null
+    Write-Host "[2/3] Injetando segredos do .env (shared\gen\setup-configs.ps1)..."
+    & "$repoRoot\shared\gen\setup-configs.ps1" | Out-Null
 
     Write-Host "[3/3] Ajustando 'startingFrom' no uber-eats.json gerado (sem tocar no template)..."
     $config = Get-Content $jsonPath -Raw | ConvertFrom-Json -Depth 100

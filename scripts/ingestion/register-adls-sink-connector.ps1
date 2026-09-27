@@ -1,6 +1,6 @@
 # ==============================================================================
 # Script: register-adls-sink-connector.ps1
-# Descricao: Injeta o nome do Storage Account (gen/.env) no template do sink
+# Descricao: Injeta o nome do Storage Account (shared/gen/.env) no template do sink
 #            connector ADLS e registra no cluster Kafka Connect dedicado da
 #            Fase 1/Azure (porta 8084). Consome os mesmos topicos que o
 #            Stream Analytics tambem le (DESIGN, Decisao 1 -- captura unica,
@@ -11,10 +11,10 @@
 # ==============================================================================
 
 $scriptFolder = $PSScriptRoot
-$envFile = "$scriptFolder\..\..\gen\.env"
+$envFile = "$scriptFolder\..\..\shared\gen\.env"
 
 if (-not (Test-Path $envFile)) {
-    Write-Host "[ERRO] gen/.env nao encontrado." -ForegroundColor Red
+    Write-Host "[ERRO] shared/gen/.env nao encontrado." -ForegroundColor Red
     exit 1
 }
 

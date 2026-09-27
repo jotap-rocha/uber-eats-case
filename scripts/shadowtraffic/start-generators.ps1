@@ -19,7 +19,7 @@ if (-not $postgresRunning -or -not $minioRunning) {
 Write-Host "[OK] Infraestrutura ativa detectada."
 Write-Host ""
 Write-Host "[1/2] Injetando segredos do .env nos arquivos .json..."
-.\gen\setup-configs.ps1
+.\shared\gen\setup-configs.ps1
 
 Write-Host ""
 Write-Host "[2/2] Iniciando geradores ShadowTraffic..."

@@ -75,12 +75,12 @@ Start-DockerDesktop
 
 # --- Copiar .env para raiz (docker-compose precisa) ---
 Write-Host "[SETUP] Preparando variaveis de ambiente..." -ForegroundColor Cyan
-if (Test-Path "gen\.env") {
-    Copy-Item -Path "gen\.env" -Destination ".env" -Force
+if (Test-Path "shared\gen\.env") {
+    Copy-Item -Path "shared\gen\.env" -Destination ".env" -Force
     Write-Host "   -> Arquivo .env copiado para raiz (temporario)" -ForegroundColor Gray
 } else {
-    Write-Host "[ERRO] Arquivo gen/.env nao encontrado!" -ForegroundColor Red
-    Write-Host "Execute: copy gen\.env.template gen\.env" -ForegroundColor Yellow
+    Write-Host "[ERRO] Arquivo shared/gen/.env nao encontrado!" -ForegroundColor Red
+    Write-Host "Execute: copy shared\gen\.env.template shared\gen\.env" -ForegroundColor Yellow
     exit 1
 }
 
@@ -99,7 +99,7 @@ Write-Host "Status dos servicos:" -ForegroundColor White
 Write-Host "   -> Postgres: localhost:5432 (Tabelas criadas automaticamente)" -ForegroundColor White
 Write-Host "   -> Oracle: localhost:1521/FREEPDB1" -ForegroundColor White
 Write-Host "   -> MinIO API: http://localhost:9000" -ForegroundColor White
-Write-Host "   -> MinIO Console: http://localhost:9001 (credenciais conforme gen/.env)" -ForegroundColor White
+Write-Host "   -> MinIO Console: http://localhost:9001 (credenciais conforme shared/gen/.env)" -ForegroundColor White
 Write-Host "   -> Bucket 'uber-eats': Criado automaticamente" -ForegroundColor Gray
 Write-Host "   -> Mongo: localhost:27017 (satelite Perfil de Restaurante, seed unico)" -ForegroundColor White
 Write-Host ""

@@ -1,7 +1,7 @@
 # ==============================================================================
 # Script: register-oracle-connector-azure.ps1
 # Descricao: Injeta a senha do usuario Debezium e a connection string do
-#            Event Hub (gen/.env) no template do connector Oracle da Fase 1/
+#            Event Hub (shared/gen/.env) no template do connector Oracle da Fase 1/
 #            Azure, e registra no cluster Kafka Connect DEDICADO desta fase
 #            (porta 8084 -- ver debezium/connect-worker-eventhub.properties.template
 #            e docker-compose.yml, servico kafka-connect-azure).
@@ -9,10 +9,10 @@
 # ==============================================================================
 
 $scriptFolder = $PSScriptRoot
-$envFile = "$scriptFolder\..\..\gen\.env"
+$envFile = "$scriptFolder\..\..\shared\gen\.env"
 
 if (-not (Test-Path $envFile)) {
-    Write-Host "[ERRO] gen/.env nao encontrado." -ForegroundColor Red
+    Write-Host "[ERRO] shared/gen/.env nao encontrado." -ForegroundColor Red
     exit 1
 }
 

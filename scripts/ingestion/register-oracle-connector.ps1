@@ -1,15 +1,15 @@
 # ==============================================================================
 # Script: register-oracle-connector.ps1
-# Descricao: Injeta a senha do usuario Debezium (gen/.env) no template do
+# Descricao: Injeta a senha do usuario Debezium (shared/gen/.env) no template do
 #            connector e registra no Kafka Connect via REST API.
 # Uso: rodar depois que oracle-ubereats e kafka-connect estiverem saudaveis.
 # ==============================================================================
 
 $scriptFolder = $PSScriptRoot
-$envFile = "$scriptFolder\..\..\gen\.env"
+$envFile = "$scriptFolder\..\..\shared\gen\.env"
 
 if (-not (Test-Path $envFile)) {
-    Write-Host "[ERRO] gen/.env nao encontrado." -ForegroundColor Red
+    Write-Host "[ERRO] shared/gen/.env nao encontrado." -ForegroundColor Red
     exit 1
 }
 
