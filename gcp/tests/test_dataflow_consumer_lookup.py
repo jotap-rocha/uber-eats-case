@@ -11,7 +11,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-DATAFLOW_DIR = Path(__file__).resolve().parents[2] / "src" / "gcp" / "dataflow_kappa_consumer"
+DATAFLOW_DIR = Path(__file__).resolve().parents[2] / "gcp" / "src" / "dataflow_kappa_consumer"
 
 
 def _load_module(name: str, filename: str):

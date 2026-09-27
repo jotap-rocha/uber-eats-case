@@ -14,7 +14,7 @@ import boto3
 import pytest
 from moto import mock_aws
 
-LAMBDA_DIR = Path(__file__).resolve().parents[2] / "src" / "aws" / "lambda_kappa_consumer"
+LAMBDA_DIR = Path(__file__).resolve().parents[2] / "aws" / "src" / "lambda_kappa_consumer"
 BUCKET = "test-bronze-bucket"
 
 

@@ -15,7 +15,7 @@ from unittest.mock import MagicMock
 import pytest
 
 FUNCTION_DIR = (
-    Path(__file__).resolve().parents[2] / "src" / "gcp" / "cloud_function_minio_pubsub_bridge"
+    Path(__file__).resolve().parents[2] / "gcp" / "src" / "cloud_function_minio_pubsub_bridge"
 )
 TOPIC_ID = "test-minio-bridge-topic"
 AUTH_TOKEN = "test-token"

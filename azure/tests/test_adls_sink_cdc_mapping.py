@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-MAPPING_MODULE_PATH = REPO_ROOT / "src" / "azure" / "cdc_contract" / "mapping.py"
+MAPPING_MODULE_PATH = REPO_ROOT / "azure" / "src" / "cdc_contract" / "mapping.py"
 
 
 def _load_mapping_module():

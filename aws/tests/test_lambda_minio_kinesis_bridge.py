@@ -15,7 +15,7 @@ import pytest
 from moto import mock_aws
 
 LAMBDA_DIR = (
-    Path(__file__).resolve().parents[2] / "src" / "aws" / "lambda_minio_kinesis_bridge"
+    Path(__file__).resolve().parents[2] / "aws" / "src" / "lambda_minio_kinesis_bridge"
 )
 STREAM_NAME = "test-kappa-stream"
 AUTH_TOKEN = "test-token"
