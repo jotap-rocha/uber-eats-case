@@ -115,7 +115,7 @@ delegação a um especialista de domínio.
   Verify: seção "Notes" deste arquivo contém a frase "Decisão de auto-preservação confirmada" (ou
   a justificativa da alternativa escolhida) após esta task.
 
-- [ ] Criar `scripts/shadowtraffic/shadowtraffic-restart-loop.ps1`, espelhando estrutura/estilo de
+- [x] Criar `scripts/shadowtraffic/shadowtraffic-restart-loop.ps1`, espelhando estrutura/estilo de
   `scripts/shadowtraffic/shadowtraffic-report-loop.ps1` (mesmo cabeçalho de comentário padrão,
   dot-source de `scripts/lib/shadowtraffic-common.ps1`, mesmo estilo de `Add-Content` para log):
   - `param([int]$IntervalSeconds = 7200)` — 2 horas por padrão, mas **sobrescrevível** para permitir
