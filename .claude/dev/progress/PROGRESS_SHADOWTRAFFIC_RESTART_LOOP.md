@@ -10,10 +10,10 @@
 |--------|-------|
 | **PROMPT File** | `.claude/dev/tasks/PROMPT_SHADOWTRAFFIC_RESTART_LOOP.md` |
 | **Started** | 2026-09-29T10:08:34Z |
-| **Last Updated** | 2026-09-29T11:10:00Z |
-| **Status** | IN_PROGRESS |
-| **Tasks Completed** | 6 / 7 |
-| **Current Iteration** | 6 |
+| **Last Updated** | 2026-09-29T11:28:00Z |
+| **Status** | COMPLETE |
+| **Tasks Completed** | 7 / 7 |
+| **Current Iteration** | 7 |
 
 ---
 
@@ -212,6 +212,60 @@ da POLISH #1 por não haver overlap de arquivos)
 **Notes for Next Iteration:**
 - Última task (POLISH #3): `@code-reviewer` revisa `shadowtraffic-restart-loop.ps1` e as edições em
   `toggle-shadowtraffic.ps1`. Depois, checar todos os Exit Criteria do PROMPT e fechar o loop.
+
+---
+
+### Iteration 7 — 2026-09-29T11:28:00Z
+
+**Task:** `@code-reviewer` revisão final + fechamento de todos os Exit Criteria (POLISH #3)
+**Priority:** 🟢 POLISH
+**Status:** PASS
+**Agent:** code-reviewer
+**Verification:** Veredito "Aprovado com ressalvas (não-bloqueantes)" registrado nas Notes do PROMPT.
+Todos os 11 Exit Criteria do PROMPT verificados nesta iteração:
+
+| Critério | Comando | Resultado |
+|---|---|---|
+| Agent router validates | `python scripts/tooling/validate-agent-router.py` | exit 0 — "OK (77 agentes, 32 hints)" |
+| Dev Loop installer dry-run | `PYTHONIOENCODING=utf-8 python install_dev_loop/install_dev_loop.py --dry-run --target .` | exit 0 |
+| Novo script existe | `Test-Path shadowtraffic-restart-loop.ps1` | `True` |
+| Intervalo customizável | `Select-String -Pattern "\[int\]\$IntervalSeconds"` | 1 ocorrência |
+| Sem `Start-Process` no script novo | `Select-String -Pattern "Start-Process"` | 0 ocorrências |
+| 3 funções em `toggle-shadowtraffic.ps1` | `Select-String -Pattern "function (Test-RestartLoopRunning\|Start-RestartLoop\|Stop-RestartLoop)"` | 3 ocorrências |
+| `status` mostra loop de restart | execução real (infra de pé) | linha "Loop de restart: PARADO/ATIVO" presente |
+| Sem `docker-compose` no script novo | `Select-String -Pattern "docker-compose"` | 0 ocorrências (corrigido nesta iteração — comentário reescrito) |
+| KB atualizada | `Test-Path` + `Select-String` no índice | `True` + 2 ocorrências |
+| `scripts/README.md` atualizado | `Select-String -Pattern "shadowtraffic-restart-loop"` | 2 ocorrências |
+| Teste funcional de ciclo curto | executado na Iteration 4 | PASS, sem PID órfão/duplicado |
+
+**Key Decisions:**
+- Aplicada a ressalva (a) do code-reviewer: `Stop-RestartLoop` agora valida `CommandLine` via
+  `Get-CimInstance Win32_Process` também no ramo de `Stop-Process` externo (antes só em
+  `Test-RestartLoopRunning`), fechando a lacuna de defesa contra PID reaproveitado pelo Windows.
+- Ressalva (b) (alinhamento cosmético em `Show-Status`) verificada e descartada — contagem exata de
+  caracteres confirma que as duas linhas já alinhavam na coluna 23; imprecisão do revisor, sem ação.
+- Ressalva (c) (dependência de WMI) aceita como risco de ambiente, sem ação — local/single-user.
+- Durante a checagem final dos Exit Criteria, encontrado e corrigido um problema real não coberto
+  pela revisão do code-reviewer: o comentário de cabeçalho de `shadowtraffic-restart-loop.ps1`
+  continha a string literal "docker-compose" (numa frase explicando que o script NUNCA a chama),
+  o que fazia o próprio Exit Criterion de ausência de `docker-compose` falhar por correspondência de
+  substring no comentário. Reescrito para "orquestrador de containers" sem alterar o sentido.
+- Confirmado que a falha inicial do installer dry-run (`UnicodeEncodeError`/cp1252) é uma
+  particularidade pré-existente do console Windows deste ambiente (não relacionada às mudanças desta
+  feature) — contornada com `PYTHONIOENCODING=utf-8`; comando real do projeto (`python3 ...`) também
+  precisou de ajuste local para `python` (sem "3") neste shell Git Bash — ambos são particularidades
+  de ambiente local, não do código produzido.
+
+**Files Changed:**
+- `scripts/shadowtraffic/toggle-shadowtraffic.ps1` — `Stop-RestartLoop` ganhou validação de
+  `CommandLine` também no ramo externo.
+- `scripts/shadowtraffic/shadowtraffic-restart-loop.ps1` — comentário de cabeçalho reescrito para não
+  conter a string literal "docker-compose".
+- `.claude/dev/tasks/PROMPT_SHADOWTRAFFIC_RESTART_LOOP.md` — task POLISH #3 marcada `[x]`, revisão do
+  code-reviewer registrada nas Notes.
+
+**Notes for Next Iteration:** Nenhuma — todas as 7 tasks e os 11 Exit Criteria concluídos. PROGRESS
+marcado `COMPLETE`. Gerar LOG final.
 
 ---
 

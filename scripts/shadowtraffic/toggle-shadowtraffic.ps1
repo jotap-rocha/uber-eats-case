@@ -139,8 +139,15 @@ function Stop-RestartLoop {
         return
     }
 
-    # Chamada externa/manual (processo diferente) -- desligar de verdade.
-    Stop-Process -Id ([int]$procId) -Force -ErrorAction SilentlyContinue
+    # Chamada externa/manual (processo diferente) -- desligar de verdade, mas
+    # so se o PID vivo ainda for realmente o loop de restart (mesma checagem
+    # de Test-RestartLoopRunning). Sem isso, um restart-loop.pid desatualizado
+    # com PID reaproveitado pelo Windows para outro processo qualquer faria
+    # este Stop-Process matar o processo errado.
+    $cmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId=$procId" -ErrorAction SilentlyContinue).CommandLine
+    if ($cmdLine -and $cmdLine -match "shadowtraffic-restart-loop") {
+        Stop-Process -Id ([int]$procId) -Force -ErrorAction SilentlyContinue
+    }
     Remove-Item $restartPidFile -Force -ErrorAction SilentlyContinue
     Write-Host "[OK] Loop de restart encerrado."
 }

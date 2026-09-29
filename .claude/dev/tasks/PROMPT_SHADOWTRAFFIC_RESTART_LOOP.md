@@ -200,7 +200,7 @@ delegação a um especialista de domínio.
   Verify: `Select-String -Path scripts/README.md -Pattern "shadowtraffic-restart-loop"` encontra pelo
   menos uma ocorrência.
 
-- [ ] `@.claude/agents/code-quality/code-reviewer.md` — Revisão final de
+- [x] `@.claude/agents/code-quality/code-reviewer.md` — Revisão final de
   `scripts/shadowtraffic/shadowtraffic-restart-loop.ps1` e das edições em
   `scripts/shadowtraffic/toggle-shadowtraffic.ps1`: confirmar que nenhuma chamada usa
   `docker-compose` direto, que a guarda `$procId -eq $PID` está correta e comentada, que o estilo
@@ -214,17 +214,17 @@ delegação a um especialista de domínio.
 
 ## Exit Criteria
 
-- [ ] Agent router validates: `python3 scripts/tooling/validate-agent-router.py`
-- [ ] Dev Loop installer dry-run succeeds: `python3 install_dev_loop/install_dev_loop.py --dry-run --target .`
-- [ ] Novo script existe: `Test-Path scripts/shadowtraffic/shadowtraffic-restart-loop.ps1` → `True`
-- [ ] Novo script aceita intervalo customizável: `Select-String -Path scripts/shadowtraffic/shadowtraffic-restart-loop.ps1 -Pattern "\[int\]\`$IntervalSeconds"` encontra o parâmetro
-- [ ] Novo script nunca usa `Start-Process` para os sub-chamados de ciclo (só `&`): `Select-String -Path scripts/shadowtraffic/shadowtraffic-restart-loop.ps1 -Pattern "Start-Process"` não encontra nada
-- [ ] `toggle-shadowtraffic.ps1` expõe as três funções do loop de restart: `Select-String -Path scripts/shadowtraffic/toggle-shadowtraffic.ps1 -Pattern "function (Test-RestartLoopRunning|Start-RestartLoop|Stop-RestartLoop)"` retorna 3 ocorrências
-- [ ] `toggle-shadowtraffic.ps1 status` (com infra de pé) mostra uma linha de estado do loop de restart (ATIVO/PARADO)
-- [ ] Nenhuma chamada nova usa `docker-compose restart`/`stop`/`start gen-unified` diretamente fora de `toggle-shadowtraffic.ps1`: `Select-String -Path scripts/shadowtraffic/shadowtraffic-restart-loop.ps1 -Pattern "docker-compose"` não encontra nada
-- [ ] KB atualizada: `Test-Path .claude/kb/shadowtraffic/patterns/restart-automatico-periodico.md` → `True` e `Select-String -Path .claude/kb/shadowtraffic/index.md -Pattern "restart-automatico-periodico"` encontra a linha
-- [ ] Documentação operacional atualizada: `Select-String -Path scripts/README.md -Pattern "shadowtraffic-restart-loop"` encontra pelo menos uma ocorrência
-- [ ] Teste funcional de ciclo curto documentado/executado (ver task de teste em CORE) sem PID órfão ou duplicado
+- [x] Agent router validates: `python3 scripts/tooling/validate-agent-router.py` (ambiente local: `python`, sem "3") → exit 0, "OK (77 agentes, 32 hints)"
+- [x] Dev Loop installer dry-run succeeds: `python3 install_dev_loop/install_dev_loop.py --dry-run --target .` (ambiente local: `PYTHONIOENCODING=utf-8 python ...`, ver Notes) → exit 0
+- [x] Novo script existe: `Test-Path scripts/shadowtraffic/shadowtraffic-restart-loop.ps1` → `True`
+- [x] Novo script aceita intervalo customizável: `Select-String -Path scripts/shadowtraffic/shadowtraffic-restart-loop.ps1 -Pattern "\[int\]\`$IntervalSeconds"` encontra o parâmetro
+- [x] Novo script nunca usa `Start-Process` para os sub-chamados de ciclo (só `&`): `Select-String -Path scripts/shadowtraffic/shadowtraffic-restart-loop.ps1 -Pattern "Start-Process"` não encontra nada
+- [x] `toggle-shadowtraffic.ps1` expõe as três funções do loop de restart: `Select-String -Path scripts/shadowtraffic/toggle-shadowtraffic.ps1 -Pattern "function (Test-RestartLoopRunning|Start-RestartLoop|Stop-RestartLoop)"` retorna 3 ocorrências
+- [x] `toggle-shadowtraffic.ps1 status` (com infra de pé) mostra uma linha de estado do loop de restart (ATIVO/PARADO) — confirmado com infra Docker real nesta sessão
+- [x] Nenhuma chamada nova usa `docker-compose restart`/`stop`/`start gen-unified` diretamente fora de `toggle-shadowtraffic.ps1`: `Select-String -Path scripts/shadowtraffic/shadowtraffic-restart-loop.ps1 -Pattern "docker-compose"` não encontra nada (corrigido na Iteration 7 — comentário de cabeçalho reescrito)
+- [x] KB atualizada: `Test-Path .claude/kb/shadowtraffic/patterns/restart-automatico-periodico.md` → `True` e `Select-String -Path .claude/kb/shadowtraffic/index.md -Pattern "restart-automatico-periodico"` encontra a linha
+- [x] Documentação operacional atualizada: `Select-String -Path scripts/README.md -Pattern "shadowtraffic-restart-loop"` encontra pelo menos uma ocorrência
+- [x] Teste funcional de ciclo curto documentado/executado (ver task de teste em CORE) sem PID órfão ou duplicado — executado de verdade contra infra Docker real (Iteration 4)
 
 ---
 
@@ -235,11 +235,17 @@ AUTO-UPDATED by the executor after each iteration.
 This is the "memory bridge" that prevents token burn from re-exploration.
 -->
 
-**Status:** NOT_STARTED
+**Status:** COMPLETE (7/7 tasks, 11/11 exit criteria)
 
 | Iteration | Timestamp | Task Completed | Key Decision | Files Changed |
 |-----------|-----------|----------------|--------------|---------------|
-| - | - | - | - | - |
+| 1 | 2026-09-29T10:16Z | RISKY #1 — validação the-planner | Arquitetura confirmada + 4 ajustes | PROMPT.md |
+| 2 | 2026-09-29T10:24Z | RISKY #2 — criar restart-loop.ps1 | `Invoke-ToggleAction` com try/catch | shadowtraffic-restart-loop.ps1 |
+| 3 | 2026-09-29T10:34Z | CORE #1 — integrar toggle-shadowtraffic.ps1 | pwsh explícito + validação PID via WMI | toggle-shadowtraffic.ps1 |
+| 4 | 2026-09-29T10:52Z | CORE #2 — teste funcional ciclo curto | Testado contra infra Docker real | (logs, não versionados) |
+| 5 | 2026-09-29T11:02Z | POLISH #2 — scripts/README.md | Paralelo ao kb-architect | scripts/README.md |
+| 6 | 2026-09-29T11:10Z | POLISH #1 — kb-architect | Pattern + índice KB | .claude/kb/shadowtraffic/... |
+| 7 | 2026-09-29T11:28Z | POLISH #3 — code-reviewer + exit criteria | Aprovado c/ ressalvas; ressalva (a) corrigida; docker-compose literal em comentário corrigido | toggle-shadowtraffic.ps1, shadowtraffic-restart-loop.ps1, PROMPT.md |
 
 ---
 
@@ -304,6 +310,25 @@ feedback_loops:           # Commands to run between tasks
     do fim de cada ciclo (o `Start-Sleep` da próxima iteração começa logo após o ciclo anterior
     terminar). O `off` dentro do ciclo também reinicia o report loop com PID novo a cada 2h — já é
     o comportamento existente e é inofensivo.
+
+- **Revisão final do `@code-reviewer` — Aprovado com ressalvas (não-bloqueantes).** Revisou os 3
+  arquivos (`shadowtraffic-restart-loop.ps1`, `toggle-shadowtraffic.ps1`, baseline
+  `shadowtraffic-report-loop.ps1`) e confirmou, ponto a ponto: (1) nenhuma chamada `docker-compose`
+  direta no script novo; (2) guarda `[int]$procId -eq $PID` em `Stop-RestartLoop` correta e bem
+  comentada; (3) estilo consistente com o loop de report (cabeçalho, `Test-X`/`Start-X`/`Stop-X`,
+  `Add-Content` para log de processo oculto); (4) sem risco de loop infinito sem saída — dupla
+  checagem de `Test-ContainerRunning` + `try/catch` isolando falhas de ciclo; (5) os 4 ajustes do
+  the-planner confirmados incorporados corretamente. Três ressalvas não-bloqueantes levantadas:
+  (a) `Stop-RestartLoop` não repetia a validação de `CommandLine` (via `Get-CimInstance
+  Win32_Process`) no `Stop-Process` da chamada externa, só em `Test-RestartLoopRunning` — **corrigido
+  nesta mesma iteração**, adicionando a mesma checagem antes do `Stop-Process` no ramo externo de
+  `Stop-RestartLoop`, fechando a lacuna de defesa contra PID reaproveitado pelo Windows; (b)
+  observação de alinhamento cosmético entre as linhas "Loop de report"/"Loop de restart" em
+  `Show-Status` — **verificado e já estavam alinhadas** (ambas com o `$` na mesma coluna 23,
+  contagem de caracteres confirmada, imprecisão do revisor); (c) dependência de WMI
+  (`Get-CimInstance Win32_Process`) pode retornar `CommandLine` vazio em ambientes com permissões
+  restritas — risco baixo aceito para uso local single-user, registrado aqui como suposição de
+  ambiente, sem ação adicional necessária. Nenhuma pendência bloqueante em aberto.
 
 - Usuário já aprovou execução direta sem revisão fase a fase — este PROMPT foi gerado sem pausar
   para perguntas, seguindo a especificação completa fornecida na conversa principal.

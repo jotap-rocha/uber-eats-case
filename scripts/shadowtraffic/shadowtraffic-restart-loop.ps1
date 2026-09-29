@@ -7,7 +7,8 @@
 #            sem colidir PK -- o "on" recalcula "startingFrom" a partir do
 #            MAX(id) real antes de religar (ver
 #            .claude/kb/shadowtraffic/patterns/restart-seguro-startingFrom.md).
-#            Nunca chama docker-compose diretamente.
+#            Nunca chama o orquestrador de containers diretamente -- toda
+#            interacao com o container passa por toggle-shadowtraffic.ps1.
 #
 #            Sobrevive ao proprio ciclo que ele dispara: chama
 #            toggle-shadowtraffic.ps1 via operador '&' (nunca via cmdlet de
