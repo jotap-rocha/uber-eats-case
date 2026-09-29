@@ -192,7 +192,7 @@ delegação a um especialista de domínio.
   Verify: `Test-Path .claude/kb/shadowtraffic/patterns/restart-automatico-periodico.md` retorna `True`.
   Verify: `Select-String -Path .claude/kb/shadowtraffic/index.md -Pattern "restart-automatico-periodico"` encontra a referência.
 
-- [ ] Atualizar `scripts/README.md` seção "3. Geração de dados — ShadowTraffic": ajustar a descrição
+- [x] Atualizar `scripts/README.md` seção "3. Geração de dados — ShadowTraffic": ajustar a descrição
   da linha `toggle-shadowtraffic.ps1 on|off|status` para mencionar que agora liga/desliga também o
   loop de restart (além do loop de report já documentado), e adicionar uma linha de tabela para
   `shadowtraffic-restart-loop.ps1` no mesmo estilo da linha existente de

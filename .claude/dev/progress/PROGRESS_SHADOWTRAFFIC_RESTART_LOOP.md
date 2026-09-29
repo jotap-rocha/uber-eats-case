@@ -10,10 +10,10 @@
 |--------|-------|
 | **PROMPT File** | `.claude/dev/tasks/PROMPT_SHADOWTRAFFIC_RESTART_LOOP.md` |
 | **Started** | 2026-09-29T10:08:34Z |
-| **Last Updated** | 2026-09-29T10:52:00Z |
+| **Last Updated** | 2026-09-29T11:02:00Z |
 | **Status** | IN_PROGRESS |
-| **Tasks Completed** | 4 / 7 |
-| **Current Iteration** | 4 |
+| **Tasks Completed** | 5 / 7 |
+| **Current Iteration** | 5 |
 
 ---
 
@@ -157,6 +157,31 @@
 **Notes for Next Iteration:**
 - Próxima task (POLISH #1): `@kb-architect` cria
   `.claude/kb/shadowtraffic/patterns/restart-automatico-periodico.md` + atualiza índice.
+
+---
+
+### Iteration 5 — 2026-09-29T11:02:00Z
+
+**Task:** Atualizar `scripts/README.md` seção 3 (POLISH #2, executado em paralelo com o kb-architect
+da POLISH #1 por não haver overlap de arquivos)
+**Priority:** 🟢 POLISH
+**Status:** PASS
+**Agent:** (dev-loop-executor direto)
+**Verification:** `grep -c "shadowtraffic-restart-loop" scripts/README.md` → 2 ocorrências → PASS
+
+**Key Decisions:**
+- Linha da tabela para `toggle-shadowtraffic.ps1` ajustada para mencionar os dois loops (report +
+  restart); nova linha de tabela para `shadowtraffic-restart-loop.ps1` no mesmo estilo/tom de "uso
+  interno" da linha existente de `shadowtraffic-report-loop.ps1`; linha de `stop-generators.ps1` e
+  `lib/shadowtraffic-common.ps1` também atualizadas para citar os dois loops.
+
+**Files Changed:**
+- `scripts/README.md` — seção "3. Geração de dados — ShadowTraffic" atualizada.
+- `.claude/dev/tasks/PROMPT_SHADOWTRAFFIC_RESTART_LOOP.md` — task POLISH #2 (README) marcada `[x]`.
+
+**Notes for Next Iteration:**
+- Task POLISH #1 (`@kb-architect`) segue em execução em paralelo (agente assíncrono) — aguardar
+  notificação antes de commitar a tarefa da KB e prosseguir para a revisão final do `@code-reviewer`.
 
 ---
 
