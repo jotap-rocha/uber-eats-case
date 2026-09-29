@@ -81,9 +81,15 @@ generators:
     mechanism: fork_statemachine_update
     fork_key: sequentialInteger
     keep_alive: true
+    max_forks: 500000
     states: [insertIt, succeeded, failed, refunded]
     looks_up: [orders]
-    notes: "mutacao real migrada para Oracle na Etapa 3; CDC confirmado via Debezium (op:u)"
+    notes: >
+      mutacao real migrada para Oracle na Etapa 3; CDC confirmado via Debezium (op:u).
+      maxForks elevado de 1200 para 500000 (2026-09-28) porque keepAlive:true tornava
+      1200 um teto VITALICIO (nunca reciclado) -- gerador silenciava por completo apos
+      todos os forks atingirem estado terminal. Ver patterns/restart-seguro-startingFrom.md
+      e concepts/mutacao-real-fork-statemachine.md para o mecanismo.
 
   mongodb/support:
     connection: minio
@@ -94,8 +100,12 @@ generators:
     connection: oracle
     mechanism: fork_static
     fork_key: "lookup(orders.order_id)"
-    max_forks: 10000
+    max_forks: 4500000
     looks_up: [orders, restaurants, products]
+    notes: >
+      maxForks elevado de 10000 para 4500000 (2026-09-28) em conjunto com orders/payments
+      -- proporcao ~8,3 order_items por order preservada (ver historico no BUILD_REPORT
+      ou commit desta mudanca) para sustentar ~10M eventos transacionais totais.
 
   mongodb/recommendations:
     connection: minio
@@ -128,9 +138,17 @@ generators:
     mechanism: fork_statemachine_update
     fork_key: sequentialInteger
     keep_alive: true
+    max_forks: 500000
     states: [insertIt, inAnalysis, accepted, preparing, readyForPickup, pickedUp, outForDelivery, delivered, completed]
     looks_up: [users, restaurants, drivers]
-    notes: "mutacao real migrada para Oracle na Etapa 3; 9 estados de ciclo de vida"
+    notes: >
+      mutacao real migrada para Oracle na Etapa 3; 9 estados de ciclo de vida.
+      maxForks elevado de 1200 para 500000 (2026-09-28) -- com keepAlive:true, 1200 era
+      um teto vitalicio (nao reciclado): apos todos os forks chegarem a completed
+      (estado terminal), o generator parava de emitir eventos para sempre, explicando
+      a queda de "quantidade de registros gerados" ao longo do tempo. Dimensionado para
+      ~10M eventos transacionais totais junto com payments (500000) e order_items (4500000):
+      500000*9 + 500000*2 + 4500000*1 = 10.000.000.
 
   receipts:
     connection: oracle
