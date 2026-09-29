@@ -134,7 +134,7 @@ delegação a um especialista de domínio.
 
 ### 🟡 CORE
 
-- [ ] Integrar o loop de restart em `scripts/shadowtraffic/toggle-shadowtraffic.ps1`, ao lado do loop
+- [x] Integrar o loop de restart em `scripts/shadowtraffic/toggle-shadowtraffic.ps1`, ao lado do loop
   de report já existente:
   - Novas variáveis no topo do script: `$restartPidFile = "$logDir\restart-loop.pid"`,
     `$restartLogFile = "$logDir\shadowtraffic-restart.log"`,

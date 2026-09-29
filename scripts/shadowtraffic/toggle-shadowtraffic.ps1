@@ -4,8 +4,15 @@
 #            SEM reiniciar a numeracao dos IDs (users/drivers/orders/payments/
 #            restaurants). Cada "on" recalcula "startingFrom" a partir do
 #            MAX(id) real nas tabelas antes de subir o container. Tambem
-#            liga/desliga junto um loop de report horario (ver
-#            shadowtraffic-report-loop.ps1) em logs/shadowtraffic-report.log.
+#            liga/desliga junto dois loops em background:
+#              - loop de report horario (shadowtraffic-report-loop.ps1) em
+#                logs/shadowtraffic-report.log;
+#              - loop de restart automatico a cada 2h por padrao
+#                (shadowtraffic-restart-loop.ps1), que dispara este mesmo
+#                script (off -> on) para liberar tetos vitalicios de
+#                maxEvents/fork.maxForks+keepAlive -- ver
+#                .claude/kb/shadowtraffic/patterns/
+#                restart-automatico-periodico.md.
 #
 # Por que este script existe (nao usar apenas docker-compose stop/start):
 #   O config shared/gen/unified/uber-eats.json.template usa "startingFrom": N fixo
@@ -45,6 +52,13 @@ $logFile     = "$logDir\shadowtraffic-report.log"
 $reportPid   = "$logDir\report.pid"
 $reportLoop  = "$PSScriptRoot\shadowtraffic-report-loop.ps1"
 
+# Loop de restart automatico (a cada 2h por padrao) -- ver
+# shadowtraffic-restart-loop.ps1 e .claude/kb/shadowtraffic/patterns/
+# restart-automatico-periodico.md.
+$restartPidFile    = "$logDir\restart-loop.pid"
+$restartLogFile    = "$logDir\shadowtraffic-restart.log"
+$restartLoopScript = "$PSScriptRoot\shadowtraffic-restart-loop.ps1"
+
 # ------------------------------------------------------------------------------
 # Helpers proprios deste script
 # ------------------------------------------------------------------------------
@@ -77,6 +91,60 @@ function Stop-ReportLoop {
     Write-Host "[OK] Loop de report encerrado."
 }
 
+function Test-RestartLoopRunning {
+    if (-not (Test-Path $restartPidFile)) { return $false }
+    $procId = (Get-Content $restartPidFile -Raw).Trim()
+    if (-not $procId) { return $false }
+    $proc = Get-Process -Id ([int]$procId) -ErrorAction SilentlyContinue
+    if (-not $proc) { return $false }
+
+    # Confirma que o PID vivo e de fato o loop de restart, nao outro processo
+    # que por acaso reaproveitou o mesmo numero (Windows recicla PIDs) com um
+    # restart-loop.pid desatualizado -- evita falso positivo em
+    # Test-RestartLoopRunning / falso alvo em Stop-RestartLoop.
+    $cmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId=$procId" -ErrorAction SilentlyContinue).CommandLine
+    return [bool]($cmdLine -and $cmdLine -match "shadowtraffic-restart-loop")
+}
+
+function Start-RestartLoop {
+    if (-not (Test-Path $logDir)) {
+        New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+    }
+    if (Test-RestartLoopRunning) { return }
+
+    # Lancado explicitamente via "pwsh" (PowerShell 7+), nunca via "powershell"
+    # (Windows PowerShell 5.1, usado por Start-ReportLoop): o ciclo interno do
+    # loop de restart chama toggle-shadowtraffic.ps1 -Action on, que roda
+    # Sync-StartingPoints com ConvertFrom-Json -Depth 100 -- parametro que nao
+    # existe no Windows PowerShell 5.1 e quebraria a primeira chamada do ciclo.
+    $proc = Start-Process pwsh -ArgumentList @("-NoProfile", "-WindowStyle", "Hidden", "-File", $restartLoopScript) -WindowStyle Hidden -PassThru
+    Set-Content -Path $restartPidFile -Value $proc.Id
+    Write-Host "[OK] Loop de restart iniciado (PID $($proc.Id)) -> $restartLogFile"
+}
+
+function Stop-RestartLoop {
+    if (-not (Test-Path $restartPidFile)) { return }
+    $procId = (Get-Content $restartPidFile -Raw).Trim()
+    if (-not $procId) { return }
+
+    if ([int]$procId -eq $PID) {
+        # Este "off" foi autodisparado pelo proprio ciclo do loop de restart
+        # (chamado via '&' dentro de shadowtraffic-restart-loop.ps1 -- mesmo
+        # processo/$PID do loop, nao um processo filho). Nao matar: o mesmo
+        # processo vai seguir sozinho para o "on" logo em seguida e
+        # restart-loop.pid deve permanecer intacto. Ver Notes de
+        # PROMPT_SHADOWTRAFFIC_RESTART_LOOP.md para o detalhamento completo
+        # desta decisao de arquitetura (validada por the-planner).
+        Add-Content -Path $restartLogFile -Value "  [INFO] loop de restart sobrevive ao proprio ciclo (PID $PID)"
+        return
+    }
+
+    # Chamada externa/manual (processo diferente) -- desligar de verdade.
+    Stop-Process -Id ([int]$procId) -Force -ErrorAction SilentlyContinue
+    Remove-Item $restartPidFile -Force -ErrorAction SilentlyContinue
+    Write-Host "[OK] Loop de restart encerrado."
+}
+
 function Show-Status {
     $running = Test-ContainerRunning -Name "gen-unified"
     $state = if ($running) { "ATIVO" } else { "PARADO" }
@@ -84,6 +152,9 @@ function Show-Status {
 
     $reportState = if (Test-ReportLoopRunning) { "ATIVO" } else { "PARADO" }
     Write-Host "Loop de report:        $reportState  (log: $logFile)"
+
+    $restartState = if (Test-RestartLoopRunning) { "ATIVO" } else { "PARADO" }
+    Write-Host "Loop de restart:       $restartState  (log: $restartLogFile)"
 
     $snap = Get-GeneratorSnapshot -EnvVars $envVars
     Write-Host "  users:       $($snap.users)"
@@ -167,6 +238,7 @@ switch ($Action) {
         if (Test-ContainerRunning -Name "gen-unified") {
             Write-Host "[OK] gen-unified ja esta ativo. Nada a fazer."
             Start-ReportLoop
+            Start-RestartLoop
             Show-Status
             exit 0
         }
@@ -177,6 +249,7 @@ switch ($Action) {
         docker-compose up -d gen-unified | Out-Null
 
         Start-ReportLoop
+        Start-RestartLoop
 
         Write-Host "[OK] Gerador LIGADO, retomando de onde parou."
         Write-Host "   Ver logs gerador:  docker-compose logs -f gen-unified"
@@ -186,6 +259,7 @@ switch ($Action) {
 
     "off" {
         Stop-ReportLoop
+        Stop-RestartLoop
 
         if (-not (Test-ContainerRunning -Name "gen-unified")) {
             Write-Host "[OK] gen-unified ja esta parado."
