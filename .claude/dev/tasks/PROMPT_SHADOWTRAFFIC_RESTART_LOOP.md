@@ -164,7 +164,7 @@ delegação a um especialista de domínio.
   Verify: `Select-String -Path scripts/shadowtraffic/toggle-shadowtraffic.ps1 -Pattern "Stop-RestartLoop|Start-RestartLoop|Test-RestartLoopRunning"` encontra as três funções.
   Verify: `Select-String -Path scripts/shadowtraffic/toggle-shadowtraffic.ps1 -Pattern "\`$procId -eq \`$PID"` (ou equivalente) confirma a guarda de auto-preservação implementada dentro de `Stop-RestartLoop`.
 
-- [ ] Teste funcional de ciclo curto (sem esperar 2h): rodar manualmente (ou documentar o comando
+- [x] Teste funcional de ciclo curto (sem esperar 2h): rodar manualmente (ou documentar o comando
   para reprodução local, já que o dev-loop-executor pode não ter Docker/licença disponíveis)
   `.\scripts\shadowtraffic\toggle-shadowtraffic.ps1 on` seguido de início manual do loop com
   intervalo curto — ex.: `powershell -File scripts/shadowtraffic/shadowtraffic-restart-loop.ps1

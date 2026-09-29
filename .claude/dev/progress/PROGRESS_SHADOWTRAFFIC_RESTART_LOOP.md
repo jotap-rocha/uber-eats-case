@@ -10,10 +10,10 @@
 |--------|-------|
 | **PROMPT File** | `.claude/dev/tasks/PROMPT_SHADOWTRAFFIC_RESTART_LOOP.md` |
 | **Started** | 2026-09-29T10:08:34Z |
-| **Last Updated** | 2026-09-29T10:34:00Z |
+| **Last Updated** | 2026-09-29T10:52:00Z |
 | **Status** | IN_PROGRESS |
-| **Tasks Completed** | 3 / 7 |
-| **Current Iteration** | 3 |
+| **Tasks Completed** | 4 / 7 |
+| **Current Iteration** | 4 |
 
 ---
 
@@ -114,6 +114,49 @@
 - Próxima task (CORE #2): teste funcional de ciclo curto com `-IntervalSeconds 15`, confirmando
   ciclo off+on registrado em `logs/shadowtraffic-restart.log` sem PID duplicado/órfão. Requer `pwsh`
   disponível no PATH (dependência introduzida por `Start-RestartLoop`) — confirmar antes de rodar.
+
+---
+
+### Iteration 4 — 2026-09-29T10:52:00Z
+
+**Task:** Teste funcional de ciclo curto (CORE #2)
+**Priority:** 🟡 CORE
+**Status:** PASS
+**Agent:** (dev-loop-executor direto — infra Docker real estava de pé, teste executado de verdade, não só documentado)
+**Verification:**
+- Confirmado `pwsh` disponível em `C:\Program Files\PowerShell\7\pwsh.exe`.
+- Lançado `shadowtraffic-restart-loop.ps1 -IntervalSeconds 15` (PID 324) mimetizando exatamente o
+  `Start-Process` de `Start-RestartLoop`.
+- `logs/shadowtraffic-restart.log` registrou ciclo 1 completo: `[INFO] loop de restart sobrevive ao
+  proprio ciclo (PID 324)` seguido de `[OK] ciclo concluido com sucesso (off + on)` → PASS.
+- Autopreservação confirmada na prática: `off` disparado de dentro do próprio processo (PID 324) NÃO
+  matou o loop; `restart-loop.pid` permaneceu com PID 324 durante todo o ciclo.
+- `Get-Process -Id 324` resolveu para um único processo `pwsh` vivo (sem duplicidade) durante o
+  ciclo → PASS.
+- Nenhuma mensagem "Cannot find process"/PID inválido no log → PASS.
+- Ciclo 2 (auto-disparado 27s depois, intervalo 15s) também logou a auto-preservação corretamente;
+  foi interrompido no meio por um `off` **externo** (chamado por mim, de outro processo/terminal,
+  para limpar o teste) — o `off` externo matou o processo 324 corretamente (PID diferente, `$procId
+  -eq $PID` = falso), exatamente o comportamento correto para chamada externa. Nenhum processo órfão
+  ou `restart-loop.pid` obsoleto ficou para trás (`Get-CimInstance Win32_Process` não encontrou mais
+  nenhum `pwsh` com `shadowtraffic-restart-loop` na linha de comando após a limpeza).
+
+**Key Decisions:**
+- Teste executado com infra Docker real (containers já estavam de pé nesta sessão), não apenas
+  documentado — maior confiança na verificação.
+- Ambiente restaurado ao estado anterior ao teste (gerador ATIVO, loop de report ATIVO, loop de
+  restart PARADO) ao final, para não deixar um loop de restart real de produção rodando em background
+  sem o usuário ter pedido explicitamente.
+
+**Files Changed:**
+- Nenhum arquivo de código alterado nesta iteração (só execução/verificação).
+- `logs/shadowtraffic-restart.log` e `logs/shadowtraffic-report.log` (gerados localmente, git-ignored
+  — não versionados).
+- `.claude/dev/tasks/PROMPT_SHADOWTRAFFIC_RESTART_LOOP.md` — task CORE #2 marcada `[x]`.
+
+**Notes for Next Iteration:**
+- Próxima task (POLISH #1): `@kb-architect` cria
+  `.claude/kb/shadowtraffic/patterns/restart-automatico-periodico.md` + atualiza índice.
 
 ---
 
