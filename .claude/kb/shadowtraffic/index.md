@@ -23,12 +23,14 @@ Base de conhecimento específica do ShadowTraffic **como usado neste repositóri
 | Evitar lookup circular/múltiplo | `patterns/evitar-lookup-circular-e-multiplo.md` | Padrão `vars`+`var`+`path` para campos correlacionados |
 | Campo = coluna real (SQL) | `patterns/nome-de-campo-igual-a-coluna-real.md` | Classe de bug já ocorrida 2x no Oracle |
 | Restart seguro (`startingFrom`) | `patterns/restart-seguro-startingFrom.md` | Colisão de PK ao religar o gerador com dado pré-existente — trava o pipeline inteiro |
+| Restart automático periódico | `patterns/restart-automatico-periodico.md` | Loop que renova cota (`maxEvents`/`fork.maxForks`) via `toggle-shadowtraffic.ps1`, com arquitetura de auto-preservação por PID |
 | Conexões SQL e object storage | `patterns/conexoes-sql-e-object-storage.md` | Config de `oracle`, `postgres`, `s3`/MinIO |
 | Mapa de geradores atual | `specs/generator-targets-uber-eats.yaml` | Tabela machine-readable dos 17 geradores do config unificado |
 
 ## Fontes de verdade
 
 - `scripts/shadowtraffic/toggle-shadowtraffic.ps1` — liga/desliga `gen-unified` manualmente sem colidir PK (ver `patterns/restart-seguro-startingFrom.md`)
+- `scripts/shadowtraffic/shadowtraffic-restart-loop.ps1` — loop periódico que renova a cota vitalícia dos generators via `toggle-shadowtraffic.ps1` (ver `patterns/restart-automatico-periodico.md`)
 - `shared/gen/unified/uber-eats.json.template` — config real (17 geradores, 3 connections)
 - `shared/gen/.env.template` — variáveis de ambiente reais (licença, credenciais)
 - `shared/docs/shadowtraffic/README.md` — howto operacional humano (start/stop, troubleshooting) — **não** é fonte de decisão de agente, ver `concepts/licenciamento-e-env.md`

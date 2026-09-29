@@ -179,7 +179,7 @@ delegação a um especialista de domínio.
 
 ### 🟢 POLISH (Do Last)
 
-- [ ] `@.claude/agents/exploration/kb-architect.md` — Criar
+- [x] `@.claude/agents/exploration/kb-architect.md` — Criar
   `.claude/kb/shadowtraffic/patterns/restart-automatico-periodico.md` documentando: por que o
   restart periódico é necessário (tetos vitalícios de `maxEvents`/`fork.maxForks`+`keepAlive`,
   citando os generators afetados), como o loop funciona (arquitetura de auto-preservação via `&` +

@@ -10,10 +10,10 @@
 |--------|-------|
 | **PROMPT File** | `.claude/dev/tasks/PROMPT_SHADOWTRAFFIC_RESTART_LOOP.md` |
 | **Started** | 2026-09-29T10:08:34Z |
-| **Last Updated** | 2026-09-29T11:02:00Z |
+| **Last Updated** | 2026-09-29T11:10:00Z |
 | **Status** | IN_PROGRESS |
-| **Tasks Completed** | 5 / 7 |
-| **Current Iteration** | 5 |
+| **Tasks Completed** | 6 / 7 |
+| **Current Iteration** | 6 |
 
 ---
 
@@ -182,6 +182,36 @@ da POLISH #1 por não haver overlap de arquivos)
 **Notes for Next Iteration:**
 - Task POLISH #1 (`@kb-architect`) segue em execução em paralelo (agente assíncrono) — aguardar
   notificação antes de commitar a tarefa da KB e prosseguir para a revisão final do `@code-reviewer`.
+
+---
+
+### Iteration 6 — 2026-09-29T11:10:00Z
+
+**Task:** `@kb-architect` cria pattern `restart-automatico-periodico.md` + atualiza índice (POLISH #1)
+**Priority:** 🟢 POLISH
+**Status:** PASS
+**Agent:** kb-architect
+**Verification:**
+- `Test-Path .claude/kb/shadowtraffic/patterns/restart-automatico-periodico.md` → `True` → PASS
+- `grep -c "restart-automatico-periodico" .claude/kb/shadowtraffic/index.md` → 2 ocorrências (tabela
+  de Navegação + Fontes de verdade) → PASS
+- Conteúdo revisado manualmente: formato consistente com `restart-seguro-startingFrom.md`
+  (Purpose/Confidence/When to Use/See Also), explica corretamente o teto vitalício, a arquitetura de
+  auto-preservação por PID, as 3 novas funções, e inclui uma seção extra "Anti-Patterns" com 4 erros
+  comuns a evitar.
+
+**Key Decisions:**
+- Nenhum ajuste necessário no conteúdo gerado pelo kb-architect — aprovado como entregue.
+
+**Files Changed:**
+- `.claude/kb/shadowtraffic/patterns/restart-automatico-periodico.md` — criado (kb-architect).
+- `.claude/kb/shadowtraffic/index.md` — linha na tabela de Navegação + Fontes de verdade
+  (kb-architect).
+- `.claude/dev/tasks/PROMPT_SHADOWTRAFFIC_RESTART_LOOP.md` — task POLISH #1 marcada `[x]`.
+
+**Notes for Next Iteration:**
+- Última task (POLISH #3): `@code-reviewer` revisa `shadowtraffic-restart-loop.ps1` e as edições em
+  `toggle-shadowtraffic.ps1`. Depois, checar todos os Exit Criteria do PROMPT e fechar o loop.
 
 ---
 
