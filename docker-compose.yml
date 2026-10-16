@@ -29,8 +29,8 @@ services:
   minio-ubereats:
     image: minio/minio:latest
     container_name: minio-ubereats
-    mem_limit: 512m
-    cpus: 0.5
+    mem_limit: 1g
+    cpus: 1.0
     ports:
       - "9000:9000" # API
       - "9001:9001" # Console
@@ -43,9 +43,10 @@ services:
     command: server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
+      interval: 15s
       timeout: 20s
-      retries: 3
+      retries: 5
+      start_period: 90s
 
   # --- 2. SERVIÇO DE SETUP (Cria o bucket automaticamente) ---
   minio-setup:
@@ -72,7 +73,7 @@ services:
     image: shadowtraffic/shadowtraffic:latest
     container_name: gen-unified
     mem_limit: 1.5g
-    cpus: 1.0
+    cpus: 3.0
     depends_on:
       postgres-ubereats:
         condition: service_healthy

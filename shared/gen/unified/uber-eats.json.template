@@ -818,7 +818,7 @@
       "row": {
         "product_id": {
           "_gen": "string",
-          "expr": "#{bothify 'PRD-#####'}"
+          "expr": "#{bothify 'PRD-########'}"
         },
         "restaurant_id": {
           "_gen": "lookup",
