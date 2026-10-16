@@ -207,10 +207,12 @@ marimo/_lsp/
 __marimo__/
 
 .databricks
-gen/postgres/drivers.json
-gen/postgres/users.json
-gen/unified/uber-eats.json
-mongo/init/01_perfil_restaurante.js
+shared/gen/postgres/drivers.json
+shared/gen/postgres/users.json
+shared/gen/unified/uber-eats.json
+shared/gen/gcp-credentials.json
+shared/mongo/init/01_perfil_restaurante.js
+config/azure/hadoop-conf/core-site.xml
 abctl-v0.30.3-windows-amd64/
 
 # --- Framework agentic (Dev Loop / SDD) ---
@@ -244,7 +246,7 @@ output/
 !scripts/lib/
 !scripts/lib/**
 
-# Terraform (infra/aws/, e futuras fases Azure/GCP) — binários de provider e state
+# Terraform (aws/infra/, e futuras fases Azure/GCP) — binários de provider e state
 # nunca versionados; .terraform.lock.hcl fica versionado (não ignorado).
 **/.terraform/
 *.tfstate

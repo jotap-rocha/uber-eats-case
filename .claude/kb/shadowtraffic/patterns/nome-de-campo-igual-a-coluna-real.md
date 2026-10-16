@@ -7,7 +7,7 @@
 
 - Editando ou criando um generator cujo destino é `postgres`, `oracle`, `mysql` ou `sqlServer` **e** a tabela já existe fisicamente com DDL fixo (criada por script `sql/*.sh`, não pelo ShadowTraffic).
 - Renomeando qualquer chave dentro de `row` (ou `where` de um `op: update`) de um generator SQL.
-- Fazendo code review de um PR que mexe em `gen/unified/uber-eats.json.template`.
+- Fazendo code review de um PR que mexe em `shared/gen/unified/uber-eats.json.template`.
 
 ## O problema
 

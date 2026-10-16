@@ -1,6 +1,6 @@
 ---
 name: shadowtraffic-renovar-licenca
-description: Procedimento para diagnosticar licença expirada/inválida do ShadowTraffic, renovar as credenciais reais em gen/.env (LICENSE_ID, LICENSE_EMAIL, LICENSE_ORGANIZATION, LICENSE_EDITION, LICENSE_EXPIRATION, LICENSE_SIGNATURE) e religar o gerador sem colidir PK. Use quando o pedido for "licença do shadowtraffic expirou", "renovar licença", "gerador parou de gerar dados por licença", ou erro de licença nos logs de gen-unified. NÃO confunda com as variáveis LICENSE_KEY/LICENSE_OWNER citadas no README antigo — não existem no .env real deste projeto.
+description: Procedimento para diagnosticar licença expirada/inválida do ShadowTraffic, renovar as credenciais reais em shared/gen/.env (LICENSE_ID, LICENSE_EMAIL, LICENSE_ORGANIZATION, LICENSE_EDITION, LICENSE_EXPIRATION, LICENSE_SIGNATURE) e religar o gerador sem colidir PK. Use quando o pedido for "licença do shadowtraffic expirou", "renovar licença", "gerador parou de gerar dados por licença", ou erro de licença nos logs de gen-unified. NÃO confunda com as variáveis LICENSE_KEY/LICENSE_OWNER citadas no README antigo — não existem no .env real deste projeto.
 ---
 
 # ShadowTraffic — Renovar Licença Expirada
@@ -22,7 +22,7 @@ Confirme que o erro é de licença (não confundir com "Connection refused", que
 ## Passo 2 — Obter/renovar credenciais
 
 1. Acesse https://shadowtraffic.io e renove ou gere uma nova licença (trial ou paga).
-2. As **6 variáveis reais** esperadas por este projeto (`gen/.env.template`) são:
+2. As **6 variáveis reais** esperadas por este projeto (`shared/gen/.env.template`) são:
    ```ini
    LICENSE_ID=
    LICENSE_EMAIL=
@@ -53,4 +53,4 @@ Só use `start-generators.ps1` direto se as tabelas estiverem vazias (ambiente r
 
 - `.claude/kb/shadowtraffic/concepts/licenciamento-e-env.md` — variáveis reais vs. README desatualizado
 - `.claude/kb/shadowtraffic/patterns/restart-seguro-startingFrom.md` — por que não religar cru
-- `docs/shadowtraffic/README.md` — howto humano de setup inicial de licença
+- `shared/docs/shadowtraffic/README.md` — howto humano de setup inicial de licença

@@ -74,7 +74,7 @@ logs/<job_name>/           # Logs por data (quando existir)
 
 ### Documentação de apoio
 
-- `CONTEXT.md`, `docs/00-INDEX.md`, `docs/project_summary.md` (quando existirem)
+- `CONTEXT.md`, `shared/docs/00-INDEX.md`, `docs/project_summary.md` (quando existirem)
 - **Valores reais de ambiente:** `docs/inventario-ambiente.md` (criado a partir de `docs/inventario-ambiente.md.example`; gitignored) — use `@docs/inventario-ambiente.md` no Cursor quando existir
 - Roteamento: `.cursor/commands/core/router.md`
 - KB Spark genérica: `.cursor/kb/spark/`; padrões de pipeline SQL (exemplos): `.cursor/kb/sql-capacity/` (processo, não inventário de hosts)

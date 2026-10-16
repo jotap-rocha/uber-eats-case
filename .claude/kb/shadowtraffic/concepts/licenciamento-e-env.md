@@ -2,7 +2,7 @@
 
 > **Purpose**: Fonte de verdade sobre licença/`.env`, incluindo uma discrepância real encontrada entre a doc humana e o `.env.template`.
 > **Confidence**: 0.85 (pricing não confirmado por doc estruturada — ver ressalva)
-> **MCP Validated**: 2026-09-07 — fonte: WebSearch (shadowtraffic.io/pricing.html, docs.shadowtraffic.io/cheatsheet/) + `gen/.env.template` + `docs/shadowtraffic/README.md` deste repo
+> **MCP Validated**: 2026-09-07 — fonte: WebSearch (shadowtraffic.io/pricing.html, docs.shadowtraffic.io/cheatsheet/) + `shared/gen/.env.template` + `shared/docs/shadowtraffic/README.md` deste repo
 
 ## Overview
 
@@ -12,7 +12,7 @@ Existe também um modelo de "lease" (enterprise) via AWS KMS com variáveis como
 
 ## Discrepância real: README vs. `.env.template`
 
-`docs/shadowtraffic/README.md` (deste repo) documenta estas variáveis de licença:
+`shared/docs/shadowtraffic/README.md` (deste repo) documenta estas variáveis de licença:
 
 ```ini
 LICENSE_ID=<seu_license_id>
@@ -21,7 +21,7 @@ LICENSE_EMAIL=<seu_email>
 LICENSE_OWNER=<seu_nome>
 ```
 
-O `gen/.env.template` **real** (arquivo que o `docker-compose.yml` de fato carrega via `env_file: ./gen/.env`) usa outro conjunto:
+O `shared/gen/.env.template` **real** (arquivo que o `docker-compose.yml` de fato carrega via `env_file: ./gen/.env`) usa outro conjunto:
 
 ```ini
 LICENSE_ID=
@@ -36,9 +36,9 @@ LICENSE_SIGNATURE=
 
 ### Regra para agentes
 
-**`gen/.env.template` é a fonte de verdade**, não `docs/shadowtraffic/README.md`. O README ficou desatualizado (provavelmente escrito num momento anterior à emissão real da licença, quando só o modelo `ID/KEY/EMAIL/OWNER` de outra doc/exemplo genérico era conhecido). Um agente que gerar instruções de setup de licença deve citar as 6 variáveis do `.env.template`, não as 4 do README — e sinalizar ao usuário que o README merece correção (fora do escopo desta KB).
+**`shared/gen/.env.template` é a fonte de verdade**, não `shared/docs/shadowtraffic/README.md`. O README ficou desatualizado (provavelmente escrito num momento anterior à emissão real da licença, quando só o modelo `ID/KEY/EMAIL/OWNER` de outra doc/exemplo genérico era conhecido). Um agente que gerar instruções de setup de licença deve citar as 6 variáveis do `.env.template`, não as 4 do README — e sinalizar ao usuário que o README merece correção (fora do escopo desta KB).
 
-## Outras variáveis relevantes (`gen/.env.template`)
+## Outras variáveis relevantes (`shared/gen/.env.template`)
 
 | Bloco | Variáveis |
 |---|---|
@@ -50,4 +50,4 @@ LICENSE_SIGNATURE=
 ## Related
 
 - [conceitos-fundamentais](conceitos-fundamentais.md)
-- `docs/shadowtraffic/README.md` (howto humano — setup passo a passo)
+- `shared/docs/shadowtraffic/README.md` (howto humano — setup passo a passo)

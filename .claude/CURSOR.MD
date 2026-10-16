@@ -46,7 +46,7 @@ Use `.claude/commands/core/router.md` como ponto de partida. Para assuntos espec
 | SDD | `.claude/sdd/` |
 | Contexto rapido | `../CONTEXT.md` |
 | README | `../README.md` |
-| Docs | `../docs/00-INDEX.md` |
+| Docs | `../shared/docs/00-INDEX.md` |
 
 ## Projeto
 
@@ -61,7 +61,7 @@ Use `.claude/commands/core/router.md` como ponto de partida. Para assuntos espec
 
 ```bash
 .\scripts\start-all.ps1
-python3 scripts/validate-agent-router.py
+python3 scripts/tooling/validate-agent-router.py
 ```
 
 ## SDD

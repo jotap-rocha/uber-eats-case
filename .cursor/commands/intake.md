@@ -123,7 +123,7 @@ _(3 opcional)_
 ## Roteamento e validação
 
 - Hints: `intake_hints` · Fallback: `intake_fallback` · Router detalhado: [core/router.md](core/router.md)
-- Validação: `python3 scripts/validate-agent-router.py`
+- Validação: `python3 scripts/tooling/validate-agent-router.py`
 
 ## Relação com outros comandos
 
@@ -143,7 +143,7 @@ O `/intake` **não executa** o upgrade no disco. Para **atualizar** um projeto l
 1. **Explorar** (opcional): `/intake O que falta no meu .cursor/ comparado ao template?`
 2. **Auditar:** `python3 …/agentspec/upgrade_agentic.py --target <destino> --source <template> --dry-run`
 3. **Aplicar:** mesmo comando com `--apply`
-4. **Validar:** `python3 scripts/validate-agent-router.py` no destino
+4. **Validar:** `python3 scripts/tooling/validate-agent-router.py` no destino
 5. **Conflitos:** `/dev tasks/PROMPT_UPGRADE_AGENTIC.md`
 
 Guia completo: [`AGENTIC_UPGRADE_Guia.md`](../../get_started/AGENTIC_UPGRADE_Guia.md) em `get_started/`.

@@ -1,12 +1,12 @@
 # PROMPT: EXAMPLE_FEATURE
 
-> Example PROMPT for AgentLoop — Building a Python utility
+> Exemplo de PROMPT pro Dev Loop — construindo um utilitário Python
 
 ---
 
 ## Goal
 
-Create a date parsing utility that handles multiple date formats and outputs ISO 8601.
+Criar um utilitário de parsing de data que lida com múltiplos formatos e retorna ISO 8601.
 
 ---
 
@@ -18,10 +18,10 @@ Create a date parsing utility that handles multiple date formats and outputs ISO
 
 ## Context
 
-- Target location: `src/utils/date_parser.py`
-- Test location: `tests/test_date_parser.py`
-- Must handle: ISO, US format (MM/DD/YYYY), EU format (DD/MM/YYYY)
-- Use Python 3.10+ with type hints
+- Local do arquivo: `src/utils/date_parser.py`
+- Local do teste: `tests/test_date_parser.py`
+- Deve suportar: ISO, formato US (MM/DD/YYYY), formato EU (DD/MM/YYYY)
+- Python 3.11+ com type hints
 
 ---
 
@@ -29,31 +29,31 @@ Create a date parsing utility that handles multiple date formats and outputs ISO
 
 ### 🔴 RISKY (Do First)
 
-- [ ] Decide on date parsing library (dateutil vs manual): Document decision in Notes
-- [ ] Create directory structure if needed: Verify: `mkdir -p src/utils tests`
+- [ ] Decidir biblioteca de parsing de data (dateutil vs manual): documentar decisão em Notes
+- [ ] Criar estrutura de diretório se necessário: Verify: `mkdir -p src/utils tests`
 
 ### 🟡 CORE
 
-- [ ] Create `src/utils/__init__.py`: Verify: `ls src/utils/__init__.py`
-- [ ] @python-developer: Implement date_parser.py with parse_date() function
-- [ ] Implement format detection logic: Verify: `python -c "from src.utils.date_parser import parse_date; print('Import OK')"`
-- [ ] @test-generator: Create comprehensive tests for date_parser
-- [ ] Run tests: Verify: `pytest tests/test_date_parser.py -v`
+- [ ] Criar `src/utils/__init__.py`: Verify: `ls src/utils/__init__.py`
+- [ ] Implementar `date_parser.py` com função `parse_date()`
+- [ ] Implementar lógica de detecção de formato: Verify: `python -c "from src.utils.date_parser import parse_date; print('Import OK')"`
+- [ ] Criar testes abrangentes pra `date_parser`
+- [ ] Rodar testes: Verify: `uv run pytest tests/test_date_parser.py -v`
 
 ### 🟢 POLISH (Do Last)
 
-- [ ] Add docstrings and type hints: Verify: `python -c "from src.utils.date_parser import parse_date; print(parse_date.__doc__)"`
-- [ ] @code-reviewer: Review implementation for edge cases
+- [ ] Adicionar docstrings e type hints: Verify: `python -c "from src.utils.date_parser import parse_date; print(parse_date.__doc__)"`
+- [ ] @revisor-codigo: Revisa a implementação em busca de caso de borda
 
 ---
 
 ## Exit Criteria
 
-- [ ] Module imports successfully: `python -c "from src.utils.date_parser import parse_date; print('OK')"`
-- [ ] All tests pass: `pytest tests/test_date_parser.py --tb=short`
-- [ ] Type hints present: `grep -q "def parse_date.*->.*:" src/utils/date_parser.py && echo "OK"`
-- [ ] Handles ISO format: `python -c "from src.utils.date_parser import parse_date; assert parse_date('2026-01-25') == '2026-01-25'"`
-- [ ] Handles US format: `python -c "from src.utils.date_parser import parse_date; assert parse_date('01/25/2026') == '2026-01-25'"`
+- [ ] Módulo importa com sucesso: `python -c "from src.utils.date_parser import parse_date; print('OK')"`
+- [ ] Todos os testes passam: `uv run pytest tests/test_date_parser.py --tb=short`
+- [ ] Type hints presentes: `grep -q "def parse_date.*->.*:" src/utils/date_parser.py && echo "OK"`
+- [ ] Lida com formato ISO: `python -c "from src.utils.date_parser import parse_date; assert parse_date('2026-01-25') == '2026-01-25'"`
+- [ ] Lida com formato US: `python -c "from src.utils.date_parser import parse_date; assert parse_date('01/25/2026') == '2026-01-25'"`
 
 ---
 
@@ -62,7 +62,7 @@ Create a date parsing utility that handles multiple date formats and outputs ISO
 **Status:** NOT_STARTED
 
 | Iteration | Timestamp | Task Completed | Key Decision | Files Changed |
-|-----------|-----------|----------------|--------------|---------------|
+|---|---|---|---|---|
 | - | - | - | - | - |
 
 ---
@@ -77,7 +77,7 @@ max_retries: 3
 circuit_breaker: 3
 small_steps: true
 feedback_loops:
-  - pytest tests/test_date_parser.py --tb=short
+  - uv run pytest tests/test_date_parser.py --tb=short
   - python -c "from src.utils.date_parser import parse_date"
 ```
 
@@ -86,14 +86,14 @@ feedback_loops:
 ## Notes
 
 **Decision Log:**
-- [ ] Library choice: [TBD - dateutil or manual parsing?]
+- [ ] Escolha de biblioteca: [TBD — dateutil ou parsing manual?]
 
-This is an example PROMPT file demonstrating how to build a simple feature using AgentLoop.
-Copy this file to `.claude/dev/tasks/` and customize it for your use case.
+Este é um PROMPT de exemplo demonstrando como construir uma feature simples com o Dev Loop.
+Copie este arquivo pra `.claude/dev/tasks/` e customize pro seu caso de uso.
 
 ---
 
 ## References
 
-- [Python Best Practices](.claude/kb/pydantic/)
+- [Boas práticas Python](.claude/rules/estilo-codigo.md)
 - [PROMPT Template](.claude/dev/templates/PROMPT_TEMPLATE.md)

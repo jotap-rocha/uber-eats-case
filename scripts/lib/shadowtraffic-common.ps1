@@ -4,18 +4,28 @@
 #            shadowtraffic-report-loop.ps1 (leitura de .env, contagem por
 #            tabela via Postgres/Oracle). Dot-source, nao executa nada sozinho.
 #
-# Uso:
-#   . "$PSScriptRoot\lib\shadowtraffic-common.ps1"
+# Uso (a partir de um script em scripts/<subpasta>/):
+#   . "$PSScriptRoot\..\lib\shadowtraffic-common.ps1"
 #   $envVars = Get-EnvVars -RepoRoot $repoRoot
 #   $snap = Get-GeneratorSnapshot -EnvVars $envVars
 # ==============================================================================
 
+function Get-RepoRoot {
+    # Resolve a raiz do repo via git (funciona em qualquer profundidade de
+    # scripts/<subpasta>/), com fallback fixo caso git nao esteja no PATH.
+    $root = (git rev-parse --show-toplevel 2>$null)
+    if (-not $root) {
+        $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+    }
+    return $root
+}
+
 function Get-EnvVars {
     param([Parameter(Mandatory = $true)][string]$RepoRoot)
 
-    $envFile = "$RepoRoot\gen\.env"
+    $envFile = "$RepoRoot\shared\gen\.env"
     if (-not (Test-Path $envFile)) {
-        Write-Host "[ERRO] gen\.env nao encontrado. Copie gen\.env.template para gen\.env e preencha as credenciais." -ForegroundColor Red
+        Write-Host "[ERRO] shared\gen\.env nao encontrado. Copie shared\gen\.env.template para shared\gen\.env e preencha as credenciais." -ForegroundColor Red
         exit 1
     }
     return (Get-Content $envFile | Where-Object { $_ -match '=' -and $_ -notmatch '^\s*#' } | ConvertFrom-StringData)
@@ -98,15 +108,23 @@ function Get-OracleScalar {
     # servico FREEPDB1 para conexoes TCP externas (gap conhecido da imagem
     # gvenzl/oracle-free) -- ORA-12514 nesse instante e transitorio, nao erro
     # real. Por isso tenta de novo em vez de confiar so no healthcheck do Docker.
+    # ORA-01109 (database/PDB montado mas ainda nao aberto) entra na mesma
+    # categoria -- observado em producao local mesmo com o container ja
+    # "healthy" ha dias, provavelmente por contencao de CPU/memoria
+    # (mem_limit: 3g / cpus: 1.5) atrasando a abertura da PDB no instante
+    # exato da consulta. "-L" evita que uma falha de logon jogue sqlplus no
+    # prompt interativo "Enter user-name:", que consumiria as linhas do
+    # heredoc (SET PAGESIZE 0 etc.) como respostas erradas e produziria
+    # "SP2-0306"/"SP2-0157" no lugar do erro real do Oracle.
     for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
-        $lines = $script | docker exec -i oracle-ubereats sqlplus -s $conn
+        $lines = $script | docker exec -i oracle-ubereats sqlplus -s -L $conn
         $value = ($lines | Where-Object { $_.Trim() -match '^\d+$' } | Select-Object -First 1)
         if ($value) {
             return [int]($value.Trim())
         }
 
         $output = ($lines -join "`n")
-        $isTransient = $output -match 'ORA-12514|ORA-12541|ORA-12528|ORA-01034|ORA-12537'
+        $isTransient = $output -match 'ORA-12514|ORA-12541|ORA-12528|ORA-01034|ORA-12537|ORA-01109'
         if ($isTransient -and $attempt -lt $MaxRetries) {
             Write-Host "   [AVISO] Oracle ainda nao aceita conexoes (tentativa $attempt/$MaxRetries) -- aguardando ${RetryDelaySeconds}s..." -ForegroundColor Yellow
             Start-Sleep -Seconds $RetryDelaySeconds
@@ -140,7 +158,7 @@ function Get-GeneratorSnapshot {
 # Chamado por toggle-ingestion.ps1 e start-all.ps1 (nao por start-infra.ps1 --
 # esse fica so nos bancos).
 function Register-OracleConnectorIfNeeded {
-    param([string]$RegisterScript = "$PSScriptRoot\..\..\debezium\register-oracle-connector.ps1")
+    param([string]$RegisterScript = "$PSScriptRoot\..\ingestion\register-oracle-connector.ps1")
 
     Write-Host "[CDC] Verificando connector Debezium Oracle..." -ForegroundColor Cyan
     $connectReady = $false

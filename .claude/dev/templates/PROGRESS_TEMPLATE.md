@@ -1,14 +1,14 @@
-# PROGRESS: [NAME]
+# PROGRESS: [NOME]
 
-> Memory bridge for AgentLoop iterations. Updated after each task completion.
+> Memory bridge das iterações do Dev Loop. Atualizado após cada task concluída.
 
 ---
 
 ## Summary
 
 | Metric | Value |
-|--------|-------|
-| **PROMPT File** | `.claude/dev/tasks/PROMPT_[NAME].md` |
+|---|---|
+| **PROMPT File** | `.claude/dev/tasks/PROMPT_[NOME].md` |
 | **Started** | [timestamp] |
 | **Last Updated** | [timestamp] |
 | **Status** | IN_PROGRESS / COMPLETE / BLOCKED |
@@ -21,68 +21,48 @@
 
 ### Iteration 1 — [timestamp]
 
-**Task:** [Task description]
+**Task:** [descrição da task]
 **Status:** PASS / FAIL / SKIPPED
-**Agent:** [If @agent was used]
-**Verification:** `[command]` → exit [code]
+**Agent:** [se algum @agente foi usado]
+**Verification:** `[comando]` → exit [código]
 
 **Key Decisions:**
-- [Decision made and reasoning]
+- [Decisão tomada e o porquê]
 
 **Files Changed:**
-- `path/to/file.py` — [what changed]
+- `path/do/arquivo.py` — [o que mudou]
 
 **Notes for Next Iteration:**
-- [Context that helps the next iteration]
-
----
-
-### Iteration 2 — [timestamp]
-
-**Task:** [Task description]
-**Status:** PASS / FAIL / SKIPPED
-
-**Key Decisions:**
-- [Decision made and reasoning]
-
-**Files Changed:**
-- `path/to/file.py` — [what changed]
-
-**Notes for Next Iteration:**
-- [Context that helps the next iteration]
+- [Contexto que ajuda a próxima iteração]
 
 ---
 
 ## Blockers
 
-<!-- Track any blockers encountered -->
+<!-- Rastreia qualquer bloqueio encontrado -->
 
 | Blocker | Iteration | Resolution |
-|---------|-----------|------------|
+|---|---|---|
 | - | - | - |
 
 ---
 
 ## Architecture Decisions
 
-<!-- Important decisions that affect future iterations -->
+<!-- Decisões importantes que afetam iterações futuras -->
 
-1. **[Decision]**: [Reasoning]
-2. **[Decision]**: [Reasoning]
+1. **[Decisão]**: [Justificativa]
 
 ---
 
 ## Exit Criteria Status
 
-<!-- Track progress toward exit criteria -->
+<!-- Rastreia progresso em relação aos exit criteria -->
 
 | Criterion | Status | Last Checked |
-|-----------|--------|--------------|
-| All tests pass | ❌ | - |
-| Types check | ❌ | - |
-| Lint passes | ❌ | - |
-| [Custom] | ❌ | - |
+|---|---|---|
+| [critério] | ❌ | - |
 
 ---
 
-*AgentLoop v3.0 — Memory bridge for session recovery*
+*Dev Loop — memory bridge para recovery de sessão*

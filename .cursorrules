@@ -4,7 +4,7 @@
 
 - `.cursor/` e a fonte canonica para agentes, KB, comandos e SDD.
 - `.github/` e `.claude/` sao espelhos opcionais gerados ou alinhados a partir de `.cursor/`.
-- O triangulo de contexto e: `CONTEXT.md` + `.cursorrules` + `docs/00-INDEX.md`.
+- O triangulo de contexto e: `CONTEXT.md` + `.cursorrules` + `shared/docs/00-INDEX.md`.
 
 ## Contexto do projeto
 
@@ -16,7 +16,7 @@ Ao iniciar uma conversa relevante para codigo ou documentacao:
 
 1. Leia `CONTEXT.md`.
 2. Leia `README.md` quando a tarefa envolver setup, arquitetura, execucao ou troubleshooting.
-3. Leia `docs/00-INDEX.md` para localizar documentacao complementar.
+3. Leia `shared/docs/00-INDEX.md` para localizar documentacao complementar.
 4. Para tarefas agentic/SDD, consulte `.cursor/CURSOR.MD`, `.cursor/commands/core/router.md` e `.cursor/sdd/architecture/`.
 5. Para regras do dominio, priorize `.cursor/agents/domain/uber-eats-case-expert.md`.
 

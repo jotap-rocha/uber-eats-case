@@ -453,7 +453,7 @@ domains:
 
   shadowtraffic:
     name: ShadowTraffic
-    description: Gerador de dados sintéticos (gen/unified/uber-eats.json.template) — semântica de lookup/fork/stateMachine, limites reais e incidentes já corrigidos neste projeto
+    description: Gerador de dados sintéticos (shared/gen/unified/uber-eats.json.template) — semântica de lookup/fork/stateMachine, limites reais e incidentes já corrigidos neste projeto
     path: shadowtraffic/
     mcp_validated: "2026-09-07"
     entry_points:

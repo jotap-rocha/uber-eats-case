@@ -6,8 +6,8 @@
 ## When to Use
 
 - Antes de qualquer `docker restart gen-unified` / `docker-compose stop` + `up -d gen-unified` **quando as tabelas já têm dados de uma execução anterior**.
-- Ao editar `gen/unified/uber-eats.json.template` em qualquer campo `"_gen": "sequentialInteger"` ou `fork.key` (hoje: `users.user_id`, `drivers` fork key, `orders` fork key, `payments` fork key, `restaurants.restaurant_id`).
-- Ao decidir entre `docker-compose stop`/`start` manual vs. usar `scripts/toggle-shadowtraffic.ps1`.
+- Ao editar `shared/gen/unified/uber-eats.json.template` em qualquer campo `"_gen": "sequentialInteger"` ou `fork.key` (hoje: `users.user_id`, `drivers` fork key, `orders` fork key, `payments` fork key, `restaurants.restaurant_id`).
+- Ao decidir entre `docker-compose stop`/`start` manual vs. usar `scripts/shadowtraffic/toggle-shadowtraffic.ps1`.
 
 ## O problema
 
@@ -38,7 +38,7 @@ Conclusão prática: **não existe colisão "segura" ou "pequena"** neste config
    também `localConfigs.maxEvents = max(1, 500 - COUNT(*) atual)`, senão o
    generator tenta recriar o total (500) a partir do novo startingFrom e
    ultrapassa a meta.
-4. Regenerar gen/unified/uber-eats.json (gen/setup-configs.ps1) e só então
+4. Regenerar shared/gen/unified/uber-eats.json (shared/gen/setup-configs.ps1) e só então
    `docker-compose up -d gen-unified` / `docker restart gen-unified`.
 5. Nunca fazer dois restarts seguidos usando o MESMO valor calculado — o
    processo entre os dois restarts pode já ter avançado além dele (condição
@@ -49,9 +49,9 @@ Conclusão prática: **não existe colisão "segura" ou "pequena"** neste config
 
 ## Automação — não fazer isso manualmente
 
-`scripts/toggle-shadowtraffic.ps1 on` automatiza os passos 1–4 (lê MAX real de cada tabela, edita apenas o `uber-eats.json` **gerado** — nunca o template versionado — e só depois sobe o container). Usar sempre esse script para ligar/desligar o gerador manualmente; não usar `docker-compose stop`/`start gen-unified` direto quando já existir dado gerado, exceto se `startingFrom` for recalculado à mão antes.
+`scripts/shadowtraffic/toggle-shadowtraffic.ps1 on` automatiza os passos 1–4 (lê MAX real de cada tabela, edita apenas o `uber-eats.json` **gerado** — nunca o template versionado — e só depois sobe o container). Usar sempre esse script para ligar/desligar o gerador manualmente; não usar `docker-compose stop`/`start gen-unified` direto quando já existir dado gerado, exceto se `startingFrom` for recalculado à mão antes.
 
 ## See Also
 
 - [mutacao-real-fork-statemachine](../concepts/mutacao-real-fork-statemachine.md) — semântica de `fork`/`maxForks`/`keepAlive`
-- `scripts/toggle-shadowtraffic.ps1` — implementação do fix automatizado
+- `scripts/shadowtraffic/toggle-shadowtraffic.ps1` — implementação do fix automatizado

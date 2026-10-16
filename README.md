@@ -58,21 +58,21 @@ Requisitos adicionais: Windows 10/11, acesso à internet (download de imagens Do
 ### Passo 0: Instalar Docker Desktop e DBeaver
 
 1. **Docker Desktop**: instale, abra o aplicativo e aguarde o ícone indicar que o engine está rodando.
-2. **DBeaver**: instale para inspecionar tabelas `drivers` e `users` após subir o ambiente (host `localhost`, porta `5432`, credenciais do `gen/.env`).
+2. **DBeaver**: instale para inspecionar tabelas `drivers` e `users` após subir o ambiente (host `localhost`, porta `5432`, credenciais do `shared/gen/.env`).
 3. **Não instale** Postgres nem MinIO nativamente no SO — eles rodam **dentro do Docker** via `docker-compose`.
 
-### Passo 1: Configurar Credenciais (Pasta `gen/`)
+### Passo 1: Configurar Credenciais (Pasta `shared/gen/`)
 
 Antes de provisionar o ambiente, você precisa configurar as credenciais e variáveis de ambiente:
 
 1. **Copie o template de configuração**:
 ```powershell
-copy gen\.env.template gen\.env
+copy shared\gen\.env.template shared\gen\.env
 ```
 
-2. **Edite o arquivo `gen/.env`** e preencha as variáveis:
+2. **Edite o arquivo `shared/gen/.env`** e preencha as variáveis:
 ```powershell
-notepad gen\.env
+notepad shared\gen\.env
 ```
 
 **Variáveis principais**:
@@ -115,13 +115,13 @@ Após configurar as credenciais, consulte a **documentação completa** em `docs
 1. [docs/automacao/README.md](docs/automacao/README.md) - Scripts de automação e Docker Compose
 2. [docs/postgres/README.md](docs/postgres/README.md) - PostgreSQL (banco OLTP)
 3. [docs/minio/README.md](docs/minio/README.md) - MinIO (Data Lake)
-4. [docs/shadowtraffic/README.md](docs/shadowtraffic/README.md) - ShadowTraffic (gerador de dados)
+4. [shared/docs/shadowtraffic/README.md](shared/docs/shadowtraffic/README.md) - ShadowTraffic (gerador de dados)
 5. [docs/airbyte/README.md](docs/airbyte/README.md) - Airbyte (ingestão de dados)
 
 **Inicio rápido**:
 ```powershell
 # Inicia toda a infraestrutura + geradores de dados
-.\scripts\start-all.ps1
+.\scripts\all\start-all.ps1
 
 # Verifica o status
 docker-compose ps
@@ -133,30 +133,35 @@ docker-compose ps
 
 ```
 .
-├── gen/                    # ⚙️ Configurações e credenciais
-│   ├── .env               # Suas credenciais (CONFIGURE PRIMEIRO!)
-│   ├── .env.template      # Template de exemplo
-│   ├── setup-configs.ps1  # Script de injeção de secrets
-│   ├── postgres/          # Configs ShadowTraffic para Postgres
-│   └── minio/             # Configs ShadowTraffic para MinIO
-├── docs/                   # 📚 Documentação técnica completa
-│   ├── README.md          # Índice da documentação
-│   ├── automacao/         # Scripts PowerShell e Docker Compose
-│   ├── postgres/          # PostgreSQL
-│   ├── minio/             # MinIO
-│   ├── shadowtraffic/     # ShadowTraffic
-│   └── airbyte/           # Airbyte
-├── scripts/                # 🤖 Scripts de automação
-│   ├── start-all.ps1      # Inicia tudo
-│   ├── start-infra.ps1    # Apenas infra
-│   ├── start-generators.ps1 # Apenas geradores
-│   ├── stop-all.ps1       # Para tudo
-│   └── reset-all.ps1      # Reset destrutivo
-├── sql/                    # 📊 Scripts SQL (DDL, CDC)
-├── pipeline/               # 🔄 Scripts Databricks (Lakeflow / DLT)
-│   └── README.md          # Bronze, Silver, Gold + nota sobre fontes no MinIO
+├── aws/                     # Trilha de ingestao AWS (Fase 2): src/, infra/, sql/, tests/
+├── azure/                   # Trilha de ingestao Azure (Fase 1): src/, infra/, sql/, tests/, docs/
+├── gcp/                     # Trilha de ingestao GCP (Fase 3): src/, infra/, sql/, tests/, docs/
+├── shared/                  # ⚙️ Comum as 3 nuvens
+│   ├── gen/                # Configurações e credenciais
+│   │   ├── .env            # Suas credenciais (CONFIGURE PRIMEIRO!)
+│   │   ├── .env.template   # Template de exemplo
+│   │   └── setup-configs.ps1 # Script de injeção de secrets
+│   ├── mongo/init/          # Seed do satélite "Perfil de Restaurante"
+│   ├── sql/                 # 📊 Scripts SQL comuns (oracle/, postgres/, legacy/)
+│   ├── pipeline/            # 🔄 Scripts Databricks (Lakeflow / DLT) — Bronze, Silver, Gold
+│   │   └── README.md
+│   └── docs/                # 📚 Documentação técnica comum
+│       ├── README.md       # Índice da documentação
+│       ├── automacao/      # Scripts PowerShell e Docker Compose
+│       ├── postgres/       # PostgreSQL
+│       ├── minio/          # MinIO
+│       ├── shadowtraffic/  # ShadowTraffic
+│       └── airbyte/        # Airbyte
+├── config/                  # Dado de conexão/ambiente por nuvem (Debezium, hadoop-conf, deploy)
+│   └── {aws,azure,gcp,shared}/
+├── scripts/                 # 🤖 Scripts de automação, por assunto
+│   ├── all/start-all.ps1   # Inicia tudo
+│   ├── infra/start-infra.ps1 # Apenas infra
+│   ├── shadowtraffic/start-generators.ps1 # Apenas geradores
+│   ├── all/stop-all.ps1    # Para tudo
+│   └── infra/reset-all.ps1 # Reset destrutivo
 ├── docker-compose.yml      # Orquestração Docker
-└── README.md              # Este arquivo
+└── README.md               # Este arquivo
 ```
 
 ---
@@ -182,12 +187,12 @@ O ambiente atual possui:
 
 ### 🚧 Em Desenvolvimento
 
-- [x] Scripts SQL em `pipeline/` (Bronze parcial, Silver, Gold inicial)
+- [x] Scripts SQL em `shared/pipeline/` (Bronze parcial, Silver, Gold inicial)
 - [ ] Deploy e validação do pipeline Lakeflow no Databricks
 - [ ] Governança completa (Unity Catalog em todos os ambientes)
 - [ ] Dashboards (Power BI / Databricks AI/BI Genie)
 
-**Próxima etapa**: Anexar os scripts de `pipeline/` a um pipeline Lakeflow no workspace e validar Bronze → Silver → Gold. Veja [pipeline/README.md](pipeline/README.md) — inclui esclarecimento de que MySQL/Kafka/MongoDB estão **embarcados no MinIO**, não em containers extras.
+**Próxima etapa**: Anexar os scripts de `shared/pipeline/` a um pipeline Lakeflow no workspace e validar Bronze → Silver → Gold. Veja [shared/pipeline/README.md](shared/pipeline/README.md) — inclui esclarecimento de que MySQL/Kafka/MongoDB estão **embarcados no MinIO**, não em containers extras.
 
 ---
 
@@ -200,12 +205,12 @@ O ambiente atual possui:
 ### Postgres
 - Host: `localhost`
 - Port: `5432`
-- Database/User/Password: Conforme seu `gen/.env`
+- Database/User/Password: Conforme seu `shared/gen/.env`
 
 ### MinIO
 - Console: `http://localhost:9001`
 - API: `http://localhost:9000`
-- User/Password: Conforme seu `gen/.env`
+- User/Password: Conforme seu `shared/gen/.env`
 - Bucket: `uber-eats`
 
 ---
@@ -214,32 +219,32 @@ O ambiente atual possui:
 
 ```powershell
 # Iniciar ambiente completo
-.\scripts\start-all.ps1
+.\scripts\all\start-all.ps1
 
 # Apenas infraestrutura (sem geradores)
-.\scripts\start-infra.ps1
+.\scripts\infra\start-infra.ps1
 
 # Verificar status
 docker-compose ps
 
 # Parar tudo (preserva dados)
-.\scripts\stop-all.ps1
+.\scripts\all\stop-all.ps1
 
 # Reset completo (APAGA DADOS!)
-.\scripts\reset-all.ps1
+.\scripts\infra\reset-all.ps1
 ```
 
 ---
 
 ## Troubleshooting
 
-Para problemas específicos, consulte a documentação de cada componente em `docs/`:
+Para problemas específicos, consulte a documentação de cada componente em `shared/docs/`:
 
-- Scripts e automação: [docs/automacao/README.md](docs/automacao/README.md)
-- PostgreSQL: [docs/postgres/README.md](docs/postgres/README.md)
-- MinIO: [docs/minio/README.md](docs/minio/README.md)
-- ShadowTraffic: [docs/shadowtraffic/README.md](docs/shadowtraffic/README.md)
-- Airbyte: [docs/airbyte/README.md](docs/airbyte/README.md)
+- Scripts e automação: [shared/docs/automacao/README.md](shared/docs/automacao/README.md)
+- PostgreSQL: [shared/docs/postgres/README.md](shared/docs/postgres/README.md)
+- MinIO: [shared/docs/minio/README.md](shared/docs/minio/README.md)
+- ShadowTraffic: [shared/docs/shadowtraffic/README.md](shared/docs/shadowtraffic/README.md)
+- Airbyte: [shared/docs/airbyte/README.md](shared/docs/airbyte/README.md)
 
 ---
 
@@ -254,7 +259,7 @@ Para problemas específicos, consulte a documentação de cada componente em `do
 | `.cursor/sdd/` | Contratos e artefatos SDD |
 | `get_started/SDD_Guia_Comandos.md` | Guia dos comandos SDD |
 
-Documentação completa do framework agentic: [`docs/00-INDEX.md`](docs/00-INDEX.md).
+Documentação completa do framework agentic: [`shared/docs/00-INDEX.md`](shared/docs/00-INDEX.md).
 
 ---
 

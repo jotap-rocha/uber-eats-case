@@ -51,7 +51,7 @@ is ready for day-to-day use by a developer unfamiliar with the project.
 
 ## Exit Criteria
 
-- [x] PROMPT_TEMPLATE.md uses this project's actual test command: `rg "python3 scripts/validate-agent-router.py" .github/dev/templates/PROMPT_TEMPLATE.md`
+- [x] PROMPT_TEMPLATE.md uses this project's actual test command: `rg "python3 scripts/tooling/validate-agent-router.py" .github/dev/templates/PROMPT_TEMPLATE.md`
 - [x] A project-specific PROMPT exists in tasks/: `test -f .github/dev/tasks/PROMPT_HELLO_WORLD.md`
 - [x] GitHub Copilot context references Dev Loop: `rg "Dev Loop|/dev" .github/CURSOR.md`
 - [x] Both agent files present: `test -f .github/agents/dev/prompt-crafter.md && test -f .github/agents/dev/dev-loop-executor.md`
@@ -79,7 +79,7 @@ max_retries: 2
 circuit_breaker: 3
 small_steps: true
 feedback_loops:
-  - python3 scripts/validate-agent-router.py
+  - python3 scripts/tooling/validate-agent-router.py
   - python3 install_dev_loop/install_dev_loop.py --dry-run --target .
 ```
 

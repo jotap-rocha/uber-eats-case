@@ -1,143 +1,93 @@
-# Databricks Knowledge Base
-
-> **Purpose**: Comprehensive reference for the Databricks Data Intelligence Platform — architecture, Spark, Delta Lake, Unity Catalog, MLflow, DLT/Lakeflow, streaming, jobs, security, and CI/CD
-> **MCP Validated**: 2026-04-20
-
-## Quick Navigation
-
-### Concepts (core platform knowledge)
-
-| File | Purpose |
-|------|---------|
-| [concepts/architecture.md](concepts/architecture.md) | Workspace hierarchy, cluster types, DBFS vs Volumes, Repos, runtimes |
-| [concepts/spark-core.md](concepts/spark-core.md) | SparkSession, DataFrame API, lazy eval, DAG, transformations, actions |
-| [concepts/delta-lake.md](concepts/delta-lake.md) | Delta format, ACID, time travel, schema evolution, Z-ordering, CDF |
-| [concepts/unity-catalog.md](concepts/unity-catalog.md) | 3-level namespace, metastore, grants, lineage, volumes, Delta Sharing |
-| [concepts/clusters.md](concepts/clusters.md) | All-purpose vs job clusters, autoscaling, pools, Photon, spot, policies |
-| [concepts/notebooks.md](concepts/notebooks.md) | Magic commands, widgets, dbutils, display(), %run, Databricks Connect |
-| [concepts/jobs-workflows.md](concepts/jobs-workflows.md) | Task types, dependencies, triggers, notifications, repair/re-run |
-| [concepts/lakeflow.md](concepts/lakeflow.md) | DLT / Lakeflow: streaming tables, materialized views, expectations, CDC |
-| [concepts/mlflow.md](concepts/mlflow.md) | Experiments, runs, autologging, model flavors, Registry (UC), serving |
-| [concepts/feature-store.md](concepts/feature-store.md) | Feature tables, point-in-time lookups, training sets, online store |
-| [concepts/sql-warehouse.md](concepts/sql-warehouse.md) | Serverless SQL, DBSQL, dashboards, alerts, Lakehouse Federation |
-| [concepts/streaming.md](concepts/streaming.md) | Structured Streaming, triggers, watermarks, checkpoints, Kafka, Auto Loader |
-| [concepts/security.md](concepts/security.md) | PAT/OAuth, secrets, cluster policies, PrivateLink, audit logs, UC grants |
-
-**Continuações (arquivos extra, por baixo do limite de linhas da KB):**  
-`spark-core-dataframe-operations`, `delta-lake-maintenance-advanced`, `unity-catalog-delta-sharing`, `clusters-policies-init-scripts`, `notebooks-display-connect`, `jobs-workflows-triggers-notifications`, `lakeflow-pipeline-modes-cdc`, `mlflow-registry-serving`, `feature-store-training-online`, `sql-warehouse-federation-views`, `streaming-kafka-autoloader-stateful`, `security-network-audit-uc` — listados em [`_index.yaml`](../_index.yaml) no domínio `databricks`.
-
-**Genie (sala conversacional):** ver domínio dedicado [../databricks_genie/index.md](../databricks_genie/index.md) — Genie Space, knowledge store, instruções, limites e Agent mode.
-
-### Patterns (production-ready implementations)
-
-| File | Purpose |
-|------|---------|
-| [patterns/medallion-architecture.md](patterns/medallion-architecture.md) | Bronze/Silver/Gold full pipeline with Delta MERGE + SCD Type 1 & 2 |
-| [patterns/etl-pipeline.md](patterns/etl-pipeline.md) | PySpark ETL: schema, multi-source read, transforms, window funcs, UDFs |
-| [patterns/incremental-load.md](patterns/incremental-load.md) | Auto Loader, MERGE INTO upserts, watermarks, CDC (Debezium → Kafka) |
-| [patterns/dlt-pipeline.md](patterns/dlt-pipeline.md) | Complete DLT pipeline: Bronze→Silver→Gold, expectations, CDC, config |
-| [patterns/spark-optimization.md](patterns/spark-optimization.md) | Partitioning, caching, broadcast joins, AQE, skew salting, Z-ordering |
-| [patterns/mlops-pipeline.md](patterns/mlops-pipeline.md) | Feature Store → MLflow training → Registry → serving → monitoring |
-| [patterns/databricks-asset-bundles.md](patterns/databricks-asset-bundles.md) | DABs: bundle.yml, environments, CI/CD with GitHub Actions |
-
-**Patterns (continuação):** `etl-pipeline-windows-udfs`, `incremental-load-cdc-kafka`, `dlt-pipeline-bundle-config`, `spark-optimization-skew-clustering`, `mlops-pipeline-registry-serving`, `databricks-asset-bundles-cli-cicd` — ver `_index.yaml`.
-
+---
+domain: databricks
+description: Databricks no canônico — DAB/bundle, SDP medallion, DLT quarentena/expectations, schema rescue e Unity Catalog FS (grants+lineage); alinhado a DE-D001–005 sem live API
+mcp_validated: null
+confidence: null
 ---
 
-## Capability Map
+# KB: Databricks (pacote D — FS only)
 
-```text
-Databricks Platform
-│
-├── Data Ingestion
-│     ├── Auto Loader (cloudFiles)  → streaming/incremental file ingest
-│     ├── Lakeflow Connect          → enterprise connectors (SaaS, DBs)
-│     └── Kafka / Event Hubs       → streaming message buses
-│
-├── Storage & Format
-│     ├── Delta Lake                → ACID, time travel, schema evolution
-│     ├── Unity Catalog Volumes     → unstructured files (not tables)
-│     └── External Locations        → cloud storage paths
-│
-├── Processing
-│     ├── PySpark / Scala Spark     → distributed batch processing
-│     ├── Structured Streaming      → micro-batch and continuous streaming
-│     ├── Lakeflow (DLT)            → declarative pipeline framework
-│     └── SQL Warehouses            → SQL analytics (serverless + classic)
-│
-├── Governance
-│     ├── Unity Catalog             → GRANT/REVOKE, lineage, discovery
-│     ├── Delta Sharing             → cross-organization data sharing
-│     └── Audit Logs (system.access) → who accessed what, when
-│
-├── Machine Learning
-│     ├── MLflow Tracking           → experiments, runs, metrics
-│     ├── Model Registry (UC)       → versioning, aliases, governance
-│     ├── Mosaic AI Feature Store   → feature tables, point-in-time
-│     └── Model Serving             → REST API endpoints
-│
-├── Orchestration
-│     ├── Databricks Jobs           → multi-task workflows, scheduling
-│     └── Databricks Asset Bundles  → CI/CD, IaC for Databricks resources
-│
-└── Security
-      ├── Unity Catalog RBAC        → table/schema/catalog grants
-      ├── Databricks Secrets        → credential management
-      ├── Network Isolation         → VPC injection, PrivateLink
-      └── Cluster Policies          → guardrails for compute
-```
+Base de conhecimento **específica de Databricks** no Agent Harness Canônico.
+Complementa `lakehouse/` (agnóstico de vendor) e `cloud-platforms/` (comparativo).
+Escopo: artefatos **versionados no filesystem** — o CI do canônico **não** consulta
+live API do workspace.
 
----
+Fonte normativa de severidade e remediação: `data-engineering.yaml` (pacote **D**).
+Este KB **não** duplica severidade.
 
-## Key Concepts Summary
+## Capability map
 
-| Concept | Description |
-|---------|-------------|
-| **Delta Lake** | Open-source storage layer: Parquet + `_delta_log/` = ACID on data lakes |
-| **Unity Catalog** | Centralized governance: `catalog.schema.table` 3-level namespace |
-| **Lakeflow DLT** | Declarative pipelines: declare what data looks like, not how to compute it |
-| **Medallion** | Bronze (raw) → Silver (cleaned) → Gold (aggregated) layered architecture |
-| **Auto Loader** | `cloudFiles` format for incremental, scalable file ingestion |
-| **Photon** | Native C++ vectorized engine for SQL/Delta workloads (2-12x speedup) |
-| **Liquid Clustering** | Modern alternative to Z-ordering: incremental, auto-maintained |
-| **AQE** | Adaptive Query Execution: runtime plan optimization (enabled by default) |
-| **MLflow Registry** | UC-backed model versioning with aliases (champion/challenger) |
-| **DABs** | Databricks Asset Bundles: YAML-based IaC for jobs, pipelines, models |
+| Pergunta | Onde achar |
+|---|---|
+| Bundle/job com identidade de execução? | [concepts/dab-bundle-identity.md](concepts/dab-bundle-identity.md) |
+| Pipeline SDP com camadas medallion? | [concepts/sdp-medallion.md](concepts/sdp-medallion.md) |
+| DLT com expectations + quarentena? | [concepts/dlt-quarantine-expectations.md](concepts/dlt-quarantine-expectations.md) |
+| Política de schema rescue (fail vs quarantine)? | [concepts/schema-rescue.md](concepts/schema-rescue.md) |
+| Grants/linhagem UC no repositório? | [concepts/unity-catalog-fs-grants-lineage.md](concepts/unity-catalog-fs-grants-lineage.md) |
+| Greenfield estilo `databricks-sdp-min`? | [patterns/greenfield-sdp-min.md](patterns/greenfield-sdp-min.md) |
+| Quarentena DLT mínima? | [patterns/dlt-quarantine.md](patterns/dlt-quarantine.md) |
+| Identidade DAB auditável? | [patterns/dab-identity.md](patterns/dab-identity.md) |
+| Pré-requisito AI-DEV-KIT (gate SDD Databricks)? | [patterns/ai-dev-kit-gate.md](patterns/ai-dev-kit-gate.md) |
 
----
+## Conceitos (1:1 com DE-D00n)
 
-## Learning Path
+| Arquivo | Rule ID |
+|---|---|
+| [dab-bundle-identity.md](concepts/dab-bundle-identity.md) | **DE-D001** |
+| [sdp-medallion.md](concepts/sdp-medallion.md) | **DE-D002** |
+| [dlt-quarantine-expectations.md](concepts/dlt-quarantine-expectations.md) | **DE-D003** |
+| [schema-rescue.md](concepts/schema-rescue.md) | **DE-D004** |
+| [unity-catalog-fs-grants-lineage.md](concepts/unity-catalog-fs-grants-lineage.md) | **DE-D005** |
 
-| Level | Files |
-|-------|-------|
-| **Beginner** | concepts/architecture.md → concepts/spark-core.md → concepts/delta-lake.md → concepts/notebooks.md |
-| **Intermediate** | concepts/unity-catalog.md → concepts/clusters.md → concepts/jobs-workflows.md → patterns/medallion-architecture.md |
-| **Advanced** | concepts/lakeflow.md → concepts/streaming.md → patterns/dlt-pipeline.md → patterns/mlops-pipeline.md → patterns/databricks-asset-bundles.md |
+## Padrões
 
----
+| Arquivo | Uso |
+|---|---|
+| [greenfield-sdp-min.md](patterns/greenfield-sdp-min.md) | Layout mínimo SDP + D (example canônico) |
+| [dlt-quarantine.md](patterns/dlt-quarantine.md) | Expectations + destino de quarentena |
+| [dab-identity.md](patterns/dab-identity.md) | `owner` / `run_as` no bundle |
+| [ai-dev-kit-gate.md](patterns/ai-dev-kit-gate.md) | Pré-requisito SDD Databricks (gate humano) |
 
-## Deprecated Features to Avoid
+## Conformidade DE (ponte)
 
-| Deprecated | Replacement | Notes |
-|-----------|-------------|-------|
-| DBFS root (`dbfs:/`) | Unity Catalog Volumes | No governance |
-| Hive metastore | Unity Catalog | Per-workspace, no lineage |
-| Model Registry stages (Staging/Production) | Aliases (`champion`, `challenger`) | UC registry uses aliases |
-| `%pip dbutils.library.installPyPI` | `%pip install` | Legacy API |
-| `trigger(once=True)` | `trigger(availableNow=True)` | More efficient |
-| Z-ordering (new tables) | Liquid Clustering (DBR 13.3+) | Better for high-cardinality |
+Fonte: `data-engineering.yaml` — este KB **não** duplica severidade nem texto normativo longo.
 
----
+| Âncora | Relação |
+|---|---|
+| `DE-D001` | DAB/layout + identidade de execução |
+| `DE-D002` | SDP medallion (bronze/silver/gold) |
+| `DE-D003` | DLT quarentena / expectations |
+| `DE-D004` | Schema rescue policy |
+| `DE-D005` | Unity Catalog grants + lineage em FS |
+| pacote **D** | checks filesystem; **sem API live** |
+
+Gate: `python -m config.canonical_data_check validate <path>` · `/validar` quando marker
+ou auto-detect SDP/DLT. Skill: `de-conformidade`.
+
+## Agents sugeridos
+
+`lakehouse-architect`, `data-platform-engineer`, `data-quality-analyst`, `schema-designer`
+(+ `spark-engineer` para stubs PySpark/SDP).
+
+## Learning path
+
+1. `concepts/dab-bundle-identity.md` (DE-D001) — identidade auditável.
+2. Escolha o motor: SDP (`sdp-medallion`) ou DLT (`dlt-quarantine-expectations`).
+3. Feche `schema-rescue` + `unity-catalog-fs-grants-lineage`.
+4. Patterns sob demanda; valide no example `examples/databricks-*-min/`.
 
 ## Quick Reference
 
-- [quick-reference.md](quick-reference.md) — Magic commands, Spark configs, SQL cheat sheet
+Ver [quick-reference.md](quick-reference.md).
 
----
+## Nota de validação
 
-## Agent Usage
+`mcp_validated` / `confidence` = `null` até auditoria Context-7. Conteúdo alinhado aos
+checks do pacote D e aos examples estáticos do canônico.
 
-| Agent | Primary Files | Use Case |
-|-------|---------------|----------|
-| ai-data-engineer | All | Data pipeline design and implementation |
-| kb-architect | All | KB creation and maintenance |
+## Conteudo adicional do projeto
+
+Arquivos mantidos de versoes anteriores desta KB (nao listados acima):
+
+- `concepts/` (25 arquivos), ex.: [concepts/architecture.md](concepts/architecture.md)
+- `patterns/` (14 arquivos), ex.: [patterns/databricks-asset-bundles-cli-cicd.md](patterns/databricks-asset-bundles-cli-cicd.md)
