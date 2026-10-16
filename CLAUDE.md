@@ -1,3 +1,6 @@
+> **Este repositório é o projeto `uber-eats-case`, não o Agent Harness Canônico.**
+> Não copie o guia do repositório canônico do harness. Refine com `/grill-me`, `/grill-with-docs` ou `harness-architect`.
+
 # Pipeline de Dados Uber Eats - Portfolio — Contexto para Claude Code
 
 Pipeline completo de engenharia de dados construido como portfolio profissional, simulando um ambiente de producao de um aplicativo de delivery (Uber Eats): ingestao com Airbyte, processamento no Databricks Lakehouse com Delta Live Tables, Arquitetura Medalhao (Bronze -> Silver -> Gold), governanca com Unity Catalog e consumo em Power BI / Databricks AI/BI Genie.. Repositório agentic com agentes, comandos e knowledge bases para desenvolvimento assistido por IA em Cursor, Claude Code e GitHub Copilot.
@@ -13,6 +16,55 @@ Pipeline completo de engenharia de dados construido como portfolio profissional,
 | Contexto Claude Code completo | `.claude/CURSOR.md` | Agentes, KBs, comandos e roteamento no ecossistema `.claude/` |
 | Roteador de agentes | `.claude/commands/core/router.md` | Escolha de agente e escopo por intenção |
 | Arquitetura do roteador | `.claude/sdd/architecture/AGENT_ROUTER.yaml` | Fonte estruturada dos agentes e hints |
+| Roadmap multi-cloud | `shared/docs/ROADMAP_ARQUITETURA_MULTICLOUD.md` | Plano das fases (0 a 4), decisões e histórico de revisões |
+
+---
+
+## Stack
+
+| Camada | Tecnologia |
+|--------|------------|
+| Fontes (Docker local) | Postgres, Oracle Free 23ai (`gvenzl/oracle-free`), MongoDB, MinIO |
+| Geração de dados | ShadowTraffic (`gen-unified`, `shared/gen/unified/uber-eats.json.template`) |
+| Ingestão / CDC | Airbyte OSS (Postgres, MongoDB, MinIO), Debezium + Kafka Connect (Oracle) |
+| Lakehouse | Databricks (Lakeflow/DLT, Unity Catalog), Bronze -> Silver -> Gold em `shared/pipeline/` |
+| Clouds (fases) | Azure (Fase 1), AWS (Fase 2), GCP (Fase 3), cada uma com Warehouse, Lakehouse e Kappa |
+| IaC | Terraform (`{aws,azure,gcp}/infra/`); DAB só para jobs Databricks |
+| Qualidade | `pytest` e `ruff` (testes por trilha em `{cloud}/tests/`) |
+| Ambiente | Windows 11, Docker Desktop, scripts PowerShell em `scripts/` |
+
+Estrutura: `aws/`, `azure/`, `gcp/` (trilhas de ingestão), `shared/` (pipeline, gen, docs comuns), `config/` (conexões por nuvem), `scripts/`. Detalhes em `CONTEXT.md`.
+
+---
+
+## Invariantes
+
+Regras do projeto que não se quebram sem decisão explícita do usuário.
+
+### Dados e fontes
+
+- **Teto do Oracle Free (12 GB) é aceito e permanente.** `orders`, `payments`, `drivers`, `products` e `restaurants` não crescem mais; o gerador será congelado. Não rediagnosticar como bug nem propor purge ou migração, salvo pedido do usuário.
+- **Contrato canônico de CDC na Bronze:** `cdc_operation`, `cdc_commit_ts`, `cdc_sequence`, `cdc_source_system`. A Silver nunca lê o formato nativo de cada ferramenta de ingestão.
+- A Fase 0 (fontes locais) não migra para a nuvem. Cada cloud ingere dela via rede.
+
+### ShadowTraffic
+
+- Ao editar `uber-eats.json.template`, usar a skill `shadowtraffic-adicionar-generator-seguro`.
+- Religar ou ajustar o gerador com `shadowtraffic-ajustar-geracao`. Não usar `start-generators.ps1` / `stop-generators.ps1` direto quando as tabelas já têm dados (não recalculam `startingFrom` e já travaram o pipeline).
+- Licença expirada: `shadowtraffic-renovar-licenca`.
+
+### Arquitetura por cloud
+
+- Dois trilhos separados: o Kappa lê só do barramento (Event Hub, Kinesis, Pub/Sub) e nunca do storage batch.
+- Azure: uma captura CDC por fonte. O trilho batch vem de um Kafka Connect Sink sobre o mesmo tópico. Synapse é **Dedicated SQL Pool** (Serverless não suporta `MERGE`).
+- Azure: o `kafka-connect-azure` (porta 8084) é separado do `kafka-connect` local. Não repontar o local para a nuvem.
+- Terraform é a única ferramenta de provisionamento. Conta cloud só é aberta no início da fase correspondente (créditos têm validade curta).
+- Custo é responsabilidade do usuário: priorizar serverless e on-demand, pausar ou desligar recursos sem uso (ex.: Synapse).
+
+### Segurança e versionamento
+
+- Segredos reais ficam fora do git (`shared/gen/.env`, `.tfvars` com credenciais).
+- Commit só com confirmação do usuário, seguindo `git-boas-praticas-versionamento`.
 
 ---
 
