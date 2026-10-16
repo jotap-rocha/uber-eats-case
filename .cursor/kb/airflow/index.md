@@ -1,52 +1,59 @@
-# Airflow — Knowledge Base (práticas de DAG)
-
-> **Propósito:** Padrões de desenho para **Apache Airflow 2.11.x** no ecossistema Data Lake — **TaskFlow**, idempotência, pipelines em fases, retries/callbacks e **dynamic task mapping**.  
-> **Infra / edge (314, systemd, F5):** ver [**migration-hub**](../migration-hub/data-stack/airflow/README.md) e [**EDGE-314**](../migration-hub/data-stack/airflow/EDGE-314-OPERACAO-E-VALIDACAO.md).
-
-**MCP Validated:** 2026-05-11 (revisão editorial; exemplos validados contra convenções 2.11.x; tags de classificação documentadas).
-
+---
+domain: airflow
+description: Apache Airflow 3.x — DAGs com TaskFlow API, scheduling orientado a assets, sensors, XComs, dynamic task mapping, pools/prioridade
+mcp_validated: null
+confidence: null
 ---
 
-## Navegação rápida
+# KB: Apache Airflow
 
-| Tipo | Ficheiro |
-|------|-----------|
-| Referência rápida | [quick-reference.md](quick-reference.md) |
-| TaskFlow (`@dag`, `@task`) | [concepts/taskflow-api.md](concepts/taskflow-api.md) |
-| Tags obrigatórias (área, stack, frequência — padrão PT) | [concepts/dag-metadata-tags.md](concepts/dag-metadata-tags.md) |
-| Idempotência e macros | [concepts/idempotencia-macros-templates.md](concepts/idempotencia-macros-templates.md) |
-| Pipeline: pré-check → carga → pós-check | [patterns/pipeline-pre-check-load-post-check.md](patterns/pipeline-pre-check-load-post-check.md) |
-| Retries, callbacks, SLA | [patterns/retries-callbacks-alertas.md](patterns/retries-callbacks-alertas.md) |
-| Dynamic task mapping | [patterns/dynamic-task-mapping.md](patterns/dynamic-task-mapping.md) |
+Base de conhecimento de padrões Airflow 3.x para orquestração de pipelines de dados.
+Princípio central: **DAGs idempotentes e determinísticas** — reexecutar uma task com o mesmo
+`logical_date`/input produz o mesmo resultado, sem efeitos colaterais duplicados.
 
----
+## Conformidade DE (ponte)
 
-## Conceitos-chave
+Fonte: `data-engineering.yaml` — este KB **não** duplica severidade nem texto normativo.
 
-| Conceito | Resumo |
-|----------|--------|
-| **TaskFlow** | DAG como função Python com `@dag` e `@task`; menos boilerplate; XCom entre tasks tipado. |
-| **Idempotência** | Re-run do mesmo `logical date` não duplica efeitos — macros (`{{ ds }}`), overwrite de partição, evitar `datetime.now()`. |
-| **Três fases (decidido)** | **Pré-check** (diff fonte/destino), **job de carga**, **pós-check** (sucesso + contagens). |
-| **Resiliência** | `retries` / `retry_delay`; `on_failure_callback` (Teams/Slack/e-mail). |
-| **Tags de classificação** | Três tags por DAG, nesta ordem: área (`data_driven`, …), stack (`python`, `spark`, `dbt`), frequência PT (`horario`, `diaria`, `mensal`); ver [dag-metadata-tags.md](concepts/dag-metadata-tags.md). |
+| Âncora | Relação |
+|---|---|
+| `DE-A*` | Universal em qualquer tree DE |
+| pacote **C** (`DE-C*`) | checks Airflow (condicional) |
+| pacotes A+B | pipeline batch com Spark/YARN quando coexiste |
 
----
+## Conceitos
 
-## Percurso sugerido
+| Arquivo | Tópico |
+|---|---|
+| [dag-anatomy.md](concepts/dag-anatomy.md) | Anatomia de uma DAG com TaskFlow API — `@dag`, `@task`, dependências implícitas |
+| [asset-scheduling.md](concepts/asset-scheduling.md) | Scheduling orientado a assets/datasets — `schedule=[asset]`, `@asset`, `AssetAlias` |
+| [sensors-vs-operators.md](concepts/sensors-vs-operators.md) | Sensor espera condição, operator executa ação — poke vs reschedule vs deferrable |
+| [xcom-communication.md](concepts/xcom-communication.md) | Comunicação entre tasks via XCom — auto XCom do TaskFlow, limites, custom backends |
 
-1. Ler [dag-metadata-tags.md](concepts/dag-metadata-tags.md), [taskflow-api.md](concepts/taskflow-api.md) e [quick-reference.md](quick-reference.md).  
-2. Fixar idempotência com [idempotencia-macros-templates.md](concepts/idempotencia-macros-templates.md).  
-3. Modelar cargas com [pipeline-pre-check-load-post-check.md](patterns/pipeline-pre-check-load-post-check.md).  
-4. Acrescentar [retries-callbacks-alertas.md](patterns/retries-callbacks-alertas.md) e [dynamic-task-mapping.md](patterns/dynamic-task-mapping.md).
+## Padrões
 
----
+| Arquivo | Tópico |
+|---|---|
+| [idempotent-dag-retry.md](patterns/idempotent-dag-retry.md) | DAG idempotente com retry/backoff exponencial e particionamento por `logical_date` |
+| [sensor-pattern.md](patterns/sensor-pattern.md) | Sensor deferrable para dependência externa (arquivo, API, outra DAG) sem ocupar worker |
+| [dynamic-task-mapping.md](patterns/dynamic-task-mapping.md) | `expand()`/`partial()` para fan-out dinâmico baseado em dados de runtime |
+| [pools-priority.md](patterns/pools-priority.md) | Pools e `priority_weight` para controlar concorrência em recursos compartilhados |
 
-## Agente / ferramentas
+## Quick Reference
 
-| Contexto | Onde ir |
-|----------|---------|
-| Criar ou refatorar DAG (TaskFlow, tags, Teams) | [airflow-dag-builder](../../agents/data-engineering/airflow-dag-builder.md) |
-| Ambiente 314, permissões `airflow`, paths do volume | [big-data-cluster-expert](../../agents/data-engineering/big-data-cluster-expert.md) |
-| DAGs em `/DATALAKE/dags`, jobs em `workspace/prd/` | [EDGE-314](../migration-hub/data-stack/airflow/EDGE-314-OPERACAO-E-VALIDACAO.md) § DAGs finas + venv por projeto |
-| Boas práticas Python (layout dados vs automação) | [python-developer](../../agents/code-quality/python-developer.md) + [design-pipelines-patterns](../design-pipelines-patterns/index.md) ou [design-automation-project-patterns](../design-automation-project-patterns/index.md) |
+Ver [quick-reference.md](quick-reference.md) — layout canônico, invariantes (AF-01…AF-07),
+decision tree operator vs sensor vs asset. Ler só se a tarefa exigir esse nível de detalhe
+operacional.
+
+## Nota de validação
+
+Este domínio foi criado sem passar pelo Context-7 MCP (ferramenta indisponível nesta sessão) —
+`mcp_validated`/`confidence` estão `null` até a primeira validação real. Auditar antes de usar
+em produção crítica (ver Modo 2 do `kb-architect`).
+
+## Conteudo adicional do projeto
+
+Arquivos mantidos de versoes anteriores desta KB (nao listados acima):
+
+- `concepts/` (3 arquivos), ex.: [concepts/dag-metadata-tags.md](concepts/dag-metadata-tags.md)
+- `patterns/` (2 arquivos), ex.: [patterns/pipeline-pre-check-load-post-check.md](patterns/pipeline-pre-check-load-post-check.md)
