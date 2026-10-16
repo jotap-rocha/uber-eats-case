@@ -262,3 +262,6 @@ infra/**/.build/
 
 # Worktrees criados por sessoes do Claude Code
 .claude/worktrees/
+
+# Gerado pelo hook Stop do Claude Code (nao versionar)
+.claude/.context-drift-stamp
