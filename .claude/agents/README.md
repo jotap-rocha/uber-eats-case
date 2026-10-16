@@ -91,7 +91,7 @@
 | `function-developer` | [`domain/function-developer.md`](domain/function-developer.md) | Cloud Run function developer for the invoice processing pipeline. Builds Python serverless functions for image proces… |
 | `infra-deployer` | [`domain/infra-deployer.md`](domain/infra-deployer.md) | Infrastructure deployment specialist for GCP serverless architectures. Uses Terraform modules and Terragrunt for mult… |
 | `key-oci-expert` | [`domain/key-oci-expert.md`](domain/key-oci-expert.md) | Especialista no módulo `src/utils/key_oci.py` e no consumo de segredos do Oracle OCI Vault neste projeto. Use PROATIV… |
-| `pipeline-architect` | [`domain/pipeline-architect.md`](domain/pipeline-architect.md) | Event-driven pipeline architect for GCP serverless data engineering. Designs Cloud Run functions, Pub/Sub topics, and… |
+| `pipeline-architect` | [`domain/pipeline-architect.md`](domain/pipeline-architect.md) | Especialista em orquestração — Airflow e Dagster: design de DAG, seleção de operator, dynamic task mapping, SLA e monitoramento. |
 | `sql-capacity-expert` | [`domain/sql-capacity-expert.md`](domain/sql-capacity-expert.md) | Especialista no projeto **sql-capacity-prd** com foco em pipelines PySpark + SQL Server, execução em produção, troubl… |
 
 ### `exploration/`

@@ -1,64 +1,53 @@
-# Airflow — Referência rápida
+---
+domain: airflow
+topic: quick-reference
+---
 
-> Airflow **2.11.x**. Detalhes: `index.md` e conceitos/patterns linkados.
+# Airflow — Quick Reference
 
-## Tags de classificação (obrigatório — novas DAGs)
+### Layout canônico
 
-Três entradas em `tags=`, **nesta ordem**, em **snake_case** (português sem acento nos identificadores quando aplicável):
+```
+dags/
+├── my_pipeline_dag.py       ← @dag + tasks via TaskFlow API
+├── common/
+│   ├── assets.py            ← definições de Asset compartilhadas
+│   ├── operators/           ← operators customizados do projeto
+│   └── sensors/             ← sensors customizados (deferrable)
+├── config/
+│   └── pools.yaml            ← definição de pools versionada (IaC)
+└── tests/
+    └── test_my_pipeline_dag.py  ← dag_bag.get_dag(...).test() ou unit test de task
+```
 
-1. **Área** — ex.: `data_driven`  
-2. **Stack** — ex.: `python`, `spark`, `dbt`  
-3. **Frequência** — ex.: `horario` (várias vezes no mesmo dia; **não** implica cron de 1 em 1 h), `diaria`, `mensal`
+### Invariantes
 
-Detalhe e exemplos: [concepts/dag-metadata-tags.md](concepts/dag-metadata-tags.md).
+| # | Invariante |
+|---|---|
+| AF-01 | Toda task é idempotente — reexecutar com o mesmo `logical_date` não duplica dados (upsert, não insert puro) |
+| AF-02 | Sem `datetime.now()`/estado mutável externo dentro da lógica da task — usar `logical_date`/`data_interval` do contexto |
+| AF-03 | Sensor de longa espera usa `mode="reschedule"` ou `deferrable=True` — nunca `mode="poke"` ocupando worker por horas |
+| AF-04 | XCom carrega apenas metadados pequenos (IDs, paths, contagens) — nunca DataFrames ou payloads grandes |
+| AF-05 | Toda task com I/O externo declara `retries` + `retry_exponential_backoff=True` — sem retry infinito silencioso |
+| AF-06 | Recursos compartilhados (DB, API rate-limited) usam `pool` dedicado — sem concorrência não controlada |
+| AF-07 | Credenciais via Airflow Connections/Variables (ou secret backend) — nunca hardcoded na DAG |
 
-## TaskFlow vs clássico
+### Decision tree: operator vs sensor vs asset scheduling
 
-| Preferir | Evitar |
-|----------|--------|
-| `@dag`, `@task`, grafo com `>>` / chamadas | `PythonOperator` gigante só com `callable=` repetido |
-| Retorno explícito entre tasks (XCom) | Parsing manual de strings gigantes entre tasks |
+```
+Preciso reagir à disponibilidade de um dado (não just rodar em horário fixo)?
+    ├── SIM, e o dado é produzido por outra DAG do MEU Airflow
+    │         → Asset scheduling: schedule=[meu_asset] (Airflow 3.x)
+    ├── SIM, e o dado vem de sistema EXTERNO (S3, API, outro cluster)
+    │         → Sensor deferrable (ex.: S3KeySensorAsync) com timeout
+    └── NÃO, é so executar uma ação em horário fixo/cron
+              → Operator normal + schedule="0 6 * * *" (cron) ou schedule="@daily"
+```
 
-## Idempotência
+### Comandos úteis
 
-| Evitar | Usar |
-|--------|------|
-| `datetime.now()` na lógica de dados | `{{ ds }}`, `data_interval_start`, `logical_date` |
-| `INSERT INTO` sem chave de dedupe | Overwrite de **partição** / merge idempotente |
-
-## Pipeline (decisão equipa)
-
-| Fase | Função |
-|------|--------|
-| **Pré-check** | Comparar fonte vs destino (diff esperado) |
-| **Carga** | Origem → destino (Spark/SQL/etc.) |
-| **Pós-check** | Confirmar sucesso + **nº de linhas** carregadas |
-
-## Resiliência
-
-| Parâmetro DAG/task | Uso típico |
-|--------------------|------------|
-| `retries` | 2–5 para falhas transitórias |
-| `retry_delay` / `retry_exponential_backoff` | Rede, blob storage, SQL timeout |
-| `on_failure_callback` | Teams / Slack / e-mail |
-
-## Dynamic tasks
-
-| Caso | API |
-|------|-----|
-| N tabelas / N paths | `.expand(param=lista)` ou `expand_kwargs` |
-
-## Pitfalls
-
-| Não | Sim |
-|-----|-----|
-| Mega-task E+T+L num só `@task` | Tasks pequenas + retries focados |
-| 10 DAGs quase iguais | 1 DAG + `.expand()` |
-
-## Documentação relacionada
-
-| Tema | Path |
-|------|------|
-| Índice KB | [index.md](index.md) |
-| Tags de classificação | [concepts/dag-metadata-tags.md](concepts/dag-metadata-tags.md) |
-| Operação 314 | [migration-hub/data-stack/airflow/README.md](../migration-hub/data-stack/airflow/README.md) |
+```bash
+airflow dags test my_pipeline_dag 2026-07-26   # roda DAG local sem scheduler
+airflow tasks test my_pipeline_dag extract 2026-07-26
+airflow dags list-import-errors                # valida sintaxe de todas as DAGs
+```

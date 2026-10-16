@@ -319,8 +319,8 @@ agents:
 - id: pipeline-architect
   file: .claude/agents/domain/pipeline-architect.md
   roster_group: domain_platform
-  specialty_en: Event-driven pipeline architect for GCP serverless data engineering. Designs Cloud Run functions, Pub/Sub
-    topics, and GCS bucket workflows. Uses KB-validated patterns for invoice processing pipelines.
+  specialty_en: Especialista em orquestração — Airflow e Dagster: design de DAG, seleção de operator, dynamic task mapping,
+    SLA e monitoramento. Use PROACTIVELY ao criar DAG, desenhar pipeline ou comparar orquestradores.
 - id: sql-capacity-expert
   file: .claude/agents/domain/sql-capacity-expert.md
   roster_group: domain_platform
