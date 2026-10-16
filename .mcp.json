@@ -4,6 +4,14 @@
       "type": "http",
       "url": "https://dbc-029603a1-3b9b.cloud.databricks.com/api/2.0/mcp/sql",
       "headersHelper": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\databricks-mcp-auth.ps1"
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ],
+      "comment": "Exige Node >=20.18.1 (undici/File). Se o Node do sistema for mais antigo, aponte 'command' para um npx de Node 20 LTS (ex.: via nvm/fnm)."
     }
   }
 }

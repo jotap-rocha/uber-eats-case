@@ -1,45 +1,94 @@
-# Dynamic Task Mapping (`.expand`)
+# Dynamic Task Mapping
 
-> **Problema:** dez tabelas semelhantes não devem exigir **dez DAGs** copy-paste.  
-> **Solução:** uma lista de trabalhos e **`.expand()`** para criar **N instâncias de task** em paralelo (limitadas por `max_active_tasks` / pool / executor).
+## O problema que resolve
 
-## Padrão com TaskFlow
+O número de tasks necessárias só é conhecido em runtime (ex.: 1 task por arquivo encontrado,
+1 task por cliente ativo naquele dia). Sem dynamic mapping, isso força DAGs estáticas com um
+número fixo de tasks "reservadas", ou um loop Python gerando tasks no parse-time (que já é
+conhecido de antemão, não dinâmico de fato).
+
+## `expand()` — fan-out básico
 
 ```python
-from airflow.decorators import dag, task
+from airflow.sdk import dag, task
+from pendulum import datetime
 
-@dag(schedule="@daily", catchup=False, ...)
-def sync_tables():
-    @task
-    def table_list() -> list[str]:
-        return ["dbo.A", "dbo.B", "dbo.C"]
+@dag(schedule="@daily", start_date=datetime(2026, 1, 1, tz="UTC"), catchup=False)
+def process_partner_files():
 
-    @task
-    def sync_one(table: str) -> str:
-        # carga idempotente para `table`
-        return f"ok:{table}"
+    @task()
+    def list_files() -> list[str]:
+        return ["s3://drop/a.csv", "s3://drop/b.csv", "s3://drop/c.csv"]
 
-    sync_one.expand(table=table_list())
+    @task()
+    def process_file(path: str) -> dict:
+        row_count = load_and_process(path)
+        return {"path": path, "row_count": row_count}
 
-sync_tables()
+    # cria 1 task instance por item da lista — número decidido em runtime
+    process_file.expand(path=list_files())
+
+process_partner_files()
 ```
 
-- **`expand`:** um parâmetro iterável → N tasks.  
-- **`expand_kwargs`:** lista de dicts quando há vários parâmetros por instância.
+## `partial()` + `expand()` — argumentos fixos + argumentos mapeados
 
-## Combinação com pré-check / carga / pós-check
+```python
+@task()
+def process_file(path: str, environment: str, chunk_size: int) -> dict:
+    ...
 
-1. Task inicial devolve **lista de tabelas** (ou dicts com fonte/destino).  
-2. **`load.expand`** (ou três fases: `pre.expand` → mapear para `load` → `post.expand`) mantendo **mesmo `logical date`** em todas as instâncias.
+process_file.partial(environment="prod", chunk_size=5000).expand(path=list_files())
+# environment e chunk_size são iguais em todas as task instances;
+# path varia por instance
+```
 
-Cuidado: **explosão de paralelismo** — afinar `max_active_tasks` na DAG e recursos do **LocalExecutor** no **314**.
+## `expand_kwargs()` — múltiplos parâmetros combinados por item
 
-## Quando não usar
+```python
+@task()
+def sync_table(table: str, mode: str) -> None:
+    ...
 
-- Ordens **estritamente sequenciais** entre todas as tabelas com dependências arbitrárias (usar grafo explícito ou sub-DAGs).  
-- Listas **enormes** sem paginação — prefira batches ou DAGs agendadas por “wave”.
+sync_table.expand_kwargs([
+    {"table": "orders", "mode": "full"},
+    {"table": "customers", "mode": "incremental"},
+])
+```
 
-## Relacionado
+Use `expand_kwargs` quando os parâmetros mapeados **não são independentes entre si** (ex.: o
+`mode` depende de qual `table` é) — `expand()` simples faria produto cartesiano se você
+mapeasse dois argumentos separadamente.
 
-- [taskflow-api.md](../concepts/taskflow-api.md).  
-- [pipeline-pre-check-load-post-check.md](pipeline-pre-check-load-post-check.md).
+## Agregando resultados do fan-out — o padrão map-reduce
+
+```python
+@task()
+def summarize(results: list[dict]) -> None:
+    total = sum(r["row_count"] for r in results)
+    print(f"total processado: {total}")
+
+processed = process_file.expand(path=list_files())
+summarize(processed)  # TaskFlow injeta a lista completa de XComs mapeados
+```
+
+## Controlando concorrência do fan-out
+
+```python
+@task(max_active_tis_per_dag=10)   # no máximo 10 task instances mapeadas rodando em paralelo
+def process_file(path: str) -> dict:
+    ...
+```
+
+Sem esse limite, um `expand()` sobre 5.000 arquivos pode tentar disparar 5.000 task instances
+simultâneas, saturando o executor/banco de metadados. Combine com `pools-priority.md` se o
+gargalo for um recurso externo (não só o próprio Airflow).
+
+## Gotchas
+
+- `expand()` sobre uma lista vazia é válido — gera **zero** task instances, e a DAG segue sem
+  erro (diferente de uma exceção). Trate explicitamente se "zero itens" for um cenário de
+  alerta no seu domínio.
+- Cada task instance mapeada é uma linha própria na UI/metadata — `expand()` sobre listas muito
+  grandes (dezenas de milhares) degrada a UI e o scheduler; considere batelar (`chunk`) antes.
+- XCom de retorno de uma task mapeada vira uma lista ao ser consumido — não assuma escalar.
