@@ -340,6 +340,11 @@ agents:
   roster_group: domain_platform
   specialty_en: Especialista em orquestração de mensagens em pipelines de dados via Microsoft Teams (pymsteams, webhooks Sentinel/Trilha).
     Use PROATIVAMENTE para alertas de falha, notificações por DataFrame, secrets URL_WEBHOOK_* e integração em jobs Databricks.
+- id: uber-eats-case-expert
+  file: .cursor/agents/domain/uber-eats-case-expert.md
+  roster_group: domain_platform
+  specialty_en: Especialista no projeto uber-eats-case (pipeline Uber Eats multi-cloud) - fontes locais, ShadowTraffic, CDC, trilhas Azure/AWS/GCP,
+    lakehouse Databricks, ambientes dsv/prd e custo de nuvem. Use PROATIVAMENTE para qualquer pedido que toque os Invariantes do projeto.
 - id: agent-architect
   file: .cursor/agents/exploration/agent-architect.md
   roster_group: exploration
@@ -560,6 +565,12 @@ intake_hints:
   - .cursor/kb/teams-notifications/index.md
   - .cursor/kb/teams-notifications/quick-reference.md
   - .cursor/agents/domain/teams-notifications-expert.md
+- signals_pt: uber-eats, ShadowTraffic, Oracle Free, fonte local, CDC Bronze, Fase 1 Azure, dsv prd, custo nuvem, terraform apply
+  primary_agent_id: uber-eats-case-expert
+  context_paths:
+  - CLAUDE.md
+  - CONTEXT.md
+  - .cursor/agents/domain/uber-eats-case-expert.md
 - signals_pt: nginx, TLS, reverse proxy
   primary_agent_id: web-edge-specialist
   context_paths:

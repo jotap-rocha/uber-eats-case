@@ -92,6 +92,7 @@
 | `infra-deployer` | [`domain/infra-deployer.md`](domain/infra-deployer.md) | Infrastructure deployment specialist for GCP serverless architectures. Uses Terraform modules and Terragrunt for mult… |
 | `key-oci-expert` | [`domain/key-oci-expert.md`](domain/key-oci-expert.md) | Especialista no módulo `src/utils/key_oci.py` e no consumo de segredos do Oracle OCI Vault neste projeto. Use PROATIV… |
 | `pipeline-architect` | [`domain/pipeline-architect.md`](domain/pipeline-architect.md) | Especialista em orquestração — Airflow e Dagster: design de DAG, seleção de operator, dynamic task mapping, SLA e monitoramento. |
+| `uber-eats-case-expert` | [`domain/uber-eats-case-expert.md`](domain/uber-eats-case-expert.md) | Especialista no projeto uber-eats-case: fontes locais, ShadowTraffic, CDC, trilhas multi-cloud, dsv/prd e custo de nuvem. |
 | `sql-capacity-expert` | [`domain/sql-capacity-expert.md`](domain/sql-capacity-expert.md) | Especialista no projeto **sql-capacity-prd** com foco em pipelines PySpark + SQL Server, execução em produção, troubl… |
 
 ### `exploration/`
