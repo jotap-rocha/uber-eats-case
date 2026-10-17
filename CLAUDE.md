@@ -33,6 +33,8 @@ Pipeline completo de engenharia de dados construido como portfolio profissional,
 | Qualidade | `pytest` e `ruff` (testes por trilha em `{cloud}/tests/`) |
 | Ambiente | Windows 11, Docker Desktop, scripts PowerShell em `scripts/` |
 
+cloud: azure, aws, gcp
+
 Estrutura: `aws/`, `azure/`, `gcp/` (trilhas de ingestão), `shared/` (pipeline, gen, docs comuns), `config/` (conexões por nuvem), `scripts/`. Detalhes em `CONTEXT.md`.
 
 ---

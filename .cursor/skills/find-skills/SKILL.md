@@ -1,18 +1,33 @@
 ---
 name: find-skills
-description: Helps users discover and install agent skills when they ask questions like "how do I do X", "find a skill for X", "is there a skill that can...", or express interest in extending capabilities. This skill should be used when the user is looking for functionality that might exist as an installable skill.
+description: >-
+  Descobre e instala skills do ecossistema aberto (skills.sh / `npx skills`)
+  quando o usuário pergunta "how do I do X", "find a skill for X", "tem skill
+  para...", "procura uma skill", "instala skill". Use when: buscar skill
+  instalável, estender capacidades, skills.sh, `npx skills find`. Não substitui
+  write-a-skill (criar skill do harness) nem install-harness (propagar o canônico).
 ---
 
 # Find Skills
 
 This skill helps you discover and install skills from the open agent skills ecosystem.
 
+## Neste harness (canônico)
+
+- **Descobrir** no ecossistema: use `npx skills find` e https://skills.sh/ — este é o papel desta skill.
+- **Criar skill do harness:** `/write-a-skill` (estrutura `SKILL.md` + espelho `.claude` ↔ `.cursor`).
+- **Propagar para projeto-filho:** só `/install-harness`. Nunca copiar skill na mão para outro repo.
+- **Deixar skill neste repo:** não basta `npx skills add -g` (`~/.agents/skills`). Vendorize em
+  `.claude/skills/<nome>/` **e** `.cursor/skills/<nome>/`, inclua no `stack_map.json`
+  (`dev_workflow`), atualize inventário (CLAUDE.md / AGENTS.md / README.md / docs/manuais/harness-guide.md /
+  freeze test). Opcional: snapshot em `.agents/skills/<nome>/` + `skills-lock.json`.
+
 ## When to Use This Skill
 
 Use this skill when the user:
 
 - Asks "how do I do X" where X might be a common task with an existing skill
-- Says "find a skill for X" or "is there a skill for X"
+- Says "find a skill for X" or "is there a skill for X" / "procura uma skill" / "tem skill para"
 - Asks "can you do X" where X is a specialized capability
 - Expresses interest in extending agent capabilities
 - Wants to search for tools, templates, or workflows
@@ -94,13 +109,17 @@ Learn more: https://skills.sh/vercel-labs/agent-skills/react-best-practices
 
 ### Step 6: Offer to Install
 
-If the user wants to proceed, you can install the skill for them:
+If the user wants the skill **só na máquina** (user-level):
 
 ```bash
 npx skills add <owner/repo@skill> -g -y
 ```
 
-The `-g` flag installs globally (user-level) and `-y` skips confirmation prompts.
+The `-g` flag installs globally (`~/.agents/skills`) and `-y` skips confirmation prompts.
+
+If the user wants the skill **neste repositório canônico** (`.claude` + `.cursor`, como
+`documentation-writer` / `find-skills`), não pare no `-g`: vendorize e atualize referências
+(ver seção "Neste harness").
 
 ## Common Skill Categories
 
@@ -128,7 +147,7 @@ If no relevant skills exist:
 
 1. Acknowledge that no existing skill was found
 2. Offer to help with the task directly using your general capabilities
-3. Suggest the user could create their own skill with `npx skills init`
+3. Suggest creating a harness skill with `/write-a-skill`, or `npx skills init` for a package no ecossistema
 
 Example:
 

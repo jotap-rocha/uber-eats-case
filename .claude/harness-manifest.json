@@ -1,7 +1,7 @@
 {
   "canonical_path": "D:\\projetos\\agent-harness",
-  "installed_at": "2026-10-16",
-  "mode": "SEM_HARNESS",
+  "installed_at": "2026-10-17",
+  "mode": "ATUALIZACAO",
   "artefacts": {
     "CLAUDE.md": {
       "source": "unknown",
@@ -426,6 +426,142 @@
       "source": "canonical",
       "customized": true,
       "seed": true
+    },
+    ".github/pull_request_template.md": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/rules/github-repo.md": {
+      "source": "canonical",
+      "customized": false
+    },
+    "docs/cheatsheets/github-repo-cheatsheet.md": {
+      "source": "canonical",
+      "customized": false
+    },
+    "scripts/setup-github-repo.sh": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/skills/cloud-secrets": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/oci-vault": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/azure-keyvault": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/agents/cloud": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/cloud-resolution": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/terraform": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/skills/terraform-style-guide": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/skills/terraform-test": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/skills/cost-optimization": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/azure-terraform": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/azure-synapse": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/azure-event-hubs": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/azure-adls-gen2": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/azure-stream-analytics": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/skills/azure-storage": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/skills/azure-synapse-analytics": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/aws-terraform": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/aws-redshift": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/aws-msk": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/aws-s3": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/aws-managed-flink": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/skills/aws-storage": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/skills/aws-billing-and-cost-management": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/gcp-terraform": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/gcp-bigquery": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/gcp-managed-kafka": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/gcp-gcs": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/kb/gcp-dataflow": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/skills/bigquery-basics": {
+      "source": "canonical",
+      "customized": false
+    },
+    ".claude/skills/google-cloud-waf-cost-optimization": {
+      "source": "canonical",
+      "customized": false
     }
   }
 }

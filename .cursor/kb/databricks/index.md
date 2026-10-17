@@ -24,6 +24,7 @@ Este KB **não** duplica severidade.
 | DLT com expectations + quarentena? | [concepts/dlt-quarantine-expectations.md](concepts/dlt-quarantine-expectations.md) |
 | Política de schema rescue (fail vs quarantine)? | [concepts/schema-rescue.md](concepts/schema-rescue.md) |
 | Grants/linhagem UC no repositório? | [concepts/unity-catalog-fs-grants-lineage.md](concepts/unity-catalog-fs-grants-lineage.md) |
+| Storage credential UC por identidade de nuvem (Azure/AWS/GCP)? | [concepts/storage-credential-cloud-identity.md](concepts/storage-credential-cloud-identity.md) |
 | Greenfield estilo `databricks-sdp-min`? | [patterns/greenfield-sdp-min.md](patterns/greenfield-sdp-min.md) |
 | Quarentena DLT mínima? | [patterns/dlt-quarantine.md](patterns/dlt-quarantine.md) |
 | Identidade DAB auditável? | [patterns/dab-identity.md](patterns/dab-identity.md) |
