@@ -142,6 +142,22 @@ Mesmo com default, **sempre** peça confirmação humana antes de gravar a respo
 no `01-grill.md`. Artefatos: skill `cloud-secrets` + KBs `oci-vault` /
 `azure-keyvault` (sem agent canônico).
 
+### 2d. Nuvem pública (obrigatória quando aplicável)
+
+Se o projeto roda em nuvem pública (serviço gerenciado, Terraform, conta free tier/crédito),
+pergunte **obrigatoriamente**:
+
+```
+Cloud: em qual nuvem o projeto roda?
+  → azure | aws | gcp | multi (mais de uma) | N/A
+  → A conta é free tier / crédito? (sim → teardown diário vira requisito)
+```
+
+Grave a resposta no `01-grill.md` e oriente registrar `cloud: <valor>` no `CLAUDE.md`
+do projeto — é o Passo 0 da KB `cloud-resolution`, lido pelos agentes `cloud-data-engineer`
+/ `iac-engineer` e pelo `install-harness` (categorias `cloud_core` + `cloud_<provider>`).
+Nunca escolha a nuvem por default; sem resposta = pergunte.
+
 Se alguma pergunta ficou sem resposta → pergunte agora antes de continuar.
 
 ### 3. Especificações implícitas — detectar o que não foi dito

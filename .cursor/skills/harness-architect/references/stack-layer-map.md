@@ -14,6 +14,7 @@ path-scoped; um `agent` só nasce quando há trabalho delegável de contexto fre
 | **IA / agente** | topologia do grafo, onde o LLM decide (escopo fechado), contrato de tool, grounding — ver `rules/langgraph.md` (5 invariantes) + `kb/langgraph/` | `tool-use-evaluator`: valida uso de tools/guardrails na trajetória; `prompt-engineer`: projeta e otimiza prompts (extração, few-shot, COT, structured output) |
 | **Ingestão** | pipeline offline determinístico, contrato de metadata, sem LLM raciocinando | — |
 | **Evals (EDD)** | golden dataset versionado fora do backend, métricas, gate de aceite | `eval-runner`: roda a suíte e devolve só o veredito |
+| **Nuvem pública (Azure / AWS / GCP)** | `cloud:` declarado no `CLAUDE.md`; IaC só por Terraform com plan → acordo → apply; teardown/pausa no mesmo dia em conta free tier/crédito; placeholders para IDs de conta — ver `kb/cloud-resolution/` (Passo 0) + `kb/terraform/` + KBs `{provider}-{serviço}` | `cloud-data-engineer`: opera serviço de dados por papel (warehouse/streaming/object-storage/stream-processing); `iac-engineer`: Terraform e teardown — ambos agnósticos, especializam pela KB |
 
 ## Utilitários transversais (não ligados a camada de stack)
 

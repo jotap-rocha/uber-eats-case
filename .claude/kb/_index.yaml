@@ -482,3 +482,493 @@ domains:
     specs:
       - name: generator-targets-uber-eats
         path: specs/generator-targets-uber-eats.yaml
+
+  aws-managed-flink:
+    description: "Amazon Managed Service for Apache Flink como stream processing — aplicações Flink 1.20 (Java/PyFlink/Flink SQL) e Studio (Zeppelin, Flink 1.15), fontes MSK/Kinesis, reference data do S3 (join com tabela bounded, lookup join, temporal join, broadcast), custo por KPU-hora e stop da aplicação"
+    path: aws-managed-flink/
+    provider: aws
+    role: stream-processing
+    mcp_validated: "2026-10-16"
+    confidence: 0.75
+    agents: [cloud-data-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: application-model, path: concepts/application-model.md}
+      - {name: sources-sinks-and-windows, path: concepts/sources-sinks-and-windows.md}
+    patterns:
+      - {name: reference-data, path: patterns/reference-data.md}
+
+  aws-msk:
+    description: "Amazon MSK como broker Kafka — MSK Serverless (IAM obrigatório, porta 9098, tópicos compactados com cleanup.policy só na criação) vs provisionado, auth SASL/IAM com aws-msk-iam-auth, MSK Connect / Kafka Connect self-managed, S3 Sink e HDFS Sink (risco a validar)"
+    path: aws-msk/
+    provider: aws
+    role: streaming
+    mcp_validated: "2026-10-16"
+    confidence: 0.8
+    agents: [cloud-data-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: serverless-vs-provisioned, path: concepts/serverless-vs-provisioned.md}
+      - {name: topics-and-quotas, path: concepts/topics-and-quotas.md}
+    patterns:
+      - {name: kafka-client-auth, path: patterns/kafka-client-auth.md}
+      - {name: kafka-connect-sink, path: patterns/kafka-connect-sink.md}
+
+  aws-redshift:
+    description: "Amazon Redshift Serverless como warehouse — namespace/workgroup, base RPU mínimo (4), crédito de trial US$ 300, COPY do S3 com IAM role, MERGE para SCD2, controle de custo (base/max RPU, usage limits) e por que não provisionado nem Athena"
+    path: aws-redshift/
+    provider: aws
+    role: warehouse
+    mcp_validated: "2026-10-16"
+    confidence: 0.85
+    agents: [cloud-data-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: cost-controls, path: concepts/cost-controls.md}
+      - {name: serverless-model, path: concepts/serverless-model.md}
+    patterns:
+      - {name: bulk-load, path: patterns/bulk-load.md}
+      - {name: merge-scd2, path: patterns/merge-scd2.md}
+
+  aws-s3:
+    description: "Amazon S3 como data lake — layout de zonas (raw/curated/...), bucket policy × IAM policy, acesso por IAM role (instance profile / role assumida), Block Public Access, Object Ownership e criptografia padrão (SSE-S3 desde 2023, SSE-KMS opcional)"
+    path: aws-s3/
+    provider: aws
+    role: object-storage
+    mcp_validated: "2026-10-16"
+    confidence: 0.85
+    agents: [cloud-data-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: access-model-and-defaults, path: concepts/access-model-and-defaults.md}
+      - {name: zone-layout, path: concepts/zone-layout.md}
+    patterns:
+      - {name: service-identity-access, path: patterns/service-identity-access.md}
+
+  aws-terraform:
+    description: "Provider Terraform hashicorp/aws — autenticação (SSO/profile no dev, OIDC/IAM role no CI, nunca access key versionada), state remoto em S3 com lock nativo (use_lockfile), default_tags e guard-rails de custo (AWS Budgets, destroy no mesmo dia)"
+    path: aws-terraform/
+    provider: aws
+    role: iac-provider
+    mcp_validated: "2026-10-16"
+    confidence: 0.85
+    agents: [iac-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: credential-chain, path: concepts/credential-chain.md}
+      - {name: provider-and-versions, path: concepts/provider-and-versions.md}
+    patterns:
+      - {name: cost-guardrails, path: patterns/cost-guardrails.md}
+      - {name: provider-auth, path: patterns/provider-auth.md}
+      - {name: remote-state, path: patterns/remote-state.md}
+
+  azure-adls-gen2:
+    description: "Azure Data Lake Storage Gen2 como object storage do lake — Storage Account com namespace hierárquico (HNS), RBAC Storage Blob Data Contributor + ACL POSIX, acesso por Service Principal/Managed Identity via abfss, layout de zonas bronze/silver/gold"
+    path: azure-adls-gen2/
+    provider: azure
+    role: object-storage
+    mcp_validated: "2026-10-16"
+    confidence: 0.8
+    agents: [cloud-data-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: hns-rbac-acl, path: concepts/hns-rbac-acl.md}
+      - {name: zone-layout, path: concepts/zone-layout.md}
+    patterns:
+      - {name: service-identity-access, path: patterns/service-identity-access.md}
+
+  azure-event-hubs:
+    description: "Azure Event Hubs Standard como broker Kafka gerenciado — endpoint :9093, SASL_SSL PLAIN com connection string ou OAUTHBEARER/Entra ID, tópicos compactados, Kafka Connect contra Event Hubs; HDFS 2 Sink marcado como risco a validar"
+    path: azure-event-hubs/
+    provider: azure
+    role: streaming
+    mcp_validated: "2026-10-16"
+    confidence: 0.8
+    agents: [cloud-data-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: kafka-on-event-hubs, path: concepts/kafka-on-event-hubs.md}
+      - {name: log-compaction, path: concepts/log-compaction.md}
+    patterns:
+      - {name: kafka-client-auth, path: patterns/kafka-client-auth.md}
+      - {name: kafka-connect-sink, path: patterns/kafka-connect-sink.md}
+
+  azure-keyvault:
+    description: "Azure Key Vault — facade, map URI/secret name, DefaultAzureCredential, SI (nunca logar); paridade com oci-vault; DE-E* sem live API"
+    path: azure-keyvault/
+    mcp_validated: null
+    confidence: null
+    agents: [data-platform-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: facade-and-uri-map, path: concepts/facade-and-uri-map.md}
+      - {name: auth-credential-chain, path: concepts/auth-credential-chain.md}
+    patterns:
+      - {name: greenfield-azure-min, path: patterns/greenfield-azure-min.md}
+
+  azure-stream-analytics:
+    description: "Azure Stream Analytics como stream processing gerenciado — query SQL (SAQL) com TIMESTAMP BY e janelas, reference data em Blob/ADLS com path pattern {date}/{time}, Managed Identity, custo por Streaming Unit (SU V2) e parar o job para não pagar"
+    path: azure-stream-analytics/
+    provider: azure
+    role: stream-processing
+    mcp_validated: "2026-10-16"
+    confidence: 0.8
+    agents: [cloud-data-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: query-language, path: concepts/query-language.md}
+      - {name: streaming-units-cost, path: concepts/streaming-units-cost.md}
+    patterns:
+      - {name: reference-data, path: patterns/reference-data.md}
+
+  azure-synapse:
+    description: "Azure Synapse Dedicated SQL Pool (DW100c) como warehouse — COPY INTO do ADLS Gen2 por Managed Identity, MERGE para SCD2 (limites do dialeto), distribuição HASH, custo e pausa/retomada via CLI; por que não Serverless nem Fabric"
+    path: azure-synapse/
+    provider: azure
+    role: warehouse
+    mcp_validated: "2026-10-16"
+    confidence: 0.85
+    agents: [cloud-data-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: cost-and-pause, path: concepts/cost-and-pause.md}
+      - {name: dedicated-pool, path: concepts/dedicated-pool.md}
+    patterns:
+      - {name: bulk-load, path: patterns/bulk-load.md}
+      - {name: merge-scd2, path: patterns/merge-scd2.md}
+
+  azure-terraform:
+    description: "Terraform no Azure — provider azurerm (v5) + azuread opcional, auth az login (dev) / Service Principal OIDC (CI), state remoto em Storage Account com Entra ID, resource group base e features {}"
+    path: azure-terraform/
+    provider: azure
+    role: iac-provider
+    mcp_validated: "2026-10-16"
+    confidence: 0.85
+    agents: [iac-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: auth-modes, path: concepts/auth-modes.md}
+      - {name: provider-azurerm, path: concepts/provider-azurerm.md}
+    patterns:
+      - {name: provider-auth, path: patterns/provider-auth.md}
+      - {name: remote-state, path: patterns/remote-state.md}
+
+  cloud-platforms:
+    description: "Comparativo entre plataformas de dados em nuvem — Snowflake, Databricks, BigQuery: precificação, arquitetura, encaixe por workload, custo"
+    path: cloud-platforms/
+    mcp_validated: null
+    confidence: null
+    agents: [data-platform-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: pricing-models, path: concepts/pricing-models.md}
+      - {name: platform-architectures, path: concepts/platform-architectures.md}
+      - {name: workload-fit, path: concepts/workload-fit.md}
+    patterns:
+      - {name: cost-optimization, path: patterns/cost-optimization.md}
+      - {name: platform-decision-checklist, path: patterns/platform-decision-checklist.md}
+
+  cloud-resolution:
+    description: "Contrato de roteamento multi-cloud — Passo 0 (provider), papéis (role) e filtro provider+role no _index.yaml; agentes/skills de nuvem são agnósticos e se especializam por aqui"
+    path: cloud-resolution/
+    mcp_validated: null
+    confidence: null
+    agents: [cloud-data-engineer, iac-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: provider-resolution, path: concepts/provider-resolution.md}
+      - {name: roles, path: concepts/roles.md}
+    patterns:
+      - {name: service-kb-contract, path: patterns/service-kb-contract.md}
+
+  data-modeling:
+    description: "Modelagem dimensional e Data Vault — star/snowflake schema, SCD, grão de fato, bridge tables"
+    path: data-modeling/
+    mcp_validated: null
+    confidence: null
+    agents: [schema-designer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: star-vs-snowflake, path: concepts/star-vs-snowflake.md}
+      - {name: data-vault-2, path: concepts/data-vault-2.md}
+      - {name: scd-types, path: concepts/scd-types.md}
+      - {name: grain-granularity, path: concepts/grain-granularity.md}
+    patterns:
+      - {name: star-schema-design, path: patterns/star-schema-design.md}
+      - {name: scd-type-2, path: patterns/scd-type-2.md}
+      - {name: accumulating-snapshot, path: patterns/accumulating-snapshot.md}
+      - {name: bridge-table, path: patterns/bridge-table.md}
+
+  data-quality:
+    description: "Dimensões de qualidade de dados, data contracts ODCS e observabilidade de pipeline — Great Expectations, Soda, dbt tests, quarentena"
+    path: data-quality/
+    mcp_validated: null
+    confidence: null
+    agents: [data-quality-analyst, data-contracts-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: quality-dimensions, path: concepts/quality-dimensions.md}
+      - {name: data-contracts-odcs, path: concepts/data-contracts-odcs.md}
+      - {name: pipeline-observability, path: concepts/pipeline-observability.md}
+    patterns:
+      - {name: great-expectations-suite, path: patterns/great-expectations-suite.md}
+      - {name: soda-checks, path: patterns/soda-checks.md}
+      - {name: dbt-tests, path: patterns/dbt-tests.md}
+      - {name: quarantine-notification, path: patterns/quarantine-notification.md}
+
+  dbt:
+    description: "dbt — model materializations, estratégias de incremental, testes, dbt Mesh multi-projeto, Fusion Engine"
+    path: dbt/
+    mcp_validated: "2026-07-26"
+    confidence: 0.95
+    agents: [dbt-specialist]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: model-materializations, path: concepts/model-materializations.md}
+      - {name: incremental-strategies, path: concepts/incremental-strategies.md}
+      - {name: testing-framework, path: concepts/testing-framework.md}
+      - {name: dbt-mesh, path: concepts/dbt-mesh.md}
+      - {name: fusion-engine, path: concepts/fusion-engine.md}
+    patterns:
+      - {name: incremental-merge-model, path: patterns/incremental-merge-model.md}
+      - {name: snapshot-scd2, path: patterns/snapshot-scd2.md}
+      - {name: custom-generic-test, path: patterns/custom-generic-test.md}
+      - {name: macro-patterns, path: patterns/macro-patterns.md}
+      - {name: semantic-layer-metrics, path: patterns/semantic-layer-metrics.md}
+
+  design-instrucional:
+    description: "Metodologia de design instrucional para guias passo-a-passo técnicos — sequenciamento pedagógico, estrutura de bloco uniforme, público-alvo, glossário antes de código"
+    path: design-instrucional/
+    mcp_validated: null
+    confidence: null
+    agents: [guia-roteiro, guia-etapas]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: sequenciamento-pedagogico, path: concepts/sequenciamento-pedagogico.md}
+      - {name: estrutura-de-prompt-uniforme, path: concepts/estrutura-de-prompt-uniforme.md}
+      - {name: publico-alvo-e-pre-requisitos, path: concepts/publico-alvo-e-pre-requisitos.md}
+      - {name: glossario-antes-do-codigo, path: concepts/glossario-antes-do-codigo.md}
+    patterns:
+      - {name: bloco-contexto-conceito-codigo-validacao, path: patterns/bloco-contexto-conceito-codigo-validacao.md}
+      - {name: checklist-de-producao, path: patterns/checklist-de-producao.md}
+      - {name: apendice-de-troubleshooting, path: patterns/apendice-de-troubleshooting.md}
+
+  gcp-bigquery:
+    description: "BigQuery como warehouse no GCP — datasets, LOAD DATA/bq load a partir do GCS, MERGE para SCD2, custo on-demand por TiB lido vs editions, free tier/sandbox, guardrails (maximum_bytes_billed, partição/cluster); por que não Dataproc/Spark"
+    path: gcp-bigquery/
+    provider: gcp
+    role: warehouse
+    mcp_validated: "2026-10-16"
+    confidence: 0.8
+    agents: [cloud-data-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: cost-model, path: concepts/cost-model.md}
+      - {name: datasets-and-tables, path: concepts/datasets-and-tables.md}
+    patterns:
+      - {name: bulk-load, path: patterns/bulk-load.md}
+      - {name: merge-scd2, path: patterns/merge-scd2.md}
+
+  gcp-dataflow:
+    description: "Dataflow (Apache Beam) streaming no GCP — jobs e Streaming Engine, templates Google (Kafka/Managed Kafka → BigQuery), side inputs como reference data (slowly-changing a partir do GCS), janelas, custo por vCPU/memória-hora e drain vs cancel"
+    path: gcp-dataflow/
+    provider: gcp
+    role: stream-processing
+    mcp_validated: "2026-10-16"
+    confidence: 0.7
+    agents: [cloud-data-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: streaming-jobs-and-cost, path: concepts/streaming-jobs-and-cost.md}
+      - {name: templates, path: concepts/templates.md}
+      - {name: windows-and-side-inputs, path: concepts/windows-and-side-inputs.md}
+    patterns:
+      - {name: kafka-to-bigquery-template, path: patterns/kafka-to-bigquery-template.md}
+      - {name: reference-data, path: patterns/reference-data.md}
+
+  gcp-gcs:
+    description: "Cloud Storage como data lake GCP — layout de zonas, uniform bucket-level access, public access prevention, IAM mínimo (objectViewer/objectCreator/objectUser/objectAdmin), acesso por service account, Workload Identity (GKE) e WIF; free tier e soft delete"
+    path: gcp-gcs/
+    provider: gcp
+    role: object-storage
+    mcp_validated: "2026-10-16"
+    confidence: 0.8
+    agents: [cloud-data-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: access-controls, path: concepts/access-controls.md}
+      - {name: lake-layout, path: concepts/lake-layout.md}
+    patterns:
+      - {name: service-identity-access, path: patterns/service-identity-access.md}
+
+  gcp-managed-kafka:
+    description: "Google Cloud Managed Service for Apache Kafka — cluster (mín. 3 vCPU, 1–8 GiB/vCPU), custo por vCPU/RAM-hora, auth SASL_SSL (OAUTHBEARER com ADC ou PLAIN com SA), porta 9092, tópicos compactados, Connect clusters gerenciados com sink GCS; sink HDFS = risco a validar"
+    path: gcp-managed-kafka/
+    provider: gcp
+    role: streaming
+    mcp_validated: "2026-10-16"
+    confidence: 0.7
+    agents: [cloud-data-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: auth-and-network, path: concepts/auth-and-network.md}
+      - {name: cluster-sizing-cost, path: concepts/cluster-sizing-cost.md}
+      - {name: topics-and-connect, path: concepts/topics-and-connect.md}
+    patterns:
+      - {name: kafka-client-auth, path: patterns/kafka-client-auth.md}
+      - {name: kafka-connect-sink, path: patterns/kafka-connect-sink.md}
+
+  gcp-terraform:
+    description: "Terraform no GCP — providers google/google-beta, auth (ADC no dev, Workload Identity Federation no CI, nunca chave JSON versionada), state remoto em GCS com lock nativo e habilitação de APIs via google_project_service"
+    path: gcp-terraform/
+    provider: gcp
+    role: iac-provider
+    mcp_validated: "2026-10-16"
+    confidence: 0.85
+    agents: [iac-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: auth-chain, path: concepts/auth-chain.md}
+      - {name: project-apis, path: concepts/project-apis.md}
+      - {name: providers, path: concepts/providers.md}
+    patterns:
+      - {name: provider-auth, path: patterns/provider-auth.md}
+      - {name: remote-state, path: patterns/remote-state.md}
+
+  lakehouse:
+    description: "Open table formats e catálogos de metadados para lakehouse — Iceberg, Delta Lake, Hudi, comparativo agnóstico de vendor"
+    path: lakehouse/
+    mcp_validated: null
+    confidence: null
+    agents: [lakehouse-architect]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: open-table-formats, path: concepts/open-table-formats.md}
+      - {name: metadata-catalogs, path: concepts/metadata-catalogs.md}
+      - {name: schema-evolution, path: concepts/schema-evolution.md}
+      - {name: time-travel-versioning, path: concepts/time-travel-versioning.md}
+    patterns:
+      - {name: partition-evolution, path: patterns/partition-evolution.md}
+      - {name: compaction-small-files, path: patterns/compaction-small-files.md}
+      - {name: hive-to-open-format-migration, path: patterns/hive-to-open-format-migration.md}
+      - {name: retention-vacuum, path: patterns/retention-vacuum.md}
+
+  multi-tenant:
+    description: "Padrões de isolamento multi-tenant — RLS, tenant_id, schema separation, pre-filter vetorial"
+    path: multi-tenant/
+    mcp_validated: "2026-06-27"
+    confidence: 0.90
+    agents: [sql-architect]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: isolation-models, path: concepts/isolation-models.md}
+      - {name: tenant-context, path: concepts/tenant-context.md}
+    patterns:
+      - {name: rls-multi-tenant, path: patterns/rls-multi-tenant.md}
+      - {name: vector-tenant-isolation, path: patterns/vector-tenant-isolation.md}
+
+  oci-vault:
+    description: "OCI Vault — facade, map OCID, auth dual (config local vs Resource Principal), SI (nunca logar); alinhado a DE-E* sem live API"
+    path: oci-vault/
+    mcp_validated: null
+    confidence: null
+    agents: [data-platform-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: facade-and-ocid-map, path: concepts/facade-and-ocid-map.md}
+      - {name: auth-dual, path: concepts/auth-dual.md}
+    patterns:
+      - {name: greenfield-oci-min, path: patterns/greenfield-oci-min.md}
+
+  pipeline:
+    description: "Conceitos e padrões de engenharia de dados — Medallion, contratos, lineage, schema evolution"
+    path: pipeline/
+    mcp_validated: "2026-06-27"
+    confidence: 0.95
+    agents: [harness-design]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: medallion, path: concepts/medallion.md}
+      - {name: gold-analytic, path: concepts/gold-analytic.md}
+      - {name: data-contracts, path: concepts/data-contracts.md}
+      - {name: schema-evolution, path: concepts/schema-evolution.md}
+      - {name: data-lineage, path: concepts/data-lineage.md}
+      - {name: quarantine, path: concepts/quarantine.md}
+      - {name: observability, path: concepts/observability.md}
+    patterns:
+      - {name: solid-pipeline, path: patterns/solid-pipeline.md}
+      - {name: centralized-config, path: patterns/centralized-config.md}
+      - {name: notification, path: patterns/notification.md}
+      - {name: data-quality, path: patterns/data-quality.md}
+      - {name: silver-checklist-odcs, path: patterns/silver-checklist-odcs.md}
+      - {name: medallion-sdd-gates, path: patterns/medallion-sdd-gates.md}
+      - {name: genie-readiness, path: patterns/genie-readiness.md}
+
+  spark:
+    description: "Apache Spark — modelo de execução distribuída, DataFrame/RDD/SQL, lazy evaluation, tuning de cluster"
+    path: spark/
+    mcp_validated: null
+    confidence: null
+    agents: [spark-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: execution-model, path: concepts/execution-model.md}
+      - {name: dataframe-vs-rdd-vs-sql, path: concepts/dataframe-vs-rdd-vs-sql.md}
+      - {name: lazy-evaluation, path: concepts/lazy-evaluation.md}
+      - {name: memory-management, path: concepts/memory-management.md}
+    patterns:
+      - {name: join-optimization, path: patterns/join-optimization.md}
+      - {name: partitioning-skew, path: patterns/partitioning-skew.md}
+      - {name: pyspark-idioms, path: patterns/pyspark-idioms.md}
+      - {name: cluster-tuning, path: patterns/cluster-tuning.md}
+
+  sql-patterns:
+    description: "SQL cross-dialect (Postgres/Snowflake/BigQuery/DuckDB) — leitura de query plan, otimização e análise de queries existentes"
+    path: sql-patterns/
+    mcp_validated: null
+    confidence: null
+    agents: [sql-optimizer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: query-plan-reading, path: concepts/query-plan-reading.md}
+      - {name: window-functions, path: concepts/window-functions.md}
+      - {name: cte-recursive-vs-materialized, path: concepts/cte-recursive-vs-materialized.md}
+      - {name: join-types-costs, path: concepts/join-types-costs.md}
+    patterns:
+      - {name: slow-query-diagnosis, path: patterns/slow-query-diagnosis.md}
+      - {name: dialect-translation, path: patterns/dialect-translation.md}
+      - {name: efficient-pagination, path: patterns/efficient-pagination.md}
+      - {name: composite-indexing, path: patterns/composite-indexing.md}
+
+  streaming:
+    description: "Processamento de streaming — Kafka, Flink, CDC/Debezium: stream vs batch, watermarking, delivery semantics, particionamento, windowing, dedup, DLQ"
+    path: streaming/
+    mcp_validated: null
+    confidence: null
+    agents: [streaming-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: stream-vs-batch, path: concepts/stream-vs-batch.md}
+      - {name: watermarking, path: concepts/watermarking.md}
+      - {name: delivery-semantics, path: concepts/delivery-semantics.md}
+      - {name: kafka-partitioning, path: concepts/kafka-partitioning.md}
+    patterns:
+      - {name: cdc-debezium, path: patterns/cdc-debezium.md}
+      - {name: windowing, path: patterns/windowing.md}
+      - {name: deduplication, path: patterns/deduplication.md}
+      - {name: dead-letter-queue, path: patterns/dead-letter-queue.md}
+
+  terraform:
+    description: "Terraform agnóstico de nuvem — state remoto e bootstrap, layout de módulos por papel, variáveis/secrets, ciclo plan→acordo→apply e teardown; específico da nuvem na KB role iac-provider"
+    path: terraform/
+    mcp_validated: null
+    confidence: null
+    agents: [iac-engineer, cloud-data-engineer]
+    entry_points: {index: index.md, quick_reference: quick-reference.md}
+    concepts:
+      - {name: state, path: concepts/state.md}
+      - {name: layout-and-modules, path: concepts/layout-and-modules.md}
+      - {name: variables-and-secrets, path: concepts/variables-and-secrets.md}
+    patterns:
+      - {name: plan-apply-with-agreement, path: patterns/plan-apply-with-agreement.md}
+      - {name: teardown, path: patterns/teardown.md}

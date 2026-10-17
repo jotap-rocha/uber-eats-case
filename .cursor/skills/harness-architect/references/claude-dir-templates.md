@@ -15,6 +15,7 @@ Mantenha enxuto (idealmente < 500 tokens). É um índice de fatos duráveis, nã
 ## Stack
 [linguagens, frameworks, stores — uma linha]
 scm: azure | github   # adapter de PR (detecta pelo remote; ambíguo → perguntar)
+cloud: azure | aws | gcp | multi   # só se usar nuvem pública; deixe UM valor (Passo 0 da KB cloud-resolution + install-harness)
 
 ## Comandos
 - rodar: `...`
@@ -213,6 +214,7 @@ sem MCP.
 ## Stack
 [linguagens, frameworks, stores — uma linha]
 scm: azure | github   # adapter de PR (detecta pelo remote; ambíguo → perguntar)
+cloud: azure | aws | gcp | multi   # só se usar nuvem pública; deixe UM valor (Passo 0 da KB cloud-resolution + install-harness)
 
 ## Comandos
 - rodar: `...`
