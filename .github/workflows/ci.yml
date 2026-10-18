@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Sem filtro de `paths:` de proposito: o job `pytest` e check obrigatorio da main
+# (scripts/setup-github-repo.sh). Um check que nao roda em PR so de docs trava o merge.
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            aws/requirements.txt
+            gcp/requirements.txt
+      - name: Instalar dependencias de teste e lint
+        run: |
+          python -m pip install -r aws/requirements.txt -r gcp/requirements.txt ruff mypy
+      - name: Lint (ruff) nas trilhas
+        run: python -m ruff check aws azure gcp
+      - name: Tipos (mypy) por pacote
+        # Cada Lambda tem seu proprio handler.py; mypy no conjunto acusa modulo duplicado.
+        run: |
+          for d in aws/src/*/ azure/src/*/ gcp/src/*/; do
+            echo "== $d"
+            python -m mypy "$d"
+          done
+      - name: Testes por trilha
+        run: |
+          for t in aws azure gcp; do
+            echo "== $t"
+            python -m pytest "$t/tests" -q
+          done

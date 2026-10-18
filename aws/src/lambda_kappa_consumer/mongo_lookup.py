@@ -41,7 +41,7 @@ class RestaurantProfileCache:
         return profiles
 
     def get(self, restaurant_id) -> dict | None:
-        if self._is_stale():
+        if self._data is None or self._is_stale():
             self._data = self._load()
             self._loaded_at = time.time()
         return self._data.get(restaurant_id)
