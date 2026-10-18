@@ -1,0 +1,12 @@
+# Configuração do gitleaks: regras padrão + exceções estreitas.
+title = "uber-eats-case"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Docs do harness com placeholders e exemplos (nao sao credenciais)"
+paths = [
+  '''^\.(claude|cursor|github)/kb/''',   # KBs do harness: OCIDs/chaves de exemplo
+  '''^(shared/)?docs/minio/README\.md$''',  # exemplo de payload com CPF ficticio
+]
