@@ -1,0 +1,11 @@
+# Config de lint/tipos do projeto. Nao e pacote de produto: sem [project].
+# Escopo do gate de CI: codigo das trilhas ({aws,azure,gcp}/src e /tests).
+# config/ e agentspec/ vem do agent-harness e ficam fora do lint deste repo.
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [".agents", ".claude", ".cursor", ".github", "abctl-v0.30.3-windows-amd64"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
