@@ -265,3 +265,6 @@ infra/**/.build/
 
 # Gerado pelo hook Stop do Claude Code (nao versionar)
 .claude/.context-drift-stamp
+
+# Config local de MCP com chaves de API (nunca versionar)
+.agentspec-test/.cursor/mcp.json

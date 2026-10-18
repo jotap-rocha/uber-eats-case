@@ -5,17 +5,25 @@ on:
   push:
     branches: [main]
 
-permissions:
-  contents: read
+permissions: {}
 
-# Sem filtro de `paths:` de proposito: o job `pytest` e check obrigatorio da main
-# (scripts/setup-github-repo.sh). Um check que nao roda em PR so de docs trava o merge.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Sem filtro de `paths:` de proposito: os jobs abaixo sao checks obrigatorios da main.
+# Um check que nao roda em PR so de docs trava o merge.
 jobs:
   pytest:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
           cache: pip
@@ -40,3 +48,69 @@ jobs:
             echo "== $t"
             python -m pytest "$t/tests" -q
           done
+
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      BASE_REF: ${{ github.base_ref }}
+      EVENT_NAME: ${{ github.event_name }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Instalar gitleaks 8.30.1 (checksum fixo)
+        run: |
+          curl -sSfL -o gitleaks.tgz \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tgz" | sha256sum -c -
+          tar -xzf gitleaks.tgz gitleaks
+
+      # O historico anterior a este CI tem achados conhecidos (ver PR de introducao):
+      # o gate olha os commits novos e a arvore atual.
+      - name: Varredura dos commits novos
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            RANGE="origin/${BASE_REF}..HEAD"
+          else
+            RANGE="-1"
+          fi
+          ./gitleaks git --redact --no-banner --config .gitleaks.toml --log-opts="$RANGE"
+
+      - name: Varredura da arvore atual
+        run: ./gitleaks dir . --redact --no-banner --config .gitleaks.toml
+
+  workflows:
+    name: workflows (actionlint + zizmor)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Instalar actionlint 1.7.12 (checksum fixo)
+        run: |
+          curl -sSfL -o actionlint.tgz \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  actionlint.tgz" | sha256sum -c -
+          tar -xzf actionlint.tgz actionlint
+
+      - name: actionlint
+        run: ./actionlint -color
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: zizmor
+        run: |
+          python -m pip install --disable-pip-version-check zizmor==1.31.1
+          zizmor --offline --format plain .github/workflows .github/dependabot.yml
