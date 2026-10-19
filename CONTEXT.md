@@ -107,6 +107,21 @@ python3 scripts/tooling/validate-agent-router.py
 | Teto do Oracle | Limite de 12 GB da edicao Free (`ORA-12954`) | Cap de 12 GB | Nao e bug do gerador |
 | ShadowTraffic | Gerador de dados sinteticos (`gen-unified`) | gen-unified | |
 | Dev Loop / SDD | Fluxos de desenvolvimento do projeto: PROMPTs L2 (`/dev`) e fases L3 (`/brainstorm` a `/ship`) | | |
+| Dominio Pedido e catalogo | Pedido, item de pedido, pagamento, recibo, produto, estoque e restaurante. Ficam juntos na mesma fonte por coerencia de negocio | | Nao inclui usuario nem motorista |
+| Dominio Pessoas | Usuario (quem pede) e motorista (quem entrega). Referenciados pelo pedido, mas fora do dominio dele | | Nao e o dominio de pedido |
+| Pedido | Compra de um unico cliente, com um ou mais itens, que pode envolver mais de um restaurante | Order | Nao tem um restaurante unico |
+| Item de pedido | Linha de um pedido: um produto em uma quantidade. Pertence a um pedido e referencia um produto | | Nao e o produto em si |
+| Atendimento | Parte de um pedido que cabe a um restaurante: um por restaurante e por pedido, com ciclo de vida proprio (aceite, preparo, pronto, retirado, cancelado). O status do pedido e derivado dos atendimentos | Sub-pedido | Nao e o pedido inteiro |
+| Perfil de restaurante | Satelite documental do restaurante: cardapio (apresentacao) e horarios de funcionamento | | Nao e o cadastro do restaurante nem fonte de preco |
+| Menu (cardapio) | Apresentacao dos produtos de um restaurante (secao, ordem, destaque, customizacoes). Referencia o produto; nao define nome nem preco proprios | Cardapio | Nao e uma segunda fonte de verdade de produto/preco |
+| Tentativa de pagamento | Registro de um pagamento recusado de um cliente (valor, motivo, momento), sem pedido associado, porque o pedido so existe com pagamento aprovado | | Nao e o pagamento do pedido |
+| Cancelamento | Evento proprio, com motivo, quem cancelou (cliente ou restaurante) e momento, ligado a um atendimento. O pedido so e cancelado quando todos os atendimentos sao cancelados | Cancelamento parcial | Nao e apenas um valor de status do pedido; o motorista nunca cancela |
+| Incidente | Reclamacao sobre um pedido apos a retirada (atraso, item errado, item faltando). Tem desfecho: a plataforma o marca como procedente ou improcedente; so o procedente gera cancelamento e devolucao | | Nao e atendimento generico |
+| Gorjeta | Valor livre e opcional pago pelo cliente ao motorista depois da entrega, a parte do pedido. No maximo uma por pedido entregue | | Nao compoe o valor do pedido nem passa por reembolso |
+| Intencao de compra (checkout) | Agrupa as tentativas de pagamento de uma compra; gera no maximo um pedido e um pagamento principal | Checkout | Nao e o pedido |
+| Pedido nao entregue | Estado terminal de um pedido que nao chega ao cliente, com motivo (cliente ausente ou motorista impossibilitado) | | Nao e cancelado |
+| Em coleta | Status do pedido quando ao menos um atendimento ja foi retirado e outro ainda nao | | Nao e "a caminho", que so comeca com tudo recolhido |
+| Cancelamento legitimo por atraso | Direito do cliente de cancelar um atendimento aceito cujo preparo passou do estimado mais 50% | | Nao exige arbitragem |
 
 ### Acronimos e siglas
 
@@ -124,4 +139,8 @@ python3 scripts/tooling/validate-agent-router.py
 
 ### Regras de negocio implicitas
 
-(preencher com `/grill-with-docs`)
+- **Ciclo de vida do pedido (dado atual):** Order Placed -> In Analysis -> Accepted -> Preparing -> Ready for Pickup -> Picked Up -> Out for Delivery -> Delivered -> Completed. Cada transicao e um evento de mudanca. O dado atual nao tem cancelamento nem rejeicao: lacuna conhecida, a ser coberta pelo evento de cancelamento.
+- **Historico de transicoes e valor de negocio:** a duracao entre estados (preparo, espera pela retirada, entrega) alimenta os indicadores de entrega. A Silver nao deve descartar esse historico (decisao de modelagem em aberto: SCD2 ou tabela de eventos).
+- **Menu referencia produto:** o menu de um restaurante e so apresentacao; o item vendavel e o produto, que carrega nome e preco. Hoje o seed do perfil nao respeita isso (itens genericos, sem `product_id`): ajuste pendente.
+- **Perfil de restaurante e satelite:** a ligacao com o restaurante e logica, por `restaurant_id`, sem FK. A cobertura do perfil pode ser menor que a do cadastro (500 perfis x ~622 restaurantes, a confirmar).
+- **Integridade e logica:** nao ha FK fisica em nenhum banco; a coerencia entre entidades e garantida pelo gerador e validada na Silver.
