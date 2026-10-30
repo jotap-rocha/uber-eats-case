@@ -221,7 +221,7 @@ fica como atributo do Atendimento (decisão 3).
 - O estado do Pagamento (`pending`, `failed`, estados finais) sai, porque pagamento recusado não gera pedido (RN-11).
   O que era estado vira Tentativa.
 - A categoria de Incidente **"Payment Issue"** do gerador antigo não tem regra que a sustente (pagamento recusado nem gera
-  pedido) e foi **retirada** por decisão do usuário. A categoria **"Other"** segue sem decisão (ver seção 8).
+  pedido) e foi **retirada** por decisão do usuário. A categoria **"Other"** também foi retirada (sem efeito financeiro definido).
 - O **Turno** deixa de ser um registro solto, com `num_orders` e ganho sorteados, e passa a ser derivado das entregas reais.
 - O **Estoque** deixa de ser um instantâneo estático (quantidade aleatória, nunca atualizada) e passa a mudar no tempo.
 
@@ -278,10 +278,12 @@ Respostas do usuário às perguntas do rascunho (2026-10-30):
 | 1 | O Checkout carrega o carrinho? | **Não na v1.** Entidade existe só com intenção e valor; o carrinho é uma evolução possível sem refazer o modelo |
 | 2 | Cidade para Cliente e Motorista? | **Sim para os dois**, com a regra nova RN-35 (entrega só dentro da cidade dos restaurantes) |
 | 3 | Espera do motorista: atributo ou evento? | **Atributo do Atendimento** (chegada e retirada) |
-| 4 | Retirar a categoria "pagamento" do Incidente? | **Retirada** ("Payment Issue") |
+| 4 | Retirar a categoria "pagamento" do Incidente? | **Retiradas**: "Payment Issue" e "Other" |
 | 5 | Recibo reflete reembolsos? | **Não.** Documento único da compra |
 | 6 | Estoque e Turno | **Turno: sim** (RN-36). **Estoque: muda por eventos do restaurante** (RN-37), não por venda |
 
-**Pendência.** A categoria **"Other"** do incidente (gerador antigo) não tem efeito financeiro definido. Decidir se sai, como
-"Payment Issue", ou se fica como motivo "outro" sem ajuste. Também a parte final da RN-35 (o motorista só atua na sua cidade)
-está marcada como a confirmar.
+Decididos depois, na revisão da PR: a categoria **"Other"** também sai; o motorista **só aceita entrega dentro da sua cidade**
+(RN-35 confirmada). Um **limite por quilometragem** fica fora da v1: exigiria posição do motorista e distância até o
+restaurante, que o modelo não tem.
+
+**Pendências:** nenhuma de decisão de negócio nesta etapa.

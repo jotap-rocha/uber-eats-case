@@ -24,8 +24,8 @@ Este documento descreve o negócio, não o banco. Qual tabela mora em qual banco
   **derivado** dos atendimentos (RN-16).
 
 - **RN-35.** A entrega só atende endereços na **mesma cidade** dos restaurantes do pedido. **Cliente** e **motorista** passam a
-  ter uma cidade (a mesma referência canônica dos restaurantes), e o motorista só é atribuído a pedidos da sua cidade (a
-  confirmar).
+  ter uma cidade (a mesma referência canônica dos restaurantes), e o motorista só é atribuído a pedidos da sua cidade. Um limite por quilometragem fica
+  fora da v1.
 
 ## Motorista
 
