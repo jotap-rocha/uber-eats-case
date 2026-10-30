@@ -23,16 +23,22 @@ Este documento descreve o negócio, não o banco. Qual tabela mora em qual banco
   O atendimento tem ciclo de vida próprio (em análise, aceito, em preparo, pronto para retirada e retirado; ou os terminais cancelado e rejeitado). O status do pedido é
   **derivado** dos atendimentos (RN-16).
 
+- **RN-35.** A entrega só atende endereços na **mesma cidade** dos restaurantes do pedido. **Cliente** e **motorista** passam a
+  ter uma cidade (a mesma referência canônica dos restaurantes), e o motorista só é atribuído a pedidos da sua cidade. Um limite por quilometragem fica
+  fora da v1.
+
 ## Motorista
 
 - **RN-06.** Um pedido tem **no máximo um motorista**, mesmo com restaurantes diferentes. O motorista é atribuído quando o
   **primeiro atendimento fica pronto para retirada**: nesse momento o pedido ganha motorista. Nunca na criação, nem no aceite,
   de modo que não há viagem de ida a um restaurante que ainda está preparando. O "primeiro atendimento" é o **primeiro a
-  ficar pronto**; em empate vale o de menor identificador. Se não há motorista disponível, o pedido **aguarda atribuição**.
+  ficar pronto**; em empate vale o de menor identificador. Se não há motorista disponível, o pedido **aguarda atribuição**. "Disponível" significa ter um **turno aberto** (RN-36).
 - **RN-07.** O motorista pode ser **reatribuído** (por exemplo, se ele cancelar) enquanto **nenhum atendimento do pedido
   foi retirado**. A partir da **primeira retirada** em qualquer restaurante, o motorista fica travado no pedido; se ficar impossibilitado depois
   disso, o destino é o estado **não entregue** (RN-30). Depois de **3 desistências** de motoristas, a atribuição seguinte não
   pode mais ser desfeita antes da retirada (parâmetro do gerador).
+- **RN-36.** O motorista tem **turnos**, que ele abre e fecha. Só um motorista com **turno aberto** pode receber atribuição
+  (RN-06). Os pedidos e o ganho de um turno são **derivados das entregas e dos repasses reais**, nunca valores independentes.
 
 ## Cancelamento
 
@@ -150,6 +156,9 @@ Os valores abaixo são **parâmetros do gerador** (ajustáveis sem mudar as regr
 
 - **RN-23.** **Todo restaurante tem perfil** (cardápio e horários); restaurante sem perfil não recebe pedido. O **menu é só
   apresentação** dos produtos do restaurante e **referencia o produto** (`product_id`), que carrega nome e preço.
+- **RN-37.** O **estoque** de um produto em um restaurante muda ao longo do tempo por **eventos do restaurante** (reposição,
+  ajuste, esgotamento), e não a cada venda. Produto **sem estoque** não pode entrar em um novo checkout; um pedido já aprovado
+  não é afetado.
 
 ## Valor do pedido e reembolso
 

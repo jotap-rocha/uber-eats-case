@@ -17,7 +17,7 @@ Pipeline completo de engenharia de dados construido como portfolio profissional,
 | Roteador de agentes | `.claude/commands/core/router.md` | Escolha de agente e escopo por intenção |
 | Arquitetura do roteador | `.claude/sdd/architecture/AGENT_ROUTER.yaml` | Fonte estruturada dos agentes e hints |
 | Roadmap multi-cloud | `shared/docs/ROADMAP_ARQUITETURA_MULTICLOUD.md` | Plano das fases (0 a 4), decisões e histórico de revisões |
-| Regras de negócio | `shared/docs/modelagem/01-regras-de-negocio.md` | Fonte das regras do domínio (RN-01 a RN-34); base do modelo e do gerador |
+| Regras de negócio | `shared/docs/modelagem/01-regras-de-negocio.md` | Fonte das regras do domínio (RN-01 em diante); base do modelo e do gerador |
 | ADRs | `docs/adr/` | Decisões arquiteturais (ADR 006: inversão de domínios Oracle/Postgres) |
 
 ---
@@ -58,7 +58,7 @@ Regras do projeto que não se quebram sem decisão explícita do usuário. Valid
 
 - **Todo dado do projeto é sintético** (ShadowTraffic). Sem `[AVISO_LGPD]` nem `rules/pii.md`. Se dado de pessoa real for carregado em qualquer fonte ou no repo, o agente para e avisa; a decisão de LGPD volta ao usuário. Mesmo sendo sintético, não imprimir registros crus de `users`/`drivers` em logs, docs ou PRs (usar contagens, schemas e exemplos falsos).
 - **Inversão de domínios entre Oracle e Postgres ([ADR 006](docs/adr/006-inversao-de-dominios-entre-oracle-e-postgres.md)).** O teto de 12 GB do Oracle Free era causado quase só por `ORDER_ITEMS` (~11,7 GB de ~11,8 GB). Decisão: o domínio **Pedido e catálogo** (`orders`, `order_items`, `payments`, `receipts`, `products`, `inventory`, `restaurants`) vai para o Postgres e o domínio **Pessoas** (`users`, `drivers`) vai para o Oracle; o MongoDB segue como satélite do perfil de restaurante. Os dois bancos relacionais serão regenerados do zero, já com as regras novas. **Até a regeração ser executada, o Oracle atual continua sendo tratado como produção:** sem `DROP`/`TRUNCATE`/purge sem confirmação explícita a cada operação (a ADR não concede essa permissão). Não religar o gerador contra o Oracle atual antes da regeração: ele está no teto e o gerador antigo não segue as regras novas.
-- **Regras de negócio.** A fonte é [`shared/docs/modelagem/01-regras-de-negocio.md`](shared/docs/modelagem/01-regras-de-negocio.md) (RN-01 a RN-34, validadas em duas revisões adversariais). O modelo e o gerador seguem essas regras; mudar uma regra volta para `/grill-with-docs` e, se afetar o modelo, vira ADR. Fluxo de modelagem: regras → adversarial → conceitual → lógico → físico → regeração dos dados.
+- **Regras de negócio.** A fonte é [`shared/docs/modelagem/01-regras-de-negocio.md`](shared/docs/modelagem/01-regras-de-negocio.md) (RN-01 em diante; as RN-01 a RN-34 passaram por duas revisões adversariais). O modelo e o gerador seguem essas regras; mudar uma regra volta para `/grill-with-docs` e, se afetar o modelo, vira ADR. Fluxo de modelagem: regras → adversarial → conceitual → lógico → físico → regeração dos dados.
 - **Todos os bancos do projeto (Oracle, Postgres, MongoDB, MinIO, na Fase 0) são tratados como produção:** nunca `DROP`, `TRUNCATE`, `docker compose down -v`, `docker volume rm` ou purge sem confirmação.
 - **Contrato canônico de CDC na Bronze:** `cdc_operation`, `cdc_commit_ts`, `cdc_sequence`, `cdc_source_system`. A Silver nunca lê o formato nativo de cada ferramenta de ingestão.
 - A Fase 0 (fontes locais) não migra para a nuvem. Cada cloud ingere dela via rede.
