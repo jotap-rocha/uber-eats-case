@@ -111,6 +111,9 @@ python3 scripts/tooling/validate-agent-router.py
 | Dominio Pessoas | Usuario (quem pede) e motorista (quem entrega). Referenciados pelo pedido, mas fora do dominio dele | | Nao e o dominio de pedido |
 | Pedido | Compra de um unico cliente, com um ou mais itens, que pode envolver mais de um restaurante | Order | Nao tem um restaurante unico |
 | Item de pedido | Linha de um pedido: um produto em uma quantidade. Pertence a um pedido e referencia um produto | | Nao e o produto em si |
+| Item de estoque | O que o restaurante estoca: o proprio produto pronto, um pre-pronto (feijao cozido) ou um insumo (arroz). Tem unidade e saldo | Insumo (caso particular) | Nao e o produto vendido |
+| Ficha tecnica | Quanto de cada item de estoque um produto consome por unidade vendida. Todo produto tem ao menos uma linha | Receita | Nao e o cardapio |
+| Movimento de estoque | Mudanca do saldo: baixa quando o atendimento entra em preparo, ou reposicao fora das janelas de funcionamento (ADR 007) | | Nao acontece no checkout |
 | Atendimento | Parte de um pedido que cabe a um restaurante: um por restaurante e por pedido, com ciclo de vida proprio (aceite, preparo, pronto, retirado, cancelado). O status do pedido e derivado dos atendimentos | Sub-pedido | Nao e o pedido inteiro |
 | Perfil de restaurante | Satelite documental do restaurante: cardapio (apresentacao) e horarios de funcionamento | | Nao e o cadastro do restaurante nem fonte de preco |
 | Menu (cardapio) | Apresentacao dos produtos de um restaurante (secao, ordem, destaque, customizacoes). Referencia o produto; nao define nome nem preco proprios | Cardapio | Nao e uma segunda fonte de verdade de produto/preco |
