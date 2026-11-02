@@ -9,7 +9,7 @@ Terceira etapa do fluxo (regras → adversarial → conceitual → **lógico** �
 | L1a | Pessoas, cidade e catálogo (parte do diagrama 2.1) | aprovada |
 | L1b | Operação: pedido, atendimento, entrega, turno, atribuição, transições (parte do diagrama 2.1) | aprovada |
 | L2 | Dinheiro (diagrama 2.2) | aprovada |
-| L3 | Pós-entrega (diagrama 2.3) | pendente |
+| L3 | Pós-entrega (diagrama 2.3) | aprovada |
 | L4 | Visão integrada: restrições entre tabelas, parâmetros, ADR do histórico de status | pendente |
 
 ---
@@ -769,3 +769,166 @@ Todas as tabelas da L2 são **só INSERT**: nenhuma linha de dinheiro é atualiz
 | 8 | Percentuais | **Congelados na linha** (pagamento e repasses) |
 | 9 | Recibo | **Tabela mínima** `receipts(payment_id, issued_at)` |
 | 10 | Geração do dinheiro da compra | **Só invariantes no lógico**; na regeração se decide se o ShadowTraffic dá conta ou se a compra vai para o simulador |
+
+---
+
+## L3. Pós-entrega: incidente e avaliação
+
+Todas as tabelas no **Postgres** (ADR 006). Mesmas convenções: tipos em notação Postgres, horário de Brasília, sem FK
+física. Os três relógios partem de `deliveries.finished_at` (L1b) e são **parâmetros** (L0 #5): 24 h para abrir incidente
+(RN-14), 20 min para avaliar e dar gorjeta, limite inclusivo (RN-26).
+
+**Escopo do pós-entrega.** Só pedido com entrega `delivered` (pedido `delivered` ou `completed`) tem incidente, avaliação ou
+gorjeta. Em `undelivered` não há o que reclamar nem avaliar: `customer_absent` não tem devolução (RN-25) e `driver_unable`
+já devolve tudo automaticamente (RN-30); avaliações e gorjeta são desconsideradas (RN-26). Nada do pós-entrega muda o
+status do pedido, do atendimento ou da entrega (RN-14, RN-30), e um incidente aberto não impede a confirmação automática
+(RN-28).
+
+### Vocabulário
+
+**Status do incidente** (RN-14: aberto → em análise → procedente ou improcedente; decidido não reabre na v1):
+
+| Valor | Significado | Terminal |
+|---|---|---|
+| `open` | aberto pelo cliente; **status inicial** | |
+| `in_review` | a plataforma começou a análise | |
+| `upheld` | procedente: gera o reembolso **na mesma transação** | sim |
+| `dismissed` | improcedente: sem reembolso | sim |
+
+**Motivo do incidente** (`incidents.reason`). O motivo diz o que o incidente aponta e se a taxa de entrega volta (RN-14):
+
+| Motivo | Tipo | Aponta itens | Devolve, se procedente |
+|---|---|---|---|
+| `missing_item` | item | sim, ao menos um | `item` e `service_fee` dos itens apontados, na proporção da quantidade |
+| `wrong_item` | item | sim, ao menos um | idem |
+| `food_quality` | item | sim, ao menos um | idem |
+| `late_delivery` | entrega | não | só o `delivery_fee` |
+| `not_received` | entrega | sim, **todos** os itens com saldo, gravados pelo simulador | tudo o que ainda não foi devolvido (itens, `service_fee` e `delivery_fee`) |
+| `driver_unable` | entrega | sim, ao menos um | `item` e `service_fee` dos itens apontados, mais o `delivery_fee` |
+
+**`driver_unable` no incidente ≠ estorno da RN-30 (decisão 1).** O estorno automático da RN-30 (origem `driver_unable` no
+reembolso, L2) é de entrega que **não terminou**: o pedido fica `undelivered`, a plataforma registra a falha e não há
+incidente. O incidente `driver_unable` é de entrega **finalizada** (`delivered`) em que o motorista não conseguiu entregar
+parte dos itens (por exemplo, avariados no trajeto): o cliente reclama, a plataforma arbitra e, se procedente, devolve os
+itens apontados e a taxa de entrega.
+
+### incidents (Postgres) — Incidente
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| incident_id | bigint, PK | sequencial; já referenciado por `refunds.incident_id` (L2) |
+| order_id | bigint | → `orders`; pedido `delivered` ou `completed` |
+| customer_id | bigint | `ext → Oracle.customers`; cópia do cliente do pedido, para consulta direta (L2, decisão 7) |
+| reason | varchar | tabela de motivos acima |
+| description | varchar, nulo | texto livre do cliente; na geração, texto sintético por motivo |
+| status | varchar | nasce `open` |
+| opened_at | timestamp | até `deliveries.finished_at` + 24 h, limite validado no próprio comando (RN-28) |
+| review_started_at | timestamp, nulo | passagem a `in_review` |
+| decided_at | timestamp, nulo | passagem a `upheld` ou `dismissed`; igual a `refunds.refunded_at` quando procedente |
+| created_at, updated_at | timestamp | |
+
+Único: no máximo **um incidente de entrega** (`late_delivery`, `not_received` ou `driver_unable`) por pedido (índice único parcial,
+decisão 6). Incidentes de item podem ser vários.
+
+Restrições checadas pelo simulador e nos testes:
+
+- `late_delivery` só é procedente se houve atraso de fato: `finished_at` > `promised_at` (L1b). A condição é objetiva.
+- `not_received` é improcedente quando o cliente estava ausente (RN-30). Como o pedido está `delivered`, o "ausente" é uma
+  verdade escondida que o simulador sorteia; o modelo guarda só o desfecho.
+- Procedente gera **exatamente um** reembolso com origem `incident` (L2), na mesma transação; improcedente nunca gera.
+- As mudanças de status seguem a RN-27 da L1b: `UPDATE ... WHERE status = <de>`. O histórico do incidente fica nas colunas
+  de instante, sem tabela de transições (decisão 4).
+
+### incident_items (Postgres) — Incidente por Item
+
+Entidade fraca do incidente.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| incident_id | bigint, PK | → `incidents` |
+| restaurant_order_id, line_number | bigint, smallint, PK | → `order_items`; item de um atendimento **retirado** do pedido do incidente |
+| quantity | integer | ≥ 1 |
+| created_at | timestamp | imutável; gravado junto com o incidente |
+
+Teto (RN-14): por item do pedido, a soma de `quantity` nos incidentes **não improcedentes** (`open`, `in_review`, `upheld`)
+nunca passa de `order_items.quantity` (decisão 5). Um incidente em aberto reserva a quantidade; o improcedente a libera.
+O componente reembolsado (`refund_components.quantity`, L2) repete a `quantity` do incidente por item.
+
+### driver_ratings (Postgres) — Avaliação do Motorista
+
+Entidade fraca 1:1 da entrega, como a gorjeta.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| delivery_id | bigint, PK | → `deliveries`; só entrega `delivered`; no máximo uma por entrega (RN-26) |
+| driver_id | bigint | `ext → Oracle.drivers`; cópia do motorista da atribuição liberada com `delivery_finished` (L1b) |
+| customer_id | bigint | `ext → Oracle.customers`; cópia do cliente do pedido |
+| rating | smallint | 1 a 5 |
+| comment | varchar, nulo | texto livre; na geração, frases sintéticas por faixa de nota |
+| rated_at | timestamp | até `deliveries.finished_at` + 20 min, limite inclusivo (RN-26) |
+| created_at | timestamp | imutável; a avaliação não é editada na v1 |
+
+**Cruzamento com a gorjeta (RN-26):** não existe gorjeta com `paid_at` ≥ `rated_at` de uma avaliação com nota 3 ou menor. A
+gorjeta dada **antes** da avaliação continua valendo ("uma gorjeta já dada nunca é invalidada"). O simulador decide a
+avaliação antes de oferecer a gorjeta; o teste confere a ordem.
+
+### restaurant_ratings (Postgres) — Avaliação do Restaurante
+
+Entidade fraca 1:1 do atendimento.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| restaurant_order_id | bigint, PK | → `restaurant_orders`; só atendimento `picked_up` de pedido `delivered` ou `completed` (RN-26) |
+| restaurant_id | bigint | → `restaurants`; cópia do restaurante do atendimento |
+| customer_id | bigint | `ext → Oracle.customers`; cópia do cliente do pedido |
+| rating | smallint | 1 a 5 |
+| comment | varchar, nulo | como em `driver_ratings` |
+| rated_at | timestamp | até `deliveries.finished_at` + 20 min, limite inclusivo |
+| created_at | timestamp | imutável |
+
+Avaliação ausente nunca vira zero: a Gold mostra quantidade e média, junto com as taxas de cancelamento, rejeição e atraso
+(RN-26).
+
+### Quem escreve
+
+| Tabela | ShadowTraffic | Simulador |
+|---|---|---|
+| `incidents` | — | INSERT (ação do cliente) e UPDATE de status (análise e decisão da plataforma) |
+| `incident_items` | — | INSERT junto com o incidente |
+| `refunds`, `refund_components` com origem `incident` (L2) | — | INSERT na decisão procedente. **Fecha a pendência da L2** |
+| `driver_ratings`, `restaurant_ratings` | — | INSERT (ação do cliente depois da entrega) |
+
+Todo o pós-entrega é do **simulador**, porque depende do relógio de `finished_at` e cruza com gorjeta e reembolso. Das
+tabelas da L3, só `incidents` recebe UPDATE.
+
+### Referências externas da L3
+
+| De | Coluna | Para |
+|---|---|---|
+| `incidents`, `driver_ratings`, `restaurant_ratings` | `customer_id` | `ext → Oracle.customers` |
+| `driver_ratings` | `driver_id` | `ext → Oracle.drivers` |
+
+Testes conferem as cópias: `customer_id` contra `orders`, `driver_id` contra a atribuição `delivery_finished`,
+`restaurant_id` contra `restaurant_orders`.
+
+### O gerador atual
+
+| Arquivo atual (MinIO) | Hoje | No modelo novo |
+|---|---|---|
+| `mysql/ratings` | `rating_id` sequencial + `uuid`, uma nota por `order_id`, data aleatória desde 2021 | **sai**; vira `driver_ratings` e `restaurant_ratings` no Postgres |
+| `mongodb/support` | `ticket_id` uuid; categorias `Late Delivery`, `Wrong Item`, `Missing Item`, `Payment Issue`, `Other`; status `Open`/`In Progress`/`Resolved`/`Closed`; descrição em Lorem | **sai**; vira `incidents` e `incident_items`. As categorias viram `late_delivery`, `wrong_item` e `missing_item` (as outras duas já saíram no conceitual) |
+
+Com isso, o MinIO fica só com `kafka/gps` (L1b, decisão 13). Nada é editado agora: o gerador muda na regeração.
+
+### Decisões da revisão da L3 (2026-11-02)
+
+| # | Tema | Decisão |
+|---|---|---|
+| 1 | Motivo `driver_unable` no incidente | **Fica**, como motivo de entrega em pedido `delivered`: o motorista não entregou parte dos itens. Aponta itens e devolve itens, taxa de serviço e taxa de entrega. Distinto do estorno automático da RN-30 (entrega não finalizada) |
+| 2 | Incidente em pedido não entregue | **Não existe**: incidente, avaliação e gorjeta só com entrega `delivered` |
+| 3 | Devolução dos motivos de entrega | **Atraso**: só a taxa de entrega, procedente só se `finished_at` > `promised_at`. **Não recebido**: tudo o que resta, com todos os itens gravados no incidente |
+| 4 | Histórico do incidente | **Colunas** `review_started_at` e `decided_at`; sem tabela de transições |
+| 5 | Teto de quantidade por item | Soma dos incidentes **não improcedentes** (o aberto reserva, o improcedente libera) |
+| 6 | Incidente de entrega repetido | **Um por pedido** (índice único parcial) |
+| 7 | Avaliações | **Chave do pai + cópias** (`driver_id` ou `restaurant_id`, mais `customer_id`), imutáveis, testadas como na L2 |
+| 8 | `mysql/ratings` e `mongodb/support` no MinIO | **Saem**; viram tabelas no Postgres. O MinIO fica só com `kafka/gps` |
