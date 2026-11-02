@@ -70,6 +70,23 @@ Fontes: <https://docs.shadowtraffic.io/functions/lookup/>, <https://docs.shadowt
   retirar do template toda transição posterior a "em análise".
 - Atraso do simulador acumula atendimentos em análise; a RN-28 (rejeição automática após 5 minutos) passa a depender dele.
 
+## Adendo (2026-11-02, revisão da L1b do modelo lógico)
+
+O simulador deixa de ser só "de restaurante" e passa a ser o **simulador de operação**. Além do atendimento a partir de
+"em análise", ele assume:
+
+- **Turno:** abre e fecha (INSERT e UPDATE em `shifts`).
+- **Atribuição de motorista:** atribui quando o primeiro atendimento fica pronto (RN-06), libera e reatribui (RN-07, RN-31),
+  sempre dentro de turno aberto (RN-36) e da cidade do pedido (RN-35).
+- **Entrega:** todo UPDATE em `deliveries` (status, prazo prometido, finalização ou falha) e o status do pedido daí em diante.
+- **Ações do cliente e da plataforma** que concorrem com o restaurante: cancelamento do cliente (inclusive em análise),
+  rejeição automática por prazo e confirmação automática.
+
+Motivo: a atribuição depende do "pronto", que já é do simulador, e do turno aberto. Com isso a fronteira fica simples: nas
+tabelas de operação o ShadowTraffic **só faz INSERT** (pedido, atendimentos, itens, entrega e a primeira linha das
+transições), e todo UPDATE é do simulador. Os arquivos `kafka/shift` e `kafka/route` do MinIO deixam de ser a fonte de
+turno e entrega (decisão 13 da L1b).
+
 ## Gatilhos de revisão
 
 - Licença do ShadowTraffic deixar de ser renovável ou ficar cara → reavaliar a alternativa B.
