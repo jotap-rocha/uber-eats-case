@@ -154,11 +154,26 @@ Os valores abaixo são **parâmetros do gerador** (ajustáveis sem mudar as regr
 
 ## Restaurante e cardápio
 
-- **RN-23.** **Todo restaurante tem perfil** (cardápio e horários); restaurante sem perfil não recebe pedido. O **menu é só
+- **RN-23.** **Todo restaurante tem perfil** (cardápio e janelas de funcionamento, RN-41); restaurante sem perfil não recebe pedido. O **menu é só
   apresentação** dos produtos do restaurante e **referencia o produto** (`product_id`), que carrega nome e preço.
-- **RN-37.** O **estoque** de um produto em um restaurante muda ao longo do tempo por **eventos do restaurante** (reposição,
-  ajuste, esgotamento), e não a cada venda. Produto **sem estoque** não pode entrar em um novo checkout; um pedido já aprovado
-  não é afetado.
+- **RN-37.** *(revisada em 2026-11-02, [ADR 007](../../../docs/adr/007-estoque-por-movimentos-e-gerador-hibrido.md))* O estoque é de **itens de estoque** do
+  restaurante. O que se estoca **varia por produto**: o próprio produto pronto (ex.: refrigerante em lata), um pré-pronto
+  (ex.: feijão cozido, em porções) ou insumos (ex.: frango, arroz, batata). **Todo produto tem ficha técnica**: uma ou mais
+  linhas de item de estoque × quantidade. O produto só pode ser vendido se **cada item da ficha** tiver saldo disponível
+  (RN-39) para a quantidade da ficha × a quantidade pedida; produto sem estoque **não entra em um novo checkout**.
+- **RN-38.** A **baixa** do estoque acontece quando o atendimento entra em **"em preparo"**: para cada item do atendimento, abate
+  ficha técnica × quantidade, e cada baixa aponta o atendimento que a causou (no máximo uma baixa por atendimento e item de
+  estoque). Atendimento cancelado ou rejeitado **antes** do preparo não gera baixa; cancelado **depois** do preparo **não
+  devolve** o estoque (a comida já foi produzida).
+- **RN-39.** No **aceite**, o restaurante verifica o estoque de novo, porque outro pedido pode tê-lo consumido desde o checkout.
+  Se faltar, **rejeita** o atendimento com o motivo **"sem estoque"**, com os efeitos de toda rejeição (reembolso, RN-10, e RN-34).
+  O saldo **disponível** é o saldo menos o que está **comprometido** por atendimentos já aceitos e ainda não em preparo; assim
+  o saldo **nunca fica negativo**.
+- **RN-40.** A **reposição** acontece só **fora das janelas de funcionamento**: antes da primeira janela do dia e no intervalo
+  entre janelas, nunca durante o serviço. Na v1 o estoque muda só por **baixa** (RN-38) e **reposição**; ajuste e descarte
+  ficam fora.
+- **RN-41.** Cada restaurante tem **uma ou duas janelas de funcionamento** por dia (ex.: 11h–15h e 18h–23h, horário de
+  Brasília), iguais em todos os dias na v1. Fora das janelas o restaurante **não recebe pedido**.
 
 ## Valor do pedido e reembolso
 
@@ -216,7 +231,7 @@ Atendimento, transições permitidas (qualquer outra é inválida; o terminal n�
 | De | Para | Quem |
 |---|---|---|
 | em análise | aceito | restaurante |
-| em análise | rejeitado | restaurante, ou automático após 5 minutos (RN-28) |
+| em análise | rejeitado | restaurante (inclusive por falta de estoque, RN-39), ou automático após 5 minutos (RN-28) |
 | em análise | cancelado | cliente (RN-12) |
 | aceito | em preparo | restaurante |
 | aceito, em preparo | cancelado | restaurante (RN-13), cliente por atraso (RN-12, RN-28), ou cliente quando o outro atendimento foi cancelado ou rejeitado pelo restaurante (RN-34) |
