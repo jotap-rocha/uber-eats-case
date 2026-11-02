@@ -44,10 +44,10 @@ erDiagram
     CIDADE ||--o{ CLIENTE : "reside em"
     CIDADE ||--o{ MOTORISTA : "atua em"
     RESTAURANTE ||--|| PERFIL_RESTAURANTE : "tem"
-    PERFIL_RESTAURANTE }o--o{ PRODUTO : "apresenta"
+    PERFIL_RESTAURANTE ||--o{ ITEM_CARDAPIO : "organiza"
+    PRODUTO ||--o| ITEM_CARDAPIO : "e apresentado como"
     RESTAURANTE ||--o{ PRODUTO : "oferece"
-    RESTAURANTE ||--o{ ESTOQUE : "mantem"
-    PRODUTO ||--o{ ESTOQUE : "e estocado em"
+    PRODUTO ||--|| ESTOQUE : "tem"
 
     CLIENTE ||--o{ CHECKOUT : "inicia"
     CHECKOUT ||--o{ TENTATIVA_PAGAMENTO : "recebe"
@@ -58,14 +58,14 @@ erDiagram
     RESTAURANTE ||--o{ ATENDIMENTO : "atende"
     ATENDIMENTO ||--|{ ITEM_PEDIDO : "contem"
     PRODUTO ||--o{ ITEM_PEDIDO : "e comprado como"
-    ATENDIMENTO ||--|{ TRANSICAO_ATENDIMENTO : "registra"
-    PEDIDO ||--|{ TRANSICAO_PEDIDO : "registra"
+    ATENDIMENTO ||--|{ TRANSICAO_STATUS_ATENDIMENTO : "registra"
+    PEDIDO ||--|{ TRANSICAO_STATUS_PEDIDO : "registra"
 
     MOTORISTA ||--o{ TURNO : "cumpre"
+    PEDIDO ||--|| ENTREGA : "gera"
+    ENTREGA ||--o{ ATRIBUICAO_MOTORISTA : "tem historico de"
     TURNO ||--o{ ATRIBUICAO_MOTORISTA : "abriga"
-    PEDIDO ||--o{ ATRIBUICAO_MOTORISTA : "tem historico de"
     MOTORISTA ||--o{ ATRIBUICAO_MOTORISTA : "recebe"
-    PEDIDO ||--o| ENTREGA : "inicia ao ficar a caminho"
 ```
 
 ### 2.2 Dinheiro: pagamento, reembolso, repasse e gorjeta
@@ -124,7 +124,8 @@ erDiagram
 | Cidade | **nova** | RN-03, RN-35 | Referência geográfica canônica. Permite verificar "mesma cidade" (restaurantes do pedido, endereço do cliente e cidade do motorista) sem comparar texto. |
 | Perfil de Restaurante | alterada | RN-23 | Cardápio e horários. Agora é **obrigatório** (restaurante sem perfil não recebe pedido) e o menu referencia o produto, que carrega nome e preço. |
 | Produto | mantida | RN-04, RN-32 | Item do cardápio de um restaurante. Pode mudar ou ser desativado sem afetar pedidos já aprovados, porque o item guarda cópia (ver `Item de Pedido`). |
-| Estoque | alterada | RN-37 | Associativa Restaurante × Produto com quantidade. **Muda ao longo do tempo** por eventos do restaurante (reposição, ajuste, esgotamento), não a cada venda. Produto sem estoque não entra em novo checkout. |
+| Item de Cardápio | **nova** | RN-23 | Entidade fraca do Perfil: apresentação de **um** produto do restaurante (seção, ordem, destaque, customizações). Nome e preço continuam no Produto. |
+| Estoque | alterada | RN-37 | **Exatamente um por produto** (quantidade 0 = esgotado); o restaurante vem do produto. **Muda ao longo do tempo** por eventos do restaurante (reposição, ajuste, esgotamento), não a cada venda. Produto sem estoque não entra em novo checkout. |
 | Motorista | alterada | RN-06, RN-07, RN-35 | Quem entrega. Deixa de ser atributo do pedido; a ligação é pela atribuição. O `city` em texto passa a ser referência a `Cidade`. |
 | Turno | alterada | RN-36 | Entidade fraca de Motorista, que o motorista **abre e fecha**. Só motorista com turno aberto recebe atribuição. Pedidos e ganho do turno são **derivados** das entregas e repasses reais. |
 
@@ -137,10 +138,10 @@ erDiagram
 | Pedido | alterada | RN-02, RN-03, RN-11, RN-16, RN-24, RN-30 | Pertence a um cliente; só existe com pagamento aprovado. Tem 1 ou 2 atendimentos (mesma cidade) e no máximo 1 motorista por vez. **Status derivado** dos atendimentos até "a caminho"; depois, dirigido por eventos do pedido (entregue, concluído, não entregue). Guarda o **motivo** quando termina em não entregue (cliente ausente ou motorista impossibilitado). |
 | Atendimento | **nova** | RN-05, RN-10, RN-12, RN-13, RN-28, RN-34 | Parte do pedido atendida por **um** restaurante (um por restaurante e por pedido). Tem ciclo de vida próprio: em análise, aceito, em preparo, pronto, retirado; terminais cancelado e rejeitado. Guarda tempo estimado de preparo (fixado no aceite), quem e por que cancelou, e os instantes de chegada do motorista e de retirada (base do tempo de espera, RN-17). |
 | Item de Pedido | alterada | RN-04, RN-32 | Entidade fraca de Atendimento. Passa a **guardar cópia** do nome do produto e do preço unitário da compra, além do identificador do produto, do restaurante vendedor, da quantidade e do total contratado. |
-| Transição de Atendimento | **nova** | RN-18 | Histórico das mudanças de status do atendimento (de, para, quem, quando). |
-| Transição de Pedido | **nova** | RN-18 | Histórico das mudanças de status do pedido. |
-| Atribuição de Motorista | **nova** | RN-06, RN-07, RN-31, RN-36 | Cada atribuição, liberação e reatribuição de motorista a um pedido, com momento, sempre dentro de um **turno aberto**. O motorista atual é o da atribuição vigente. Pedido sem motorista disponível fica "aguardando atribuição". |
-| Entrega | alterada | RN-17, RN-24 | Existe só quando o pedido fica "a caminho" (todos os atendimentos ativos retirados). Guarda rota e finalização; a finalização dispara "entregue" e o relógio de 10 minutos da confirmação automática. Motorista vem da atribuição vigente. |
+| Transição de Status de Atendimento | **nova** | RN-18 | Histórico das mudanças de status do atendimento (de, para, quem, quando). |
+| Transição de Status de Pedido | **nova** | RN-18 | Histórico das mudanças de status do pedido. |
+| Atribuição de Motorista | **nova** | RN-06, RN-07, RN-31, RN-36 | Cada atribuição, liberação e reatribuição de motorista a uma entrega, com momento, sempre dentro de um **turno aberto**. O motorista atual é o da atribuição vigente. Entrega sem motorista disponível fica "aguardando atribuição". |
+| Entrega | alterada | RN-06, RN-17, RN-24, RN-30 | **Nasce junto com o pedido** e começa "aguardando atribuição". Carrega as atribuições de motorista, a rota e a finalização (ou o motivo da falha); a finalização dispara "entregue" e o relógio de 10 minutos da confirmação automática. Se todos os atendimentos forem cancelados, a entrega é cancelada. O motorista cumpre a entrega dentro do seu turno. |
 
 ### 3.3 Dinheiro
 
@@ -175,20 +176,20 @@ restaurante têm donos, cardinalidades e prazos de existência diferentes.
 |---|---|---|---|
 | Restaurante ↔ Pedido | 1:N direto | **N:N via Atendimento** (pedido com 1 ou 2 restaurantes, mesma cidade) | RN-03, RN-05 |
 | Pedido ↔ Item | 1:N | Pedido 1:N Atendimento 1:N Item (o item continua do pedido, por transitividade) | RN-04, RN-05 |
-| Pedido ↔ Motorista | atributo | **N:N com histórico** via Atribuição; vigente = no máximo um; atribuição dentro de um turno aberto | RN-06, RN-07, RN-31, RN-36 |
+| Entrega ↔ Motorista | atributo do pedido | **N:N com histórico** via Atribuição; vigente = no máximo um; atribuição dentro de um turno aberto | RN-06, RN-07, RN-31, RN-36 |
 | Pedido ↔ Pagamento | 1:1 com 4 estados finais | 1:1 só aprovado; recusas viram Tentativa de um Checkout | RN-08, RN-11, RN-15 |
-| Pedido ↔ Entrega | 1:1 | 1:0..1 (só existe a partir de "a caminho") | RN-16, RN-17 |
+| Pedido ↔ Entrega | 1:1 | 1:1 (a entrega nasce com o pedido e passa por atribuição de motorista) | RN-06, RN-17 |
 | Avaliação ↔ Pedido | 1:0..1 única | Motorista por pedido; Restaurante por atendimento | RN-26 |
 | Pedido ↔ Incidente | 1:N | 1:N, agora com desfecho e itens apontados | RN-14 |
 | Cliente / Motorista ↔ Cidade | texto solto no motorista; nada no cliente | Referência canônica a Cidade nos dois | RN-35 |
-| Perfil de Restaurante ↔ Produto | menu solto, sem ligação | Menu referencia o produto (N:N de apresentação) | RN-23 |
+| Perfil de Restaurante ↔ Produto | menu solto, sem ligação | Via **Item de Cardápio** (apresentação de um produto do próprio restaurante) | RN-23 |
 | Turno ↔ Atribuição | sem ligação | Atribuição ocorre dentro de um turno aberto | RN-36 |
 
 ---
 
 ## 5. O que muda em relação ao modelo atual
 
-Modelo atual: 14 entidades. Modelo-alvo: **29**, sendo 16 novas, 11 alteradas e 2 mantidas.
+Modelo atual: 14 entidades. Modelo-alvo: **30**, sendo 17 novas, 11 alteradas e 2 mantidas.
 
 | Entidade atual | Destino |
 |---|---|
@@ -199,7 +200,7 @@ Modelo atual: 14 entidades. Modelo-alvo: **29**, sendo 16 novas, 11 alteradas e 
 | Pedido | alterada (atendimentos, status derivado, motivo de não entrega) |
 | Item de Pedido | alterada (cópia de nome e preço; pertence ao atendimento) |
 | Pagamento | alterada (só aprovado; sem máquina de estados) |
-| Entrega | alterada (existe a partir de "a caminho") |
+| Entrega | alterada (nasce com o pedido; leva as atribuições) |
 | Avaliação | **dividida** em Avaliação do Motorista e do Restaurante |
 | Recibo | mantida |
 | Estoque | alterada (muda por eventos do restaurante) |
@@ -207,7 +208,7 @@ Modelo atual: 14 entidades. Modelo-alvo: **29**, sendo 16 novas, 11 alteradas e 
 | Incidente | alterada (desfecho, motivos novos, itens apontados) |
 | Perfil de Restaurante | alterada (obrigatório; menu referencia produto) |
 
-**Novas (16):** Cidade, Checkout, Tentativa de Pagamento, Atendimento, Transição de Atendimento, Transição de Pedido,
+**Novas (17):** Cidade, Item de Cardápio, Checkout, Tentativa de Pagamento, Atendimento, Transição de Status de Atendimento, Transição de Status de Pedido,
 Atribuição de Motorista, Alocação, Ajuste Financeiro, Linha de Ajuste, Repasse ao Restaurante, Repasse ao Motorista,
 Gorjeta, Incidente por Item, Avaliação do Motorista e Avaliação do Restaurante. O tempo de espera do motorista
 fica como atributo do Atendimento (decisão 3).
@@ -215,7 +216,7 @@ fica como atributo do Atendimento (decisão 3).
 **Reinterpretações que desfazem decisões da Onda 3** (registradas no modelo atual):
 
 - O histórico de status de Pedido e de Pagamento tinha sido **removido** em favor de mutação de linha capturada por CDC.
-  A RN-18 exige histórico de transições nos dois níveis, então `Transição de Atendimento` e `Transição de Pedido`
+  A RN-18 exige histórico de transições nos dois níveis, então `Transição de Status de Atendimento` e `Transição de Status de Pedido`
   voltam como entidades de negócio. O CDC não substitui isso: ele captura o que o banco gravou, e atualizações
   intermediárias podem se perder entre uma captura e outra. Isto pode virar ADR no lógico.
 - O estado do Pagamento (`pending`, `failed`, estados finais) sai, porque pagamento recusado não gera pedido (RN-11).
@@ -235,7 +236,7 @@ fica como atributo do Atendimento (decisão 3).
 | RN-02 | Cliente, Pedido |
 | RN-03 | Cidade, Restaurante, Atendimento |
 | RN-04 | Item de Pedido, Produto |
-| RN-05, RN-16, RN-18 | Atendimento, Pedido, Transição de Atendimento, Transição de Pedido |
+| RN-05, RN-16, RN-18 | Atendimento, Pedido, Transição de Status de Atendimento, Transição de Status de Pedido |
 | RN-06, RN-07, RN-31 | Atribuição de Motorista |
 | RN-08 | Pagamento, Ajuste Financeiro |
 | RN-09, RN-19, RN-20, RN-33 | Pagamento, Alocação, Linha de Ajuste |
@@ -245,7 +246,7 @@ fica como atributo do Atendimento (decisão 3).
 | RN-17, RN-28 | Atendimento (tempos), Entrega |
 | RN-21 | Ajuste Financeiro, Linha de Ajuste |
 | RN-22 | Gorjeta |
-| RN-23 | Perfil de Restaurante, Produto |
+| RN-23 | Perfil de Restaurante, Item de Cardápio, Produto |
 | RN-24, RN-25 | Pedido, Entrega |
 | RN-26 | Avaliação do Motorista, Avaliação do Restaurante |
 | RN-27 | Regra de ordenação sobre eventos; não gera entidade, vira restrição no lógico |

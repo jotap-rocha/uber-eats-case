@@ -29,10 +29,10 @@ Este documento descreve o negócio, não o banco. Qual tabela mora em qual banco
 
 ## Motorista
 
-- **RN-06.** Um pedido tem **no máximo um motorista**, mesmo com restaurantes diferentes. O motorista é atribuído quando o
-  **primeiro atendimento fica pronto para retirada**: nesse momento o pedido ganha motorista. Nunca na criação, nem no aceite,
+- **RN-06.** Todo pedido gera uma **entrega**, que tem **no máximo um motorista**, mesmo com restaurantes diferentes. O motorista é atribuído quando o
+  **primeiro atendimento fica pronto para retirada**: nesse momento a entrega ganha motorista. Nunca na criação, nem no aceite,
   de modo que não há viagem de ida a um restaurante que ainda está preparando. O "primeiro atendimento" é o **primeiro a
-  ficar pronto**; em empate vale o de menor identificador. Se não há motorista disponível, o pedido **aguarda atribuição**. "Disponível" significa ter um **turno aberto** (RN-36).
+  ficar pronto**; em empate vale o de menor identificador. Se não há motorista disponível, a entrega **aguarda atribuição**. "Disponível" significa ter um **turno aberto** (RN-36).
 - **RN-07.** O motorista pode ser **reatribuído** (por exemplo, se ele cancelar) enquanto **nenhum atendimento do pedido
   foi retirado**. A partir da **primeira retirada** em qualquer restaurante, o motorista fica travado no pedido; se ficar impossibilitado depois
   disso, o destino é o estado **não entregue** (RN-30). Depois de **3 desistências** de motoristas, a atribuição seguinte não
@@ -196,8 +196,8 @@ evento com valor devido e momento, sem fluxo de caixa.
 
 ## Regras transversais (da revisão adversarial)
 
-- **RN-31.** O motorista de um pedido tem **histórico de atribuições**: cada atribuição, liberação e reatribuição é registrada com
-  o momento. O motorista atual do pedido não substitui o histórico.
+- **RN-31.** A entrega de um pedido tem **histórico de atribuições**: cada atribuição, liberação e reatribuição é registrada com
+  o momento. O motorista atual da entrega não substitui o histórico.
 - **RN-32.** O item do pedido **guarda o nome do produto e o preço unitário da compra**. Alterar ou desativar o produto depois
   não muda pedidos já aprovados. O item guarda também o **identificador do
   produto**, o **restaurante vendedor**, a quantidade e o total contratado.
