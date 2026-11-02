@@ -65,7 +65,7 @@ Este documento descreve o negócio, não o banco. Qual tabela mora em qual banco
   mas **não cancela pedido por conta própria**. No incidente procedente o cliente recebe **estorno completo** e a **plataforma
   assume o prejuízo**: o restaurante continua recebendo o seu repasse. O incidente **aponta item(ns) e quantidade**: o estorno é
   completo desses itens, mais a taxa de serviço e o imposto proporcionais. A taxa de entrega só é devolvida quando o problema
-  é a própria entrega. O incidente **não altera o estado operacional** do atendimento retirado: gera um ajuste financeiro.
+  é a própria entrega. O incidente **não altera o estado operacional** do atendimento retirado: gera um reembolso.
   Regras do incidente: pode ser aberto até **24 horas** após a entrega (parâmetro); a quantidade reembolsada por item, somando
   todos os incidentes, nunca excede a quantidade comprada; um incidente decidido não é reaberto na v1. O **motivo** define o
   efeito na taxa de entrega: **item faltando, item errado e qualidade do alimento** não a devolvem; **atraso procedente,
@@ -120,7 +120,7 @@ Este documento descreve o negócio, não o banco. Qual tabela mora em qual banco
   - **motorista impossibilitado** de continuar depois de recolher (registrado pela plataforma): **estorno total** ao cliente,
     assumido pela plataforma; o restaurante mantém o repasse dos atendimentos já retirados.
   Se o pedido já foi marcado como entregue e o cliente diz que não recebeu, o estado não muda: o incidente da RN-14 gera só o
-  ajuste financeiro, e é improcedente se o cliente estava ausente. Na Gold, o incidente procedente de falha na entrega conta como falha
+  reembolso, e é improcedente se o cliente estava ausente. Na Gold, o incidente procedente de falha na entrega conta como falha
   logística, embora o estado do pedido permaneça entregue.
 
 ## Limites de tempo
@@ -206,7 +206,7 @@ evento com valor devido e momento, sem fluxo de caixa.
   taxa de serviço, taxa de entrega). Invariantes: a soma dos reembolsos nunca excede o valor pago; o cancelamento de todos os
   atendimentos reembolsa exatamente o pagamento original; o reembolsado acumulado por item nunca excede o valor alocado a ele.
   O imposto é **decomposição** do valor bruto (alíquota efetiva sobre o valor bruto de cada componente), **nunca um acréscimo** ao
-  reembolso. A alocação original por atendimento e componente é **congelada na compra** e não é recalculada a cada cancelamento.
+  reembolso. A divisão original do pagamento por atendimento e componente é **congelada na compra** e não é recalculada a cada cancelamento.
   O resultado financeiro final **não depende da ordem** dos cancelamentos.
 
 ## Tabelas de referência
@@ -244,7 +244,7 @@ Pedido com **dois atendimentos**, derivação do status (RN-16). Nas linhas de u
 | retirado + retirado | a caminho |
 
 Pedido, transições depois de **a caminho** (dirigidas por eventos do pedido, não pelos atendimentos). Reclamação posterior a
-entregue ou concluído gera incidente e ajuste financeiro, sem mudar o estado.
+entregue ou concluído gera incidente e reembolso, sem mudar o estado.
 
 | De | Para | Condição |
 |---|---|---|
