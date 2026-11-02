@@ -267,7 +267,7 @@ fica como atributo do Atendimento (decisão 3).
 ## 7. Fica para o lógico (não é conceitual)
 
 - Quais status são colunas e quais são derivados (RN-16 manda derivar o status do pedido até "a caminho").
-- Granularidade exata da Componente do Pagamento (por item, atendimento ou pedido) e como os componentes de imposto são guardados.
+- Granularidade exata do Componente do Pagamento (por item, atendimento ou pedido) e como os componentes de imposto são guardados.
 - Chaves, tipos, centavos e regra de "última parcela absorve a diferença" (RN-33).
 - Restrições de RN-27 (quem registrou primeiro) e de limites de tempo (RN-28).
 - Janelas de 24 h, 20 min e 10 min como parâmetros, não como colunas.

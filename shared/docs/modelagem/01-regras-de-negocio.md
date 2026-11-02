@@ -104,7 +104,7 @@ Este documento descreve o negócio, não o banco. Qual tabela mora em qual banco
   Se houver problema na entrega e o cliente não recebe, ele abre um **incidente** que marca **falha na entrega**.
 - **RN-25.** Se o motorista e o restaurante cumpriram a sua parte e o **cliente não retira o pedido**, não há devolução: o
   dinheiro permanece com a plataforma, o motorista e o restaurante.
-- **RN-26.** Depois da entrega o cliente pode **avaliar** o **motorista** (uma avaliação por pedido) e cada **restaurante** (uma
+- **RN-26.** Depois da entrega o cliente pode **avaliar** o **motorista** (uma avaliação por **entrega**, que é 1:1 com o pedido) e cada **restaurante** (uma
   avaliação por atendimento). A avaliação é **opcional**, com **nota de 1 a 5** e **comentário livre opcional** (campo que abre
   espaço para classificação por ML ou LLM no futuro). O prazo máximo para avaliar é de **20 minutos** após a finalização da
   entrega. Em seguida o cliente escolhe dar **gorjeta** (RN-22) ou não. A gorjeta independe da avaliação, **exceto** quando a
@@ -173,7 +173,7 @@ Os valores abaixo são **parâmetros do gerador** (ajustáveis sem mudar as regr
   atendimento a entregar. Se **todos** os atendimentos forem cancelados, o reembolso é **total**, incluindo a taxa de entrega.
 - **RN-22.** Existe **gorjeta**, opcional, em **valor livre**, paga **no final** (depois da entrega) e **direto ao motorista**.
   É um valor **à parte do pedido**: não entra no pagamento do pedido (RN-08), não passa por reembolso de itens e a plataforma
-  não retém parte dela. Há **no máximo uma gorjeta por pedido**, e **só para pedidos entregues**, e não é oferecida se a nota do motorista for 3 ou menor (RN-26). O valor tem **mínimo positivo e máximo**, definidos como parâmetros. A gorjeta é um registro de
+  não retém parte dela. Há **no máximo uma gorjeta por entrega** (1:1 com o pedido), e **só para entregas concluídas**, destinada ao motorista dela, e não é oferecida se a nota do motorista for 3 ou menor (RN-26). O valor tem **mínimo positivo e máximo**, definidos como parâmetros. A gorjeta é um registro de
   valor já liquidado: não se modela recusa nem cancelamento dela, e ela **não é estornada**, nem em incidente procedente.
 
 ## Distribuição do dinheiro
