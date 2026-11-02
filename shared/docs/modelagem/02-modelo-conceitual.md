@@ -85,7 +85,7 @@ erDiagram
 
     PAGAMENTO ||--|{ COMPONENTE_PAGAMENTO : "e dividido em"
     ATENDIMENTO |o--o{ COMPONENTE_PAGAMENTO : "recebe parte de"
-    ITEM_PEDIDO |o--o| COMPONENTE_PAGAMENTO : "recebe parte de"
+    ITEM_PEDIDO |o--o{ COMPONENTE_PAGAMENTO : "recebe parte de"
 
     PAGAMENTO ||--o{ REEMBOLSO : "sofre"
     REEMBOLSO ||--|{ COMPONENTE_REEMBOLSADO : "detalha"

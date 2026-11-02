@@ -8,7 +8,7 @@ Terceira etapa do fluxo (regras → adversarial → conceitual → **lógico** �
 | L0 | Convenções transversais | aprovada |
 | L1a | Pessoas, cidade e catálogo (parte do diagrama 2.1) | aprovada |
 | L1b | Operação: pedido, atendimento, entrega, turno, atribuição, transições (parte do diagrama 2.1) | aprovada |
-| L2 | Dinheiro (diagrama 2.2) | pendente |
+| L2 | Dinheiro (diagrama 2.2) | aprovada |
 | L3 | Pós-entrega (diagrama 2.3) | pendente |
 | L4 | Visão integrada: restrições entre tabelas, parâmetros, ADR do histórico de status | pendente |
 
@@ -531,3 +531,241 @@ e da abertura do turno. Com elas, a RN-03, a RN-35 e a RN-36 são checadas dentr
 | 11 | Turno, entrega e atribuição | **Simulador de operação**; adendo na [ADR 007](../../../docs/adr/007-estoque-por-movimentos-e-gerador-hibrido.md) |
 | 12 | Código de rastreio | **12 caracteres base32 Crockford** do SHA-256 de `order_id` com sal, calculado fora do banco; mesmo formato para o pagamento na L2 |
 | 13 | `kafka/shift` e `kafka/route` no MinIO | **Saem**; `kafka/gps` fica e passa a apontar `delivery_id` (`ext → Postgres.deliveries`) |
+
+---
+
+## L2. Dinheiro: checkout, pagamento, reembolso, repasses, gorjeta e recibo
+
+Todas as tabelas no **Postgres** (ADR 006). Valores em `numeric(12,2)` (L0 #3); percentuais em `numeric(5,4)` (ex.:
+`0.1200` = 12%). Sem FK física.
+
+**Ideia central.** O pagamento é um **retrato congelado da compra** (RN-33): ele e os seus componentes nunca mudam. Tudo o
+que acontece depois (reembolso, repasse, gorjeta) é um **evento próprio**, com linha nova. Os percentuais vigentes na compra
+(imposto, taxa de serviço, meio de pagamento) e no fato gerador (comissão, parcela do motorista) são **copiados** para a
+linha, porque os parâmetros podem mudar e o resultado antigo não pode mudar junto (decisão 8).
+
+### Vocabulário
+
+| Coluna | Valores | Regra |
+|---|---|---|
+| `payment_attempts.result` | `approved`, `declined` | RN-15 |
+| `payment_attempts.decline_reason` | `insufficient_funds`, `card_declined`, `expired_card`, `suspected_fraud`, `processing_error` | RN-15 |
+| `payment_attempts.payment_method` | `card`, `pix`, `wallet` | decisão 3 da L2 |
+| `payment_components.component_type` | `item`, `service_fee`, `delivery_fee` | RN-19, RN-20, RN-33 |
+| `refunds.origin_type` | `restaurant_order` (cancelado ou rejeitado), `incident` (procedente), `driver_unable` | RN-10, RN-14, RN-30 |
+
+### checkouts (Postgres) — Checkout
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| checkout_id | bigint, PK | sequencial |
+| customer_id | bigint | `ext → Oracle.customers` |
+| amount | numeric(12,2) | valor da intenção de compra; sem carrinho na v1 (conceitual, decisão 1) |
+| created_at | timestamp | |
+
+Gera **no máximo um** pedido e um pagamento (RN-15): garantido por `orders.checkout_id` único (L1b) e pela tentativa
+aprovada única (abaixo). "Convertido" ou "abandonado" é derivado (tem ou não tentativa aprovada), não coluna.
+
+### payment_attempts (Postgres) — Tentativa de Pagamento
+
+Entidade fraca do checkout.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| checkout_id | bigint, PK | → `checkouts` |
+| attempt_number | smallint, PK | 1, 2, ... |
+| amount | numeric(12,2) | igual a `checkouts.amount` |
+| payment_method | varchar | `card`, `pix`, `wallet` |
+| card_brand | varchar, nulo | só em `card` (Visa, Mastercard, Elo, ...) |
+| wallet_provider | varchar, nulo | só em `wallet` (Apple Pay, Google Pay, ...) |
+| gateway | varchar | processador (hoje `provider`: Stripe, Adyen, ...) |
+| result | varchar | `approved` ou `declined` |
+| decline_reason | varchar, nulo | só em `declined` |
+| attempted_at | timestamp | |
+| created_at | timestamp | imutável |
+
+Único: no máximo uma tentativa `approved` por checkout (índice único parcial). É o que torna a aprovação repetida
+inofensiva (RN-15). A recusada nunca tem pedido nem pagamento.
+
+Saem do gerador atual: `currency` (só Brasil, sempre BRL), `ip_address` e `user_agent` (sem regra), `card_exp_month` e
+`card_exp_year`.
+
+### payments (Postgres) — Pagamento
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| payment_id | bigint, PK | sequencial |
+| tracking_code | char(12), único | mesmo formato do pedido (L1b, decisão 12), com outro sal |
+| order_id | bigint, único | → `orders` (1:1, RN-08) |
+| checkout_id, attempt_number | bigint, smallint | → `payment_attempts`: a tentativa aprovada que o gerou. Único |
+| total_amount | numeric(12,2) | valor pago: itens + taxa de serviço + taxa de entrega, imposto embutido (RN-19). Igual à soma dos componentes |
+| tax_rate | numeric(5,4) | alíquota única vigente na compra (RN-09) |
+| service_fee_rate | numeric(5,4) | percentual da taxa de serviço sobre os itens (RN-19) |
+| payment_fee_rate | numeric(5,4) | custo do meio de pagamento sobre o valor pago (RN-29) |
+| payment_fee_amount | numeric(12,2) | custo do meio de pagamento; da plataforma, **não devolvido** em estorno (RN-29) |
+| paid_at | timestamp | aprovação; igual a `orders.placed_at` |
+| created_at | timestamp | imutável; sem `updated_at` (o pagamento nunca muda, RN-08) |
+
+O meio de pagamento é o da tentativa aprovada (não é copiado). Saem: `status` e os estados `pending`/`failed`/`refunded`
+(RN-11), `refund_amount` (vira `refunds`), `net_amount`, `platform_fee` e `tax_amount` (derivados; decisão 1).
+
+### payment_components (Postgres) — Componente do Pagamento
+
+Entidade fraca do pagamento. Divisão **congelada na compra** (RN-33).
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| payment_id | bigint, PK | → `payments` |
+| component_number | smallint, PK | 1, 2, ... |
+| component_type | varchar | `item`, `service_fee` ou `delivery_fee` |
+| restaurant_order_id, line_number | bigint, smallint, nulos | → `order_items`; nulos só em `delivery_fee` |
+| gross_amount | numeric(12,2) | valor bruto do componente, imposto embutido |
+| tax_amount | numeric(12,2) | imposto decomposto do bruto (RN-33: decomposição, nunca acréscimo) |
+| created_at | timestamp | imutável |
+
+Por item do pedido há **dois** componentes: `item` (o `total_amount` do item) e `service_fee` (a parte da taxa de serviço
+alocada a ele, decisão 2). A taxa de entrega é **um** componente por pagamento, sem atendimento (RN-20: nunca rateada).
+Em toda alocação, cada parcela é calculada e a última absorve a diferença (RN-33).
+
+Único: (`payment_id`, `component_type`, `restaurant_order_id`, `line_number`), e um só `delivery_fee` por pagamento.
+
+### refunds (Postgres) — Reembolso
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| refund_id | bigint, PK | sequencial |
+| payment_id | bigint | → `payments` |
+| origin_type | varchar | `restaurant_order`, `incident` ou `driver_unable` |
+| restaurant_order_id | bigint, nulo | → `restaurant_orders`; só em `restaurant_order` |
+| incident_id | bigint, nulo | → `incidents` (L3); só em `incident` |
+| delivery_id | bigint, nulo | → `deliveries`; só em `driver_unable` |
+| total_amount | numeric(12,2) | soma dos componentes reembolsados |
+| refunded_at | timestamp | |
+| created_at | timestamp | imutável |
+
+Exatamente uma das três referências é preenchida, conforme `origin_type` (uma única origem, conceitual 2.2). Único: um
+reembolso por atendimento, por incidente e por entrega (índices únicos parciais).
+
+**Quem arca** não é coluna: sai da origem. `incident` e `driver_unable` são prejuízo da plataforma (RN-14, RN-30); em
+`restaurant_order` o dinheiro só volta, porque não há repasse de atendimento não retirado (RN-29).
+
+**O que cada origem devolve:**
+
+| Origem | Componentes devolvidos | Regra |
+|---|---|---|
+| `restaurant_order` | `item` e `service_fee` de todos os itens do atendimento; mais o `delivery_fee` se não restar atendimento ativo | RN-21 |
+| `incident` | `item` e `service_fee` dos itens apontados, na proporção da quantidade; `delivery_fee` só se o motivo for de entrega | RN-14 |
+| `driver_unable` | tudo o que ainda não foi devolvido | RN-30 |
+
+### refund_components (Postgres) — Componente Reembolsado
+
+Entidade fraca do reembolso.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| refund_id | bigint, PK | → `refunds` |
+| component_number | smallint, PK | → `payment_components`, junto com o `payment_id` do reembolso |
+| quantity | integer, nulo | unidades devolvidas, em componente de item (incidente parcial) |
+| gross_amount | numeric(12,2) | |
+| tax_amount | numeric(12,2) | acompanha o bruto na mesma proporção (RN-09) |
+| created_at | timestamp | imutável |
+
+Invariantes (RN-33, checadas nos testes): o reembolsado acumulado por componente nunca passa do `gross_amount` dele; a
+soma dos reembolsos nunca passa do `total_amount` do pagamento; cancelar todos os atendimentos devolve exatamente o
+pagamento; a quantidade devolvida por item, somando incidentes, nunca passa da comprada (RN-14).
+
+### restaurant_payouts (Postgres) — Repasse ao Restaurante
+
+Entidade fraca 1:1 do atendimento: a chave é a do pai.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| restaurant_order_id | bigint, PK | → `restaurant_orders`; só atendimento **retirado** (RN-29) |
+| restaurant_id | bigint | → `restaurants`; cópia do restaurante do atendimento, para consulta direta (decisão 7) |
+| items_amount | numeric(12,2) | soma dos componentes `item` do atendimento |
+| commission_rate | numeric(5,4) | comissão vigente na retirada |
+| commission_amount | numeric(12,2) | retenção da plataforma |
+| payout_amount | numeric(12,2) | `items_amount` − `commission_amount` |
+| due_at | timestamp | a retirada (`restaurant_orders.picked_up_at`); obrigação reconhecida, não liquidação |
+| created_at | timestamp | imutável |
+
+Incidente procedente e cliente ausente não mexem no repasse (RN-29).
+
+### driver_payouts (Postgres) — Repasse ao Motorista
+
+Entidade fraca 1:1 da entrega.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| delivery_id | bigint, PK | → `deliveries`; só em `delivered`, ou `undelivered` por `customer_absent` (RN-29) |
+| driver_id | bigint | `ext → Oracle.drivers`; cópia do motorista da atribuição liberada com `delivery_finished` (decisão 7) |
+| shift_id | bigint | → `shifts`; cópia do turno dessa atribuição (base do ganho do turno, RN-36) |
+| delivery_fee_amount | numeric(12,2) | o componente `delivery_fee` do pagamento |
+| driver_share_rate | numeric(5,4) | parcela do motorista vigente na finalização |
+| payout_amount | numeric(12,2) | parcela do motorista; o resto da taxa fica com a plataforma |
+| due_at | timestamp | `deliveries.finished_at` |
+| created_at | timestamp | imutável |
+
+Teste: `driver_id` e `shift_id` batem com a atribuição liberada com `delivery_finished` (L1b).
+
+### tips (Postgres) — Gorjeta
+
+Entidade fraca 1:1 da entrega.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| delivery_id | bigint, PK | → `deliveries`; no máximo uma por entrega, só de pedido **concluído** (RN-22) |
+| driver_id | bigint | `ext → Oracle.drivers`; cópia do motorista da entrega (decisão 7) |
+| amount | numeric(12,2) | entre o mínimo e o máximo (parâmetros, RN-22) |
+| paid_at | timestamp | até 20 minutos depois de `deliveries.finished_at`, limite inclusivo (RN-26) |
+| created_at | timestamp | imutável |
+
+Fora do pagamento, sem retenção, nunca estornada (RN-22). Não existe se a nota do motorista for 3 ou menor (RN-26; a
+avaliação é da L3).
+
+### receipts (Postgres) — Recibo
+
+Entidade fraca 1:1 do pagamento.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| payment_id | bigint, PK | → `payments` |
+| issued_at | timestamp | emissão |
+| created_at | timestamp | imutável |
+
+Documento único da compra; reembolsos não o alteram (conceitual, decisão 5). Saem `total_amount`, `item_count` e
+`receipt_url` (derivados ou sem uso).
+
+### Quem escreve
+
+| Tabela | ShadowTraffic | Simulador |
+|---|---|---|
+| `checkouts`, `payment_attempts`, `payments`, `payment_components`, `receipts` | INSERT na compra (decisão 10) | — |
+| `refunds`, `refund_components` | — | INSERT no cancelamento, na rejeição e em `driver_unable`; incidente fica para a L3 |
+| `restaurant_payouts` | — | INSERT na retirada |
+| `driver_payouts` | — | INSERT na finalização |
+| `tips` | — | INSERT (ação do cliente depois da entrega) |
+
+Todas as tabelas da L2 são **só INSERT**: nenhuma linha de dinheiro é atualizada depois de gravada.
+
+### Referências externas da L2
+
+| De | Coluna | Para |
+|---|---|---|
+| `checkouts` | `customer_id` | `ext → Oracle.customers` |
+| `driver_payouts`, `tips` | `driver_id` | `ext → Oracle.drivers` |
+
+### Decisões da revisão da L2 (2026-11-02)
+
+| # | Tema | Decisão |
+|---|---|---|
+| 1 | Totais do pagamento | **Só `total_amount` e `payment_fee_amount`**; imposto total, taxa da plataforma e líquido (RN-09) são derivados na Gold |
+| 2 | Taxa de serviço | **Alocada por item**: o item tem até dois componentes (`item` e `service_fee`); diagrama 2.2 ajustado |
+| 3 | Meios de pagamento | **`card`, `pix`, `wallet`**; boleto e moeda saem |
+| 4 | Detalhe do meio | **Só na tentativa**; o pagamento aponta a tentativa aprovada |
+| 5 | Motivos de recusa | **`insufficient_funds`, `card_declined`, `expired_card`, `suspected_fraud`, `processing_error`** |
+| 6 | Origem do reembolso | **`origin_type` + três referências**, exatamente uma preenchida |
+| 7 | Chaves 1:1 | **Chave do pai + cópia** para consulta direta: `restaurant_id` no repasse ao restaurante; `driver_id` e `shift_id` no repasse ao motorista; `driver_id` na gorjeta. Testes conferem a cópia contra a origem |
+| 8 | Percentuais | **Congelados na linha** (pagamento e repasses) |
+| 9 | Recibo | **Tabela mínima** `receipts(payment_id, issued_at)` |
+| 10 | Geração do dinheiro da compra | **Só invariantes no lógico**; na regeração se decide se o ShadowTraffic dá conta ou se a compra vai para o simulador |
