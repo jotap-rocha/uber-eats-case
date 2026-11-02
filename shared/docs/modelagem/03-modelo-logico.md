@@ -714,7 +714,7 @@ Entidade fraca 1:1 da entrega.
 
 | Coluna | Tipo | Observação |
 |---|---|---|
-| delivery_id | bigint, PK | → `deliveries`; no máximo uma por entrega, só de pedido **concluído** (RN-22) |
+| delivery_id | bigint, PK | → `deliveries`; no máximo uma por entrega, só de pedido **entregue** ou **concluído** (RN-22) |
 | driver_id | bigint | `ext → Oracle.drivers`; cópia do motorista da entrega (decisão 7) |
 | amount | numeric(12,2) | entre o mínimo e o máximo (parâmetros, RN-22) |
 | paid_at | timestamp | até 20 minutos depois de `deliveries.finished_at`, limite inclusivo (RN-26) |

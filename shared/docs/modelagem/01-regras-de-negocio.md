@@ -195,7 +195,7 @@ Os valores abaixo são **parâmetros do gerador** (ajustáveis sem mudar as regr
   atendimento a entregar. Se **todos** os atendimentos forem cancelados, o reembolso é **total**, incluindo a taxa de entrega.
 - **RN-22.** Existe **gorjeta**, opcional, em **valor livre**, paga **no final** (depois da entrega) e **direto ao motorista**.
   É um valor **à parte do pedido**: não entra no pagamento do pedido (RN-08), não passa por reembolso de itens e a plataforma
-  não retém parte dela. Há **no máximo uma gorjeta por entrega** (1:1 com o pedido), e **só para entregas concluídas**, destinada ao motorista dela, e não é oferecida se a nota do motorista for 3 ou menor (RN-26). O valor tem **mínimo positivo e máximo**, definidos como parâmetros. A gorjeta é um registro de
+  não retém parte dela. Há **no máximo uma gorjeta por entrega** (1:1 com o pedido), e **só para entregas finalizadas com sucesso** (pedido entregue ou concluído; a janela de 20 minutos da RN-26 pode terminar depois da confirmação automática de 10 minutos, RN-24), destinada ao motorista dela, e não é oferecida se a nota do motorista for 3 ou menor (RN-26). O valor tem **mínimo positivo e máximo**, definidos como parâmetros. A gorjeta é um registro de
   valor já liquidado: não se modela recusa nem cancelamento dela, e ela **não é estornada**, nem em incidente procedente.
 
 ## Distribuição do dinheiro

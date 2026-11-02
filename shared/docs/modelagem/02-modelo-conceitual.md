@@ -169,7 +169,7 @@ erDiagram
 | Componente Reembolsado | **nova** | RN-33 | Quanto de cada componente do pagamento (item, taxa de serviço, taxa de entrega) o reembolso devolve. É o que garante que o acumulado por item nunca excede o valor do componente e que a ordem dos cancelamentos não muda o resultado. |
 | Repasse ao Restaurante | **nova** | RN-29 | Valor devido ao restaurante: itens do atendimento menos comissão. Um por atendimento **retirado**; atendimento rejeitado, cancelado ou ainda não retirado não gera repasse. O restaurante recebe muitos ao longo do tempo. É obrigação reconhecida, não liquidação. |
 | Repasse ao Motorista | **nova** | RN-29 | Ligado à **entrega**. Parcela fixa da taxa de entrega, devida só quando a entrega é concluída ou termina em cliente ausente. Não existe se todos os atendimentos forem cancelados nem se o motorista ficar impossibilitado. Vai ao motorista vigente na finalização. |
-| Gorjeta | **nova** | RN-22, RN-26 | Pertence à **entrega**: no máximo uma por entrega, só de entrega concluída, direto ao motorista dela (que recebe muitas ao longo do tempo, uma por entrega). **Fora do pagamento**, não retida, não estornada. Não é oferecida se a nota do motorista for 3 ou menor. |
+| Gorjeta | **nova** | RN-22, RN-26 | Pertence à **entrega**: no máximo uma por entrega, só de entrega finalizada com sucesso (pedido entregue ou concluído), direto ao motorista dela (que recebe muitas ao longo do tempo, uma por entrega). **Fora do pagamento**, não retida, não estornada. Não é oferecida se a nota do motorista for 3 ou menor. |
 | Recibo | mantida | RN-08 | **Documento único da compra** (1:1 com pedido e pagamento). Reembolsos não o alteram: vivem na entidade Reembolso. |
 
 ### 3.4 Pós-entrega
