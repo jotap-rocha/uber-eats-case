@@ -10,7 +10,7 @@ Terceira etapa do fluxo (regras → adversarial → conceitual → **lógico** �
 | L1b | Operação: pedido, atendimento, entrega, turno, atribuição, transições (parte do diagrama 2.1) | aprovada |
 | L2 | Dinheiro (diagrama 2.2) | aprovada |
 | L3 | Pós-entrega (diagrama 2.3) | aprovada |
-| L4 | Visão integrada: restrições entre tabelas, parâmetros, ADR do histórico de status | pendente |
+| L4 | Visão integrada: restrições entre tabelas, parâmetros, ADR do histórico de status | aprovada |
 
 ---
 
@@ -932,3 +932,125 @@ Com isso, o MinIO fica só com `kafka/gps` (L1b, decisão 13). Nada é editado a
 | 6 | Incidente de entrega repetido | **Um por pedido** (índice único parcial) |
 | 7 | Avaliações | **Chave do pai + cópias** (`driver_id` ou `restaurant_id`, mais `customer_id`), imutáveis, testadas como na L2 |
 | 8 | `mysql/ratings` e `mongodb/support` no MinIO | **Saem**; viram tabelas no Postgres. O MinIO fica só com `kafka/gps` |
+
+---
+
+## L4. Visão integrada: restrições, parâmetros e histórico de status
+
+Fecha o modelo lógico: reúne o que as fases L1a a L3 deixaram para "os testes" e "a L4", fixa a lista de parâmetros e
+formaliza o histórico de status. Não cria tabela nova.
+
+### Quem garante cada restrição
+
+Três mecanismos, do mais forte ao mais fraco (sem FK física, L0 #9):
+
+| Mecanismo | O que garante | Quando falha |
+|---|---|---|
+| **Índice único** (inclusive parcial) | Unicidade e a trava da RN-27 | A escrita é recusada no banco |
+| **Simulador** (dentro da transação) | Regras de estado, prazo e dinheiro na hora de gravar | O comando é recusado com aviso |
+| **Teste de verificação** (consulta sobre os dados) | Tudo o que cruza tabelas ou bancos; é a rede de proteção do que o simulador esqueceu | O teste falha e a regeração não é aprovada |
+
+### Catálogo 1: índices únicos
+
+| Tabela | Único | Regra |
+|---|---|---|
+| `customers` | `email` | |
+| `restaurants` | `cnpj` | |
+| `stock_items` | (`restaurant_id`, `name`) | |
+| `stock_movements` | (`restaurant_order_id`, `stock_item_id`) onde `consumption` | RN-38: uma baixa por atendimento e item |
+| `orders` | `tracking_code`; `checkout_id` | RN-15: um checkout, no máximo um pedido |
+| `restaurant_orders` | (`order_id`, `restaurant_id`) | RN-05 |
+| `deliveries` | `order_id` | RN-06 |
+| `shifts` | `driver_id` onde `status = open` | RN-42 |
+| `driver_assignments` | `delivery_id` e `driver_id`, ambos onde `released_at` é nulo | RN-31, RN-42 |
+| `payment_attempts` | `checkout_id` onde `result = approved` | RN-15 |
+| `payments` | `tracking_code`; `order_id`; (`checkout_id`, `attempt_number`) | RN-08 |
+| `payment_components` | (`payment_id`, `component_type`, `restaurant_order_id`, `line_number`); um `delivery_fee` por pagamento | RN-20 |
+| `refunds` | `restaurant_order_id`, `incident_id`, `delivery_id`, cada um onde não nulo | um reembolso por origem |
+| `incidents` | `order_id` onde `reason` é de entrega | L3, decisão 6 |
+
+### Catálogo 2: invariantes verificados por teste
+
+**Pedido e operação (L1a, L1b)**
+
+| # | Invariante | Regra |
+|---|---|---|
+| T1 | Pedido com 1 ou 2 atendimentos, todos de restaurantes da `orders.city_id` | RN-03, RN-35 |
+| T2 | `orders.status` igual à derivação da RN-16 até `out_for_delivery`; `deliveries.status = in_transit` exatamente quando o pedido está `out_for_delivery` | L0 #7 |
+| T3 | Em toda tabela de transição, `from_status` é o `to_status` da linha anterior; só transições da tabela das regras; o status da linha-pai é o `to_status` da última transição | RN-18, L1b |
+| T4 | Produto do item é do restaurante do atendimento; item de estoque da ficha e do movimento são do mesmo restaurante do produto | RN-37 |
+| T5 | Atribuição: turno do mesmo motorista, `open` em `assigned_at`, com `city_id` igual ao do pedido; `driver_gave_up` só antes da primeira retirada e nunca da 4ª atribuição em diante | RN-07, RN-35, RN-36 |
+| T6 | Saldo `quantity_on_hand` nunca negativo e igual à soma dos movimentos; reposição só fora das janelas do perfil | RN-39, RN-40 |
+| T7 | `estimated_prep_min` e `accepted_at` preenchidos de `accepted` em diante; `promised_at` congelado quando o último atendimento ativo é aceito | RN-28 |
+
+**Dinheiro (L2)**
+
+| # | Invariante | Regra |
+|---|---|---|
+| T8 | `payments.total_amount` = soma dos `gross_amount` dos componentes; `paid_at` = `orders.placed_at`; valor do pagamento = valor da tentativa aprovada | RN-33 |
+| T9 | Reembolsado acumulado por componente ≤ `gross_amount`; soma dos reembolsos ≤ `total_amount`; todos os atendimentos cancelados devolvem exatamente o pagamento; o resultado não depende da ordem dos cancelamentos | RN-33 |
+| T10 | Cópias conferem com a origem: `restaurant_payouts.restaurant_id`, `driver_payouts.driver_id` e `shift_id`, `tips.driver_id` | L2, decisão 7 |
+| T11 | Repasse ao restaurante só de atendimento `picked_up`; repasse ao motorista só de entrega `delivered` ou `customer_absent`; gorjeta só de entrega `delivered` | RN-29, RN-22 |
+
+**Pós-entrega (L3)**
+
+| # | Invariante | Regra |
+|---|---|---|
+| T12 | Incidente, avaliação e gorjeta só com entrega `delivered`; `incidents.opened_at` ≤ `finished_at` + 24 h; `rated_at` e `tips.paid_at` ≤ `finished_at` + 20 min (inclusivo) | RN-14, RN-26 |
+| T13 | `incident_items` aponta item de atendimento `picked_up` do pedido do incidente; soma de `quantity` por item nos incidentes não improcedentes ≤ `order_items.quantity` | RN-14 |
+| T14 | `upheld` ⇒ exatamente um reembolso `incident` com `refunded_at` = `decided_at` e `refund_components.quantity` = `incident_items.quantity`; `dismissed`, `open` e `in_review` ⇒ nenhum | RN-14 |
+| T15 | `late_delivery` procedente ⇒ `finished_at` > `promised_at` | RN-14, RN-28 |
+| T16 | Nenhuma gorjeta com `paid_at` ≥ `rated_at` de avaliação do motorista com nota ≤ 3; cópias de avaliação e incidente conferem com a origem | RN-26 |
+
+**Entre bancos**
+
+| # | Invariante | Regra |
+|---|---|---|
+| T17 | Todo `ext → Oracle.*` aponta para uma linha existente (cliente ou motorista); `cities` é idêntica nos dois bancos; `orders.city_id` = cidade do cliente na compra, `shifts.city_id` = cidade do motorista na abertura | L0 #10, #11 |
+| T18 | Todo `menu_items[].product_id` e `restaurant_id` do MongoDB aponta para linha existente do Postgres; todo restaurante tem perfil | RN-23 |
+
+### Parâmetros
+
+Valores das regras estão fixados; os demais são **valor inicial sugerido**, para ajuste na regeração. Os percentuais são
+**copiados para a linha** quando usados (L2, decisão 8), então mudar um parâmetro nunca altera dado antigo.
+
+| Parâmetro | Valor | Onde é usado | Regra |
+|---|---|---|---|
+| `incident_window` | 24 h | abertura de incidente | RN-14 |
+| `rating_tip_window` | 20 min, inclusivo | avaliação e gorjeta | RN-26 |
+| `auto_confirm_delay` | 10 min | confirmação automática | RN-24, RN-28 |
+| `analysis_timeout` | 5 min | rejeição automática | RN-28 |
+| `prep_tolerance` | 50% | atraso do restaurante | RN-28 |
+| `max_restaurants_per_order` | 2 | pedido | RN-03 |
+| `max_driver_give_ups` | 3 | atribuição que não se desfaz | RN-07 |
+| `average_speed_kmh` | sugestão: 25 | prazo prometido | RN-28 |
+| `promise_slack_min` | sugestão: 10 | prazo prometido | RN-28 |
+| `route_detour_factor` | sugestão: 1,3 (linha reta × fator) | `deliveries.distance_km` | RN-28 |
+| `tax_rate` | sugestão: 0,0800 | `payments.tax_rate` | RN-09 |
+| `service_fee_rate` | sugestão: 0,1200 | `payments.service_fee_rate` | RN-19 |
+| `payment_fee_rate` | sugestão: `card` 0,0299; `pix` 0,0099; `wallet` 0,0250 | `payments.payment_fee_rate` | RN-29 |
+| `commission_rate` | sugestão: 0,2500 | `restaurant_payouts.commission_rate` | RN-29 |
+| `driver_share_rate` | sugestão: 0,8000 | `driver_payouts.driver_share_rate` | RN-29 |
+| `tip_min`, `tip_max` | sugestão: 1,00 e 100,00 | `tips.amount` | RN-22 |
+| `rating_comment_by_band` | frases sintéticas por faixa de nota | `comment` das avaliações | RN-26 |
+
+**Ordem dos restaurantes na rota (pendência da L1b).** A distância de `deliveries.distance_km` percorre restaurante →
+restaurante → cliente quando há dois. Sem posição do motorista, o critério precisa vir só das coordenadas dos três pontos.
+
+### Histórico de status: ADR 008
+
+A L0 #8 já fez do histórico de pedido e de atendimento **tabelas** (RN-18), contra a Onda 3, que o tinha removido em favor
+de mutação de linha capturada por CDC. Falta registrar a decisão, porque é difícil de reverter (muda o contrato da Bronze e
+o desenho da Silver) e tem troca real. A [ADR 008](../../../docs/adr/008-historico-de-status-em-tabelas-de-transicao.md) registra a decisão, com as alternativas: **A**, tabelas de
+transição gravadas na mesma transação; **B**, só CDC, com a Silver reconstruindo o histórico (`apply_changes` com SCD2);
+**C**, as duas coisas.
+
+### Decisões da revisão da L4 (2026-11-02)
+
+| # | Tema | Decisão |
+|---|---|---|
+| 1 | Parâmetros | **Arquivo único versionado**, lido por simulador, gerador e testes; sem tabela. O local fica para o físico |
+| 2 | Ordem dos restaurantes na rota | **Menor rota total** (testa as duas ordens), desempate pelo menor `restaurant_id` |
+| 3 | Gorjeta antes da confirmação | **Pedido `delivered` ou `completed`**. RN-22, conceitual (3.3) e `tips` ajustados: "concluída" vira "finalizada com sucesso" |
+| 4 | Histórico de status | **Alternativa A** (tabelas de transição); registrada na [ADR 008](../../../docs/adr/008-historico-de-status-em-tabelas-de-transicao.md) |
+| 5 | Valores iniciais | **Aceitos** como sugeridos; ajustáveis na regeração |
