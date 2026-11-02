@@ -23,16 +23,22 @@ Este documento descreve o negócio, não o banco. Qual tabela mora em qual banco
   O atendimento tem ciclo de vida próprio (em análise, aceito, em preparo, pronto para retirada e retirado; ou os terminais cancelado e rejeitado). O status do pedido é
   **derivado** dos atendimentos (RN-16).
 
+- **RN-35.** A entrega só atende endereços na **mesma cidade** dos restaurantes do pedido. **Cliente** e **motorista** passam a
+  ter uma cidade (a mesma referência canônica dos restaurantes), e o motorista só é atribuído a pedidos da sua cidade. Um limite por quilometragem fica
+  fora da v1.
+
 ## Motorista
 
-- **RN-06.** Um pedido tem **no máximo um motorista**, mesmo com restaurantes diferentes. O motorista é atribuído quando o
-  **primeiro atendimento fica pronto para retirada**: nesse momento o pedido ganha motorista. Nunca na criação, nem no aceite,
+- **RN-06.** Todo pedido gera uma **entrega**, que tem **no máximo um motorista**, mesmo com restaurantes diferentes. O motorista é atribuído quando o
+  **primeiro atendimento fica pronto para retirada**: nesse momento a entrega ganha motorista. Nunca na criação, nem no aceite,
   de modo que não há viagem de ida a um restaurante que ainda está preparando. O "primeiro atendimento" é o **primeiro a
-  ficar pronto**; em empate vale o de menor identificador. Se não há motorista disponível, o pedido **aguarda atribuição**.
+  ficar pronto**; em empate vale o de menor identificador. Se não há motorista disponível, a entrega **aguarda atribuição**. "Disponível" significa ter um **turno aberto** (RN-36).
 - **RN-07.** O motorista pode ser **reatribuído** (por exemplo, se ele cancelar) enquanto **nenhum atendimento do pedido
   foi retirado**. A partir da **primeira retirada** em qualquer restaurante, o motorista fica travado no pedido; se ficar impossibilitado depois
   disso, o destino é o estado **não entregue** (RN-30). Depois de **3 desistências** de motoristas, a atribuição seguinte não
   pode mais ser desfeita antes da retirada (parâmetro do gerador).
+- **RN-36.** O motorista tem **turnos**, que ele abre e fecha. Só um motorista com **turno aberto** pode receber atribuição
+  (RN-06). Os pedidos e o ganho de um turno são **derivados das entregas e dos repasses reais**, nunca valores independentes.
 
 ## Cancelamento
 
@@ -59,7 +65,7 @@ Este documento descreve o negócio, não o banco. Qual tabela mora em qual banco
   mas **não cancela pedido por conta própria**. No incidente procedente o cliente recebe **estorno completo** e a **plataforma
   assume o prejuízo**: o restaurante continua recebendo o seu repasse. O incidente **aponta item(ns) e quantidade**: o estorno é
   completo desses itens, mais a taxa de serviço e o imposto proporcionais. A taxa de entrega só é devolvida quando o problema
-  é a própria entrega. O incidente **não altera o estado operacional** do atendimento retirado: gera um ajuste financeiro.
+  é a própria entrega. O incidente **não altera o estado operacional** do atendimento retirado: gera um reembolso.
   Regras do incidente: pode ser aberto até **24 horas** após a entrega (parâmetro); a quantidade reembolsada por item, somando
   todos os incidentes, nunca excede a quantidade comprada; um incidente decidido não é reaberto na v1. O **motivo** define o
   efeito na taxa de entrega: **item faltando, item errado e qualidade do alimento** não a devolvem; **atraso procedente,
@@ -98,7 +104,7 @@ Este documento descreve o negócio, não o banco. Qual tabela mora em qual banco
   Se houver problema na entrega e o cliente não recebe, ele abre um **incidente** que marca **falha na entrega**.
 - **RN-25.** Se o motorista e o restaurante cumpriram a sua parte e o **cliente não retira o pedido**, não há devolução: o
   dinheiro permanece com a plataforma, o motorista e o restaurante.
-- **RN-26.** Depois da entrega o cliente pode **avaliar** o **motorista** (uma avaliação por pedido) e cada **restaurante** (uma
+- **RN-26.** Depois da entrega o cliente pode **avaliar** o **motorista** (uma avaliação por **entrega**, que é 1:1 com o pedido) e cada **restaurante** (uma
   avaliação por atendimento). A avaliação é **opcional**, com **nota de 1 a 5** e **comentário livre opcional** (campo que abre
   espaço para classificação por ML ou LLM no futuro). O prazo máximo para avaliar é de **20 minutos** após a finalização da
   entrega. Em seguida o cliente escolhe dar **gorjeta** (RN-22) ou não. A gorjeta independe da avaliação, **exceto** quando a
@@ -114,7 +120,7 @@ Este documento descreve o negócio, não o banco. Qual tabela mora em qual banco
   - **motorista impossibilitado** de continuar depois de recolher (registrado pela plataforma): **estorno total** ao cliente,
     assumido pela plataforma; o restaurante mantém o repasse dos atendimentos já retirados.
   Se o pedido já foi marcado como entregue e o cliente diz que não recebeu, o estado não muda: o incidente da RN-14 gera só o
-  ajuste financeiro, e é improcedente se o cliente estava ausente. Na Gold, o incidente procedente de falha na entrega conta como falha
+  reembolso, e é improcedente se o cliente estava ausente. Na Gold, o incidente procedente de falha na entrega conta como falha
   logística, embora o estado do pedido permaneça entregue.
 
 ## Limites de tempo
@@ -150,6 +156,9 @@ Os valores abaixo são **parâmetros do gerador** (ajustáveis sem mudar as regr
 
 - **RN-23.** **Todo restaurante tem perfil** (cardápio e horários); restaurante sem perfil não recebe pedido. O **menu é só
   apresentação** dos produtos do restaurante e **referencia o produto** (`product_id`), que carrega nome e preço.
+- **RN-37.** O **estoque** de um produto em um restaurante muda ao longo do tempo por **eventos do restaurante** (reposição,
+  ajuste, esgotamento), e não a cada venda. Produto **sem estoque** não pode entrar em um novo checkout; um pedido já aprovado
+  não é afetado.
 
 ## Valor do pedido e reembolso
 
@@ -164,7 +173,7 @@ Os valores abaixo são **parâmetros do gerador** (ajustáveis sem mudar as regr
   atendimento a entregar. Se **todos** os atendimentos forem cancelados, o reembolso é **total**, incluindo a taxa de entrega.
 - **RN-22.** Existe **gorjeta**, opcional, em **valor livre**, paga **no final** (depois da entrega) e **direto ao motorista**.
   É um valor **à parte do pedido**: não entra no pagamento do pedido (RN-08), não passa por reembolso de itens e a plataforma
-  não retém parte dela. Há **no máximo uma gorjeta por pedido**, e **só para pedidos entregues**, e não é oferecida se a nota do motorista for 3 ou menor (RN-26). O valor tem **mínimo positivo e máximo**, definidos como parâmetros. A gorjeta é um registro de
+  não retém parte dela. Há **no máximo uma gorjeta por entrega** (1:1 com o pedido), e **só para entregas concluídas**, destinada ao motorista dela, e não é oferecida se a nota do motorista for 3 ou menor (RN-26). O valor tem **mínimo positivo e máximo**, definidos como parâmetros. A gorjeta é um registro de
   valor já liquidado: não se modela recusa nem cancelamento dela, e ela **não é estornada**, nem em incidente procedente.
 
 ## Distribuição do dinheiro
@@ -187,8 +196,8 @@ evento com valor devido e momento, sem fluxo de caixa.
 
 ## Regras transversais (da revisão adversarial)
 
-- **RN-31.** O motorista de um pedido tem **histórico de atribuições**: cada atribuição, liberação e reatribuição é registrada com
-  o momento. O motorista atual do pedido não substitui o histórico.
+- **RN-31.** A entrega de um pedido tem **histórico de atribuições**: cada atribuição, liberação e reatribuição é registrada com
+  o momento. O motorista atual da entrega não substitui o histórico.
 - **RN-32.** O item do pedido **guarda o nome do produto e o preço unitário da compra**. Alterar ou desativar o produto depois
   não muda pedidos já aprovados. O item guarda também o **identificador do
   produto**, o **restaurante vendedor**, a quantidade e o total contratado.
@@ -197,7 +206,7 @@ evento com valor devido e momento, sem fluxo de caixa.
   taxa de serviço, taxa de entrega). Invariantes: a soma dos reembolsos nunca excede o valor pago; o cancelamento de todos os
   atendimentos reembolsa exatamente o pagamento original; o reembolsado acumulado por item nunca excede o valor alocado a ele.
   O imposto é **decomposição** do valor bruto (alíquota efetiva sobre o valor bruto de cada componente), **nunca um acréscimo** ao
-  reembolso. A alocação original por atendimento e componente é **congelada na compra** e não é recalculada a cada cancelamento.
+  reembolso. A divisão original do pagamento por atendimento e componente é **congelada na compra** e não é recalculada a cada cancelamento.
   O resultado financeiro final **não depende da ordem** dos cancelamentos.
 
 ## Tabelas de referência
@@ -235,7 +244,7 @@ Pedido com **dois atendimentos**, derivação do status (RN-16). Nas linhas de u
 | retirado + retirado | a caminho |
 
 Pedido, transições depois de **a caminho** (dirigidas por eventos do pedido, não pelos atendimentos). Reclamação posterior a
-entregue ou concluído gera incidente e ajuste financeiro, sem mudar o estado.
+entregue ou concluído gera incidente e reembolso, sem mudar o estado.
 
 | De | Para | Condição |
 |---|---|---|
