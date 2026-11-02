@@ -7,7 +7,7 @@ Terceira etapa do fluxo (regras → adversarial → conceitual → **lógico** �
 |---|---|---|
 | L0 | Convenções transversais | aprovada |
 | L1a | Pessoas, cidade e catálogo (parte do diagrama 2.1) | aprovada |
-| L1b | Operação: pedido, atendimento, entrega, turno, atribuição, transições (parte do diagrama 2.1) | pendente |
+| L1b | Operação: pedido, atendimento, entrega, turno, atribuição, transições (parte do diagrama 2.1) | aprovada |
 | L2 | Dinheiro (diagrama 2.2) | pendente |
 | L3 | Pós-entrega (diagrama 2.3) | pendente |
 | L4 | Visão integrada: restrições entre tabelas, parâmetros, ADR do histórico de status | pendente |
@@ -28,7 +28,7 @@ Decididas com o usuário em 2026-11-01.
 | 5 | Janelas de tempo | 24 h (incidente), 20 min (avaliação), 10 min (confirmação automática) e demais limites de RN-28 são **parâmetros**, não colunas. |
 | 6 | Status | Todo status é **coluna**, inclusive o do pedido. O banco transacional **não tem view**; view é só para análise de negócio (Gold). |
 | 7 | Status do pedido | A RN-16 deriva o status do pedido a partir dos atendimentos. A coluna guarda esse valor e é atualizada **na mesma transação** que muda o atendimento. A regra da RN-16 vira uma **consulta de verificação nos testes**, não uma view. |
-| 8 | Histórico de status | `order_status_transitions` e `fulfillment_status_transitions` são **tabelas** (RN-18), como no conceitual. |
+| 8 | Histórico de status | `order_status_transitions` e `restaurant_order_status_transitions` são **tabelas** (RN-18), como no conceitual. |
 | 9 | Integridade | Sem chave estrangeira física (invariante do projeto). A integridade é lógica, garantida pelo gerador (`lookup`). |
 | 10 | Referência entre bancos | Coluna com o identificador, sem chave estrangeira, **marcada no modelo** como `ext → Oracle.<tabela>` ou `ext → Postgres.<tabela>` para rastreio. Cada entidade mora em um único banco (ADR 006). |
 | 11 | Cidade | Única entidade **duplicada**: tabela de referência `cities` nos dois bancos, com o **código do IBGE** como chave natural, para o mesmo valor valer dos dois lados. |
@@ -90,6 +90,7 @@ Colunas de rastro (`created_at`, `updated_at`) em todas as tabelas, em horário 
 | phone_number | varchar | |
 | phone_verified | boolean | |
 | address_line1, address_line2, postal_code | varchar | |
+| latitude, longitude | numeric(9,6) | coordenada do endereço; destino da rota e base do prazo prometido (RN-28). Reaberto na L1b |
 | city_id | integer | → `cities` (RN-35); estado e país saem (derivados da cidade; só Brasil) |
 | date_of_birth | date | |
 | gender | varchar | |
@@ -122,6 +123,7 @@ Colunas de rastro (`created_at`, `updated_at`) em todas as tabelas, em horário 
 | cnpj | char(14), único | só dígitos |
 | phone_number | varchar | |
 | address, postal_code | varchar | |
+| latitude, longitude | numeric(9,6) | ponto de retirada; origem da rota (RN-28). Reaberto na L1b |
 | city_id | integer | → `cities` (RN-03, RN-35) |
 | cuisine_type | varchar | |
 | status | varchar | `active`, `suspended`, `inactive`; "aberto" é derivado das janelas (RN-41) |
@@ -179,11 +181,11 @@ Todo produto tem ao menos uma linha. Produto pronto: uma linha, quantidade 1, ap
 | stock_item_id | bigint | → `stock_items` |
 | movement_type | varchar | `consumption` (baixa no preparo, RN-38) ou `restock` (reposição, RN-40) |
 | quantity | numeric(12,3) | sempre positiva; o tipo diz o sinal |
-| fulfillment_id | bigint, nulo | → atendimento (L1b); obrigatório em `consumption`, nulo em `restock` |
+| restaurant_order_id | bigint, nulo | → `restaurant_orders` (L1b); obrigatório em `consumption`, nulo em `restock` |
 | occurred_at | timestamp | reposição só fora das janelas (RN-40) |
 | created_at | timestamp | |
 
-Único: (`fulfillment_id`, `stock_item_id`) quando `consumption` — no máximo uma baixa por atendimento e item (RN-38).
+Único: (`restaurant_order_id`, `stock_item_id`) quando `consumption` — no máximo uma baixa por atendimento e item (RN-38).
 
 **Saldo disponível no aceite (RN-39):** `quantity_on_hand` menos o comprometido pelos atendimentos já aceitos e ainda não em
 preparo (ficha × quantidade dos itens deles). O simulador calcula numa consulta, com o item de estoque travado, sem view.
@@ -227,3 +229,305 @@ operação faz. Fica para o físico decidir se ele lê do MongoDB ou de uma cóp
 | 5 | `cuisine_type` | Só no restaurante |
 | 6 | Status do restaurante | `active`/`suspended`/`inactive`; aberto ou fechado vem das janelas de funcionamento |
 | 7 | Saldo do item de estoque | **Coluna** `quantity_on_hand`, atualizada pelo simulador na mesma transação do movimento |
+
+---
+
+## L1b. Operação: pedido, atendimento, entrega, turno e atribuição
+
+Todas as tabelas no **Postgres** (ADR 006). Mesmas convenções da L1a: tipos em notação Postgres, `created_at`/`updated_at`
+em horário de Brasília, sem FK física. Checkout e tentativa de pagamento aparecem no diagrama 2.1, mas ficam na **L2**
+(dinheiro); aqui o pedido só aponta para o checkout (decisão 2).
+
+### Vocabulário: atores, status e motivos
+
+**Atores** (RN-01), usados em toda coluna de "quem": `customer`, `restaurant`, `driver`, `platform`. A rejeição automática
+por prazo (RN-28) e a confirmação automática (RN-24) são da `platform`.
+
+**Status do atendimento** (tabela de transições das regras):
+
+| Valor | Regra | Terminal |
+|---|---|---|
+| `in_analysis` | em análise; **status inicial** | |
+| `accepted` | aceito | |
+| `preparing` | em preparo (dispara a baixa de estoque, RN-38) | |
+| `ready_for_pickup` | pronto para retirada | |
+| `picked_up` | retirado | sim (não muda mais; incidente não altera, RN-14) |
+| `cancelled` | cancelado | sim |
+| `rejected` | rejeitado | sim |
+
+**Status do pedido:**
+
+| Valor | Regra | Origem |
+|---|---|---|
+| `in_analysis` | em análise; **status inicial** | derivação RN-16 |
+| `preparing` | em preparo | derivação RN-16 |
+| `partially_ready` | parcialmente pronto | derivação RN-16 |
+| `ready_for_pickup` | pronto para retirada | derivação RN-16 |
+| `partially_picked_up` | em coleta | derivação RN-16 |
+| `out_for_delivery` | a caminho | derivação RN-16 |
+| `delivered` | entregue | evento do pedido (RN-24) |
+| `completed` | concluído (terminal) | evento do pedido (RN-24) |
+| `undelivered` | não entregue (terminal) | evento do pedido (RN-30) |
+| `cancelled` | cancelado (terminal) | derivação RN-16 (nenhum atendimento ativo) |
+
+**Status da entrega:**
+
+| Valor | Significado |
+|---|---|
+| `awaiting_assignment` | sem motorista. **Status inicial** (a entrega nasce com o pedido, conceitual 3.2); a busca por motorista só começa quando o primeiro atendimento fica pronto (RN-06). Volta para cá quando o motorista desiste (RN-07) |
+| `assigned` | com motorista, recolhendo ou aguardando nos restaurantes (RN-17) |
+| `in_transit` | todos os atendimentos ativos recolhidos; o pedido fica `out_for_delivery` na mesma transação |
+| `delivered` | o motorista finalizou (RN-24) |
+| `undelivered` | não entregue (RN-30) |
+| `cancelled` | todos os atendimentos cancelados ou rejeitados |
+
+**Motivo de fim do atendimento** (`end_reason`). Cada motivo já diz o status e quem agiu:
+
+| Motivo | Status | Quem | Regra |
+|---|---|---|---|
+| `restaurant_declined` | `rejected` | restaurant | o restaurante recusa na análise (tabela de transições) |
+| `out_of_stock` | `rejected` | restaurant | RN-39 (falta saldo no aceite) |
+| `analysis_timeout` | `rejected` | platform | RN-28 (5 minutos sem resposta) |
+| `customer_request` | `cancelled` | customer | RN-12 (cliente cancela até "em análise") |
+| `restaurant_late` | `cancelled` | customer | RN-12 e RN-28 (aceito ou em preparo, passou do estimado + 50%) |
+| `other_restaurant_dropped` | `cancelled` | customer | RN-34 (o outro restaurante cancelou ou rejeitou; vale até ficar pronto) |
+| `restaurant_issue` | `cancelled` | restaurant | RN-13 (restaurante cancela depois do aceite, até o fim do preparo) |
+
+**Motivo de não entrega** (`deliveries.failure_reason`, RN-30): `customer_absent` (registrado pelo motorista, sem devolução,
+RN-25) e `driver_unable` (registrado pela plataforma, estorno total).
+
+**Motivo de liberação da atribuição** (`driver_assignments.release_reason`, RN-31): `driver_gave_up` (desistência, RN-07),
+`delivery_cancelled` (todos os atendimentos cancelados; motorista liberado, RN-28) e `delivery_finished` (entrega terminou
+em `delivered` ou `undelivered`; fecha a atribuição final).
+
+### orders (Postgres) — Pedido
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| order_id | bigint, PK | sequencial |
+| tracking_code | char(12), único | código de rastreio visível ao cliente (hash, ver abaixo); atributo, não chave |
+| checkout_id | bigint, único | → `checkouts` (L2); um checkout gera no máximo um pedido (RN-15) |
+| customer_id | bigint | `ext → Oracle.customers` (RN-02) |
+| city_id | integer | → `cities`; cidade dos restaurantes e do endereço de entrega, **copiada na compra** (RN-03, RN-35; decisão 9) |
+| status | varchar | nasce `in_analysis`; atualizado na mesma transação que muda o atendimento ou a entrega (L0 #7) |
+| placed_at | timestamp | momento da compra (aprovação do pagamento, RN-11) |
+| created_at, updated_at | timestamp | |
+
+Valores (itens, taxas, total) ficam no pagamento (L2). O motivo de não entrega fica na entrega e na transição do pedido.
+
+**Código de rastreio (decisão 12).** 12 caracteres em base32 Crockford maiúsculo (sem `I`, `L`, `O`, `U`, fácil de ditar),
+tirados do SHA-256 de `order_id` com um sal fixo. É determinístico (a regeração produz o mesmo código), não deixa adivinhar
+o pedido vizinho e tem 60 bits (colisão desprezível na escala do projeto). Onde calcular fica para o físico, com uma
+restrição: **não** como coluna gerada do Postgres, porque o Postgres 15 do projeto não publica coluna gerada na replicação
+lógica (só a partir do 18) e o Debezium não a veria.
+
+### restaurant_orders (Postgres) — Atendimento
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| restaurant_order_id | bigint, PK | sequencial; já referenciado por `stock_movements.restaurant_order_id` (L1a) |
+| order_id | bigint | → `orders` |
+| restaurant_id | bigint | → `restaurants`; da cidade do pedido (RN-03) |
+| status | varchar | nasce `in_analysis` |
+| estimated_prep_min | integer, nulo | tempo estimado até ficar pronto; **fixado no aceite e imutável** (RN-28) |
+| accepted_at | timestamp, nulo | começa o relógio de preparo; o atraso começa em `accepted_at` + estimado × 1,5 (RN-12, RN-28) |
+| driver_arrived_at | timestamp, nulo | chegada do motorista ao restaurante (RN-17); numa reatribuição antes da retirada, vale a chegada do novo motorista |
+| picked_up_at | timestamp, nulo | retirada; espera do motorista = `picked_up_at` − `driver_arrived_at` (RN-17); a primeira retirada trava o motorista (RN-07) |
+| end_reason | varchar, nulo | só em `cancelled` e `rejected` (tabela de motivos acima) |
+| created_at, updated_at | timestamp | `created_at` é o envio ao restaurante: começa o prazo de análise de 5 minutos (RN-28) |
+
+Único: (`order_id`, `restaurant_id`), um atendimento por restaurante e pedido (RN-05). O máximo de 2 por pedido (RN-03) é
+checado pelo gerador e nos testes.
+
+Os demais instantes de mudança de status (preparo, pronto, cancelamento) ficam só nas transições (decisão 4).
+
+### order_items (Postgres) — Item de Pedido
+
+Entidade fraca do atendimento: chave composta com a do pai (L0 #2).
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| restaurant_order_id | bigint, PK | → `restaurant_orders` |
+| line_number | smallint, PK | 1, 2, ... dentro do atendimento (decisão 6) |
+| product_id | bigint | → `products`, do restaurante do atendimento |
+| product_name | varchar | cópia na compra (RN-32) |
+| unit_price | numeric(12,2) | preço unitário da compra (RN-32) |
+| quantity | integer | ≥ 1 |
+| total_amount | numeric(12,2) | `unit_price` × `quantity`, o total contratado (RN-32) |
+| created_at | timestamp | imutável depois de criado; sem `updated_at` |
+
+O restaurante vendedor (RN-32) e o pedido vêm do atendimento: o restaurante de um atendimento nunca muda, então não precisa
+de cópia. O `discount_applied` do gerador atual sai (sem regra).
+
+### order_status_transitions (Postgres) — Transição de Status de Pedido
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| order_id | bigint, PK | → `orders` |
+| sequence_number | smallint, PK | 1 na criação, +1 a cada mudança |
+| from_status | varchar, nulo | nulo na criação |
+| to_status | varchar | |
+| actor | varchar | quem causou; numa mudança derivada (RN-16), o ator do evento do atendimento que a provocou |
+| reason | varchar, nulo | em `undelivered`, o motivo da RN-30. Em `completed` fica nulo: a causa é o ator (`customer` confirmou, `platform` confirmou automaticamente, RN-24 e RN-28) |
+| occurred_at | timestamp | |
+| created_at | timestamp | |
+
+Só grava quando o status do pedido muda de fato: um atendimento que passa de aceito para em preparo com o pedido já
+`preparing` não gera linha aqui (gera na tabela do atendimento).
+
+### restaurant_order_status_transitions (Postgres) — Transição de Status de Atendimento
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| restaurant_order_id | bigint, PK | → `restaurant_orders` |
+| sequence_number | smallint, PK | 1 na criação, +1 a cada mudança |
+| from_status | varchar, nulo | nulo na criação |
+| to_status | varchar | só transições permitidas pela tabela das regras |
+| actor | varchar | |
+| reason | varchar, nulo | igual ao `end_reason` quando `to_status` é `cancelled` ou `rejected` |
+| occurred_at | timestamp | |
+| created_at | timestamp | |
+
+Nas duas tabelas de transição, a criação é a **linha 1** (`from_status` nulo → `in_analysis`), gravada junto com o pai. Assim
+o tempo em cada status sai só das transições.
+
+**RN-27 (vale o que foi registrado primeiro) vira restrição:** toda mudança faz `UPDATE ... WHERE status = <de>` e insere a
+transição com `sequence_number` = último + 1. Um segundo evento concorrente encontra o status já mudado (0 linhas) ou
+colide na chave da transição, e é recusado. A chave composta é a trava.
+
+### deliveries (Postgres) — Entrega
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| delivery_id | bigint, PK | sequencial (decisão 7) |
+| order_id | bigint, único | → `orders` (1:1, RN-06) |
+| status | varchar | nasce `awaiting_assignment` |
+| dropoff_address | varchar | endereço de entrega, copiado do cliente na compra (decisão 8) |
+| dropoff_latitude, dropoff_longitude | numeric(9,6) | idem |
+| distance_km | numeric(6,2), nulo | rota restaurante → restaurante (se 2) → cliente; base do prazo prometido (RN-28) |
+| promised_at | timestamp, nulo | prazo prometido (RN-28); calculado e **congelado** quando o último atendimento ativo é aceito |
+| finished_at | timestamp, nulo | finalização pelo motorista ou registro da falha. Começa os relógios de 10 min (confirmação automática, RN-24), 20 min (avaliação e gorjeta, RN-26) e 24 h (incidente, RN-14) |
+| failure_reason | varchar, nulo | só em `undelivered`: `customer_absent` ou `driver_unable` (RN-30) |
+| created_at, updated_at | timestamp | |
+
+O motorista atual não é coluna: é o da atribuição vigente (RN-31). O critério da ordem dos restaurantes no cálculo da rota
+fica para a L4 (parâmetros).
+
+### shifts (Postgres) — Turno
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| shift_id | bigint, PK | sequencial próprio (decisão do Turno no L0) |
+| driver_id | bigint | `ext → Oracle.drivers` |
+| city_id | integer | → `cities`; cidade do motorista **copiada na abertura**, para a RN-35 ser checada no Postgres (decisão 9) |
+| status | varchar | `open`, `closed` |
+| opened_at | timestamp | só motorista `active` no cadastro abre turno (RN-42) |
+| closed_at | timestamp, nulo | |
+| close_reason | varchar, nulo | `driver_closed` (o motorista fecha, sem atribuição vigente) ou `driver_unable` (a plataforma fecha na mesma transação da falha, RN-30 e RN-42) |
+| created_at, updated_at | timestamp | |
+
+Único: no máximo um turno `open` por motorista (índice único parcial). Turnos do mesmo motorista não se sobrepõem.
+Pedidos e ganho do turno são derivados (RN-36): entregas pelas atribuições do turno e repasses da L2. `num_orders`,
+`payout_per_order` e afins do gerador atual saem.
+
+### driver_assignments (Postgres) — Atribuição de Motorista
+
+Entidade fraca da entrega: chave composta com a do pai.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| delivery_id | bigint, PK | → `deliveries` |
+| assignment_number | smallint, PK | 1, 2, ... na ordem das atribuições |
+| driver_id | bigint | `ext → Oracle.drivers` |
+| shift_id | bigint | → `shifts`; turno **aberto** do motorista na atribuição (RN-36), da cidade do pedido (RN-35) |
+| assigned_at | timestamp | quando o primeiro atendimento fica pronto, ou depois, se não havia motorista (RN-06) |
+| released_at | timestamp, nulo | nulo = vigente |
+| release_reason | varchar, nulo | `driver_gave_up`, `delivery_cancelled` ou `delivery_finished` |
+| created_at, updated_at | timestamp | |
+
+Único: no máximo uma atribuição vigente por entrega e uma por motorista (índices únicos parciais em `delivery_id` e em
+`driver_id` onde `released_at` é nulo; RN-42).
+
+Restrições checadas pelo simulador e nos testes:
+
+- `driver_gave_up` só antes da primeira retirada do pedido (RN-07) e nunca da 4ª atribuição em diante (RN-07: depois de 3
+  desistências, a atribuição seguinte não se desfaz). A trava sai de `assignment_number`; não é coluna.
+- O turno da atribuição é do mesmo motorista, estava `open` em `assigned_at` e tem `city_id` igual ao do pedido.
+- O repasse ao motorista (L2) vai para o motorista da atribuição liberada com `delivery_finished`.
+- Um motorista não aparece em duas atribuições da mesma entrega se a primeira foi liberada com `driver_gave_up` (RN-42).
+- `delivery_finished` é gravado na finalização (`finished_at`), não na conclusão (RN-42).
+- Turno com atribuição vigente não fecha, salvo `driver_unable` (RN-42).
+
+### Quem escreve (gerador híbrido, ADR 007)
+
+| Tabela | ShadowTraffic | Simulador |
+|---|---|---|
+| `orders` | INSERT (`in_analysis`) | UPDATE de `status` |
+| `restaurant_orders` | INSERT (`in_analysis`) | todo UPDATE: aceite, rejeição (inclusive `analysis_timeout` e `out_of_stock`), preparo, pronto, chegada do motorista, retirada, cancelamentos |
+| `order_items` | INSERT | — |
+| `order_status_transitions`, `restaurant_order_status_transitions` | INSERT da linha 1 | INSERT das demais |
+| `deliveries` | INSERT (`awaiting_assignment`) | UPDATE |
+| `shifts` | — | INSERT e UPDATE (decisão 11) |
+| `driver_assignments` | — | INSERT e UPDATE |
+| `stock_movements` (L1a) | — | INSERT |
+
+Regra simples: nestas tabelas o ShadowTraffic **só faz INSERT**; todo UPDATE é do simulador. O cancelamento do cliente em
+análise (RN-12) também fica com o simulador: ele concorre com o aceite (RN-27), e a fronteira da ADR 007 diz que, depois de
+"em análise", só o simulador escreve no atendimento.
+
+**Risco:** o ShadowTraffic grava pedido, atendimentos, itens e entrega em inserts separados, sem transação comum. O simulador
+não pode aceitar um atendimento cujos itens ainda não chegaram, porque a checagem de estoque sairia errada. O físico define a
+guarda (por exemplo, só processar atendimento que já tenha itens e alguns segundos de idade).
+
+**Verificações nos testes** (o conjunto completo vai para a L4): a consulta da RN-16 sobre `restaurant_orders` confere
+`orders.status` até `out_for_delivery`; `deliveries.status = in_transit` exatamente quando o pedido está `out_for_delivery`;
+toda linha de transição tem `from_status` igual ao `to_status` da linha anterior.
+
+### Conferência das chaves no gerador atual
+
+A L0 #2 pediu para conferir as chaves das demais tabelas. Estado do `uber-eats.json.template` hoje:
+
+| Tabela ou arquivo atual | Chave hoje | No modelo novo |
+|---|---|---|
+| `users` (Postgres) | `sequentialInteger` | `customers.customer_id` (Oracle), mantém |
+| `drivers` (Postgres) | `sequentialInteger` | mantém (vai para o Oracle) |
+| `restaurants` (Oracle) | `sequentialInteger` + coluna `uuid` | mantém; o `uuid` sai (L1a #2) |
+| `orders` (Oracle) | `sequentialInteger` (fork) | mantém (vai para o Postgres) |
+| `payments` (Oracle) | `sequentialInteger` (fork) | L2 |
+| `products` (Oracle) | texto `PRD-########` | **muda** para inteiro sequencial (a L1a já o declara `bigint`) |
+| `order_items` (Oracle) | `uuid` | **muda** para (`restaurant_order_id`, `line_number`) |
+| `inventory` (Oracle) | `uuid` | **sai**; vira `stock_items` (L1a) |
+| `receipts` (Oracle) | `uuid` | L2 (muda para inteiro) |
+| `kafka/shift` (MinIO) | `uuid` | **vira tabela** `shifts` (decisão 13) |
+| `kafka/route` (MinIO) | `uuid` | **vira tabela** `deliveries` (decisão 13) |
+
+Nada disso é editado agora: o gerador muda na regeração.
+
+### Referências externas da L1b
+
+| De | Coluna | Para |
+|---|---|---|
+| `orders` | `customer_id` | `ext → Oracle.customers` |
+| `shifts` | `driver_id` | `ext → Oracle.drivers` |
+| `driver_assignments` | `driver_id` | `ext → Oracle.drivers` |
+
+`orders.city_id` e `shifts.city_id` são **cópias** da cidade do cliente e do motorista (Oracle), feitas no momento da compra
+e da abertura do turno. Com elas, a RN-03, a RN-35 e a RN-36 são checadas dentro do Postgres, sem consulta entre bancos.
+
+### Decisões da revisão da L1b (2026-11-02)
+
+| # | Tema | Decisão |
+|---|---|---|
+| 1 | Nome físico do Atendimento | **`restaurant_orders`** (mais intuitivo que `fulfillments`); L0 #8 e L1a renomeados (`restaurant_order_status_transitions`, `stock_movements.restaurant_order_id`) |
+| 2 | Checkout e tentativa de pagamento | **Ficam na L2**; a L1b só guarda `orders.checkout_id` |
+| 3 | Status inicial | **`in_analysis`** para atendimento e pedido; "Order Placed" some; a criação é a linha 1 das transições |
+| 4 | Instantes de status como colunas | **Só `accepted_at`, `driver_arrived_at` e `picked_up_at`**; os demais só nas transições |
+| 5 | Motivo de cancelamento e rejeição | **Uma coluna `end_reason`**, cujo valor já diz o status e quem agiu |
+| 6 | Chave do item de pedido | **(`restaurant_order_id`, `line_number`)** |
+| 7 | Chave da entrega | **`delivery_id` próprio**, com `order_id` único |
+| 8 | Coordenadas | **L1a reaberta**: `latitude`/`longitude` voltam em `customers` e `restaurants`. A entrega guarda cópia do destino, `distance_km` e `promised_at` congelado |
+| 9 | Cidade copiada | **Sim**, em `orders` (na compra) e `shifts` (na abertura) |
+| 10 | Uma entrega por vez por motorista | **RN-42** (grill de 2026-11-02): uma atribuição vigente por motorista; livre na finalização; quem desiste não volta à mesma entrega; impossibilitado fecha o turno (`shifts.close_reason`); turno não fecha com atribuição vigente; só motorista ativo abre turno |
+| 11 | Turno, entrega e atribuição | **Simulador de operação**; adendo na [ADR 007](../../../docs/adr/007-estoque-por-movimentos-e-gerador-hibrido.md) |
+| 12 | Código de rastreio | **12 caracteres base32 Crockford** do SHA-256 de `order_id` com sal, calculado fora do banco; mesmo formato para o pagamento na L2 |
+| 13 | `kafka/shift` e `kafka/route` no MinIO | **Saem**; `kafka/gps` fica e passa a apontar `delivery_id` (`ext → Postgres.deliveries`) |
