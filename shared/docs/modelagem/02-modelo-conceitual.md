@@ -72,27 +72,32 @@ erDiagram
 
 ```mermaid
 erDiagram
-    TENTATIVA_PAGAMENTO |o--o| PAGAMENTO : "aprovada gera"
+    TENTATIVA_PAGAMENTO ||--o| PAGAMENTO : "aprovada gera"
     PEDIDO ||--|| PAGAMENTO : "e pago por"
     PAGAMENTO ||--|| RECIBO : "comprova"
-    PAGAMENTO ||--|{ ALOCACAO : "e congelado em"
-    ATENDIMENTO ||--o{ ALOCACAO : "recebe parte de"
-    ITEM_PEDIDO ||--o{ ALOCACAO : "recebe parte de"
+
+    PAGAMENTO ||--|{ ALOCACAO : "e dividido em"
+    ATENDIMENTO |o--o{ ALOCACAO : "recebe parte de"
+    ITEM_PEDIDO |o--o| ALOCACAO : "recebe parte de"
 
     PAGAMENTO ||--o{ AJUSTE_FINANCEIRO : "sofre"
     AJUSTE_FINANCEIRO ||--|{ LINHA_AJUSTE : "detalha"
     ALOCACAO ||--o{ LINHA_AJUSTE : "e abatida por"
-    ATENDIMENTO |o--o{ AJUSTE_FINANCEIRO : "origina se cancelado"
-    INCIDENTE |o--o| AJUSTE_FINANCEIRO : "origina se procedente"
+    ATENDIMENTO |o--o| AJUSTE_FINANCEIRO : "origem cancelamento"
+    INCIDENTE |o--o| AJUSTE_FINANCEIRO : "origem incidente procedente"
+    ENTREGA |o--o| AJUSTE_FINANCEIRO : "origem motorista impossibilitado"
 
-    ATENDIMENTO ||--o| REPASSE_RESTAURANTE : "gera ao ser retirado"
-    RESTAURANTE ||--o{ REPASSE_RESTAURANTE : "recebe"
-    PEDIDO ||--o| REPASSE_MOTORISTA : "gera ao ser entregue"
-    MOTORISTA ||--o{ REPASSE_MOTORISTA : "recebe"
+    ATENDIMENTO ||--o| REPASSE_RESTAURANTE : "gera se retirado"
+    RESTAURANTE ||--o{ REPASSE_RESTAURANTE : "recebe um por atendimento"
+    ENTREGA ||--o| REPASSE_MOTORISTA : "gera se concluida ou cliente ausente"
+    MOTORISTA ||--o{ REPASSE_MOTORISTA : "recebe um por entrega"
 
-    PEDIDO ||--o| GORJETA : "pode receber"
-    MOTORISTA ||--o{ GORJETA : "recebe direto"
+    ENTREGA ||--o| GORJETA : "pode gerar"
+    MOTORISTA ||--o{ GORJETA : "recebe"
 ```
+
+Cada ajuste tem **uma única origem** (cancelamento de atendimento, incidente procedente ou entrega não concluída por motorista
+impossibilitado); as três linhas são alternativas, não somam.
 
 ### 2.3 Pós-entrega: incidente e avaliação
 
@@ -102,8 +107,9 @@ erDiagram
     CLIENTE ||--o{ INCIDENTE : "abre"
     INCIDENTE ||--o{ INCIDENTE_ITEM : "aponta"
     ITEM_PEDIDO ||--o{ INCIDENTE_ITEM : "e apontado em"
+    INCIDENTE |o--o| AJUSTE_FINANCEIRO : "se procedente gera"
 
-    PEDIDO ||--o| AVALIACAO_MOTORISTA : "pode ter"
+    ENTREGA ||--o| AVALIACAO_MOTORISTA : "pode ter"
     MOTORISTA ||--o{ AVALIACAO_MOTORISTA : "recebe"
     ATENDIMENTO ||--o| AVALIACAO_RESTAURANTE : "pode ter"
     RESTAURANTE ||--o{ AVALIACAO_RESTAURANTE : "recebe"
@@ -149,11 +155,11 @@ erDiagram
 |---|---|---|---|
 | Pagamento | alterada | RN-08, RN-09, RN-19 | **Um por pedido**, sempre aprovado (recusa vira apenas tentativa). Compõe-se de itens, taxa de entrega e taxa de serviço, com imposto embutido, taxa da plataforma, taxa do meio de pagamento e valor líquido. Deixa de mudar de estado: o que acontece depois é ajuste. |
 | Alocação | **nova** | RN-20, RN-33 | Parcela do pagamento **congelada na compra** por componente (item, taxa de serviço, taxa de entrega) e, quando cabe, por atendimento, com o imposto decomposto por componente. Não é recalculada a cada cancelamento. A taxa de entrega é uma só por pedido, nunca rateada. |
-| Ajuste Financeiro | **nova** | RN-08, RN-10, RN-14, RN-21, RN-30 | Evento posterior ligado ao pagamento (reembolso). Origem: cancelamento de atendimento, incidente procedente ou pedido não entregue por motorista impossibilitado. Registra quem arca (plataforma assume incidente e estorno por motorista impossibilitado). |
-| Linha de Ajuste | **nova** | RN-33 | Quanto de cada alocação o ajuste devolve. É o que garante que o acumulado por item nunca excede o alocado e que a ordem dos cancelamentos não muda o resultado. |
-| Repasse ao Restaurante | **nova** | RN-29 | Valor devido ao restaurante: itens do atendimento menos comissão. Devido **na retirada** e só de atendimento retirado. É obrigação reconhecida, não liquidação. |
-| Repasse ao Motorista | **nova** | RN-29 | Parcela fixa da taxa de entrega, devida quando o pedido é entregue ou termina em cliente ausente; não devida se o motorista fica impossibilitado. |
-| Gorjeta | **nova** | RN-22, RN-26 | Valor livre, no máximo uma por pedido, só de pedido entregue, direto ao motorista. **Fora do pagamento**, não retida, não estornada. Não é oferecida se a nota do motorista for 3 ou menor. |
+| Ajuste Financeiro | **nova** | RN-08, RN-10, RN-14, RN-21, RN-30 | Evento posterior ligado ao pagamento (reembolso); o pagamento em si nunca muda. Um pagamento tem zero ou muitos ajustes. Cada ajuste tem **uma única origem**: cancelamento de atendimento, incidente procedente ou entrega não concluída por motorista impossibilitado. Registra quem arca (plataforma assume incidente e estorno por motorista impossibilitado). |
+| Linha de Ajuste | **nova** | RN-33 | Quanto de cada alocação (fatia do pagamento) o ajuste devolve. É o que garante que o acumulado por item nunca excede o alocado e que a ordem dos cancelamentos não muda o resultado. |
+| Repasse ao Restaurante | **nova** | RN-29 | Valor devido ao restaurante: itens do atendimento menos comissão. Um por atendimento **retirado**; atendimento rejeitado, cancelado ou ainda não retirado não gera repasse. O restaurante recebe muitos ao longo do tempo. É obrigação reconhecida, não liquidação. |
+| Repasse ao Motorista | **nova** | RN-29 | Ligado à **entrega**. Parcela fixa da taxa de entrega, devida só quando a entrega é concluída ou termina em cliente ausente. Não existe se todos os atendimentos forem cancelados nem se o motorista ficar impossibilitado. Vai ao motorista vigente na finalização. |
+| Gorjeta | **nova** | RN-22, RN-26 | Pertence à **entrega**: no máximo uma por entrega, só de entrega concluída, direto ao motorista dela (que recebe muitas ao longo do tempo, uma por entrega). **Fora do pagamento**, não retida, não estornada. Não é oferecida se a nota do motorista for 3 ou menor. |
 | Recibo | mantida | RN-08 | **Documento único da compra** (1:1 com pedido e pagamento). Reembolsos não o alteram: vivem no Ajuste Financeiro. |
 
 ### 3.4 Pós-entrega
@@ -162,7 +168,7 @@ erDiagram
 |---|---|---|---|
 | Incidente | alterada | RN-14, RN-24, RN-30 | Reclamação sobre pedido retirado/entregue, aberta em até 24 h. Tem **desfecho**: aberto, em análise, procedente ou improcedente; só o procedente gera ajuste. Tem **motivo** (item faltando, item errado, qualidade do alimento, atraso, pedido não recebido, motorista impossibilitado), que define se a taxa de entrega volta. Não altera o estado operacional do pedido. |
 | Incidente por Item | **nova** | RN-14 | Item(ns) e quantidade apontados. A soma reembolsada por item, entre todos os incidentes, nunca passa da quantidade comprada. Incidente de entrega (pedido não recebido, atraso) pode não apontar item. |
-| Avaliação do Motorista | **nova** (divide a Avaliação atual) | RN-26 | Uma por **pedido**. Nota 1 a 5 obrigatória se existir, comentário livre opcional, prazo de 20 minutos. |
+| Avaliação do Motorista | **nova** (divide a Avaliação atual) | RN-26 | Uma por **entrega**. Nota 1 a 5 obrigatória se existir, comentário livre opcional, prazo de 20 minutos. |
 | Avaliação do Restaurante | **nova** (divide a Avaliação atual) | RN-26 | Uma por **atendimento retirado** de pedido entregue. Mesma nota, comentário e prazo. |
 
 A `Avaliação` atual (1:1 com pedido, com restaurante deduzido) se divide em duas, porque nota de motorista e nota de
