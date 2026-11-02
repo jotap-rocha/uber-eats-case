@@ -39,6 +39,13 @@ Este documento descreve o negócio, não o banco. Qual tabela mora em qual banco
   pode mais ser desfeita antes da retirada (parâmetro do gerador).
 - **RN-36.** O motorista tem **turnos**, que ele abre e fecha. Só um motorista com **turno aberto** pode receber atribuição
   (RN-06). Os pedidos e o ganho de um turno são **derivados das entregas e dos repasses reais**, nunca valores independentes.
+- **RN-42.** *(2026-11-02, revisão da L1b do modelo lógico)* O motorista leva **uma entrega por vez**: só passa por dois
+  restaurantes quando eles são do mesmo pedido (RN-03); não há agrupamento de entregas na v1. Detalhes:
+  - Fica livre para a próxima entrega na **finalização** (entregue ou cliente ausente), sem esperar a confirmação do cliente (RN-24).
+  - Quem **desiste** (RN-07) continua no turno e pode receber outra entrega, mas **nunca volta** a uma entrega da qual desistiu.
+  - Se a plataforma o registra como **impossibilitado** (RN-30), o **turno fecha** na mesma hora; para voltar, ele abre outro.
+  - O motorista **não fecha o turno** com entrega atribuída; antes da retirada, o caminho é desistir e depois fechar.
+  - Só motorista **ativo** no cadastro abre turno. Uma suspensão no meio do turno não interrompe o turno na v1.
 
 ## Cancelamento
 

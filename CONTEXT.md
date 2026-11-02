@@ -122,6 +122,8 @@ python3 scripts/tooling/validate-agent-router.py
 | Incidente | Reclamacao sobre um pedido apos a retirada (atraso, item errado, item faltando). Tem desfecho: a plataforma o marca como procedente ou improcedente; so o procedente gera cancelamento e devolucao | | Nao e atendimento generico |
 | Gorjeta | Valor livre e opcional pago pelo cliente ao motorista depois da entrega, a parte do pedido. No maximo uma por pedido entregue | | Nao compoe o valor do pedido nem passa por reembolso |
 | Intencao de compra (checkout) | Agrupa as tentativas de pagamento de uma compra; gera no maximo um pedido e um pagamento principal | Checkout | Nao e o pedido |
+| Turno | Periodo em que o motorista esta disponivel para entregas, aberto e fechado por ele (ou fechado pela plataforma quando ele fica impossibilitado). So motorista ativo abre turno; nao se fecha com entrega atribuida | | Nao e escala planejada nem registra ganho proprio (ganho e derivado das entregas) |
+| Atribuicao de motorista | Ligacao de um motorista a uma entrega, com momento de inicio e de liberacao. A vigente e a atual; um motorista tem no maximo uma atribuicao vigente (uma entrega por vez) | Atribuicao | Nao e agrupamento de entregas: duas coletas so acontecem quando o mesmo pedido tem dois restaurantes |
 | Pedido nao entregue | Estado terminal de um pedido que nao chega ao cliente, com motivo (cliente ausente ou motorista impossibilitado) | | Nao e cancelado |
 | Em coleta | Status do pedido quando ao menos um atendimento ja foi retirado e outro ainda nao | | Nao e "a caminho", que so comeca com tudo recolhido |
 | Cancelamento legitimo por atraso | Direito do cliente de cancelar um atendimento aceito cujo preparo passou do estimado mais 50% | | Nao exige arbitragem |
