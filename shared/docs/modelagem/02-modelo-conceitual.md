@@ -2,7 +2,7 @@
 
 Etapa 2 do fluxo de modelagem: regras de negócio → adversarial → **conceitual** → lógico → físico → regeração dos dados.
 
-**Status:** para revisão (decisões das perguntas 1 a 6 incorporadas, 2026-10-30). Parte de [`01-regras-de-negocio.md`](01-regras-de-negocio.md) (RN-01 a RN-37) e do
+**Status:** aprovado (2026-10-31); revisado em 2026-11-02 para o estoque por ficha técnica e movimentos ([ADR 007](../../../docs/adr/007-estoque-por-movimentos-e-gerador-hibrido.md)). Parte de [`01-regras-de-negocio.md`](01-regras-de-negocio.md) (RN-01 a RN-41) e do
 modelo atual em [`../MODELO_CONCEITUAL_UBER_EATS.md`](../MODELO_CONCEITUAL_UBER_EATS.md) (14 entidades).
 
 **Escopo.** Este documento diz **o que existe no negócio** e **como as coisas se relacionam**. Fica de fora, de propósito:
@@ -26,6 +26,8 @@ O modelo atual gira em torno de `Pedido` ligado direto a `Restaurante`, `Pagamen
   aberto** (RN-31, RN-36).
 - Avaliação, incidente e gorjeta viram o **pós-entrega**, cada um com regra própria (RN-14, RN-22, RN-26).
 - **Cidade** vira referência canônica de restaurante, cliente e motorista (RN-03, RN-35).
+- O estoque deixa de ser um número por produto e passa a ser de **itens de estoque** (pronto, pré-pronto ou insumo), ligados
+  ao produto pela **ficha técnica** e alterados por **movimentos** (baixa no preparo, reposição fora das janelas) (RN-37 a RN-41).
 
 Atores (RN-01): cliente, restaurante e motorista são entidades. A **plataforma** é o dono do sistema, não uma entidade
 (não há mais de uma). O **governo** não é ator: imposto é componente do pagamento (RN-09).
@@ -47,7 +49,11 @@ erDiagram
     PERFIL_RESTAURANTE ||--o{ ITEM_CARDAPIO : "organiza"
     PRODUTO ||--o| ITEM_CARDAPIO : "e apresentado como"
     RESTAURANTE ||--o{ PRODUTO : "oferece"
-    PRODUTO ||--|| ESTOQUE : "tem"
+    PERFIL_RESTAURANTE ||--|{ JANELA_FUNCIONAMENTO : "define 1 a 2"
+    RESTAURANTE ||--o{ ITEM_ESTOQUE : "estoca"
+    PRODUTO ||--|{ FICHA_TECNICA : "consome"
+    ITEM_ESTOQUE ||--o{ FICHA_TECNICA : "compoe"
+    ITEM_ESTOQUE ||--o{ MOVIMENTO_ESTOQUE : "registra"
 
     CLIENTE ||--o{ CHECKOUT : "inicia"
     CHECKOUT ||--o{ TENTATIVA_PAGAMENTO : "recebe"
@@ -59,6 +65,7 @@ erDiagram
     ATENDIMENTO ||--|{ ITEM_PEDIDO : "contem"
     PRODUTO ||--o{ ITEM_PEDIDO : "e comprado como"
     ATENDIMENTO ||--|{ TRANSICAO_STATUS_ATENDIMENTO : "registra"
+    ATENDIMENTO |o--o{ MOVIMENTO_ESTOQUE : "baixa no preparo"
     PEDIDO ||--|{ TRANSICAO_STATUS_PEDIDO : "registra"
 
     MOTORISTA ||--o{ TURNO : "cumpre"
@@ -78,7 +85,7 @@ erDiagram
 
     PAGAMENTO ||--|{ COMPONENTE_PAGAMENTO : "e dividido em"
     ATENDIMENTO |o--o{ COMPONENTE_PAGAMENTO : "recebe parte de"
-    ITEM_PEDIDO |o--o| COMPONENTE_PAGAMENTO : "recebe parte de"
+    ITEM_PEDIDO |o--o{ COMPONENTE_PAGAMENTO : "recebe parte de"
 
     PAGAMENTO ||--o{ REEMBOLSO : "sofre"
     REEMBOLSO ||--|{ COMPONENTE_REEMBOLSADO : "detalha"
@@ -128,10 +135,13 @@ erDiagram
 | Cliente | alterada (hoje `Usuário`) | RN-02, RN-35 | Quem compra. Dono de checkouts, pedidos, incidentes e avaliações. O nome muda para casar com o vocabulário das regras. Passa a referenciar `Cidade`. |
 | Restaurante | alterada | RN-03, RN-23 | **Unidade física de retirada.** Passa a referenciar `Cidade`. Deixa de se ligar direto ao pedido: a ligação é pelo atendimento. |
 | Cidade | **nova** | RN-03, RN-35 | Referência geográfica canônica. Permite verificar "mesma cidade" (restaurantes do pedido, endereço do cliente e cidade do motorista) sem comparar texto. |
-| Perfil de Restaurante | alterada | RN-23 | Cardápio e horários. Agora é **obrigatório** (restaurante sem perfil não recebe pedido) e o menu referencia o produto, que carrega nome e preço. |
+| Perfil de Restaurante | alterada | RN-23, RN-41 | Cardápio e janelas de funcionamento. Agora é **obrigatório** (restaurante sem perfil não recebe pedido) e o menu referencia o produto, que carrega nome e preço. |
 | Produto | mantida | RN-04, RN-32 | Item do cardápio de um restaurante. Pode mudar ou ser desativado sem afetar pedidos já aprovados, porque o item guarda cópia (ver `Item de Pedido`). |
 | Item de Cardápio | **nova** | RN-23 | Entidade fraca do Perfil: apresentação de **um** produto do restaurante (seção, ordem, destaque, customizações). Nome e preço continuam no Produto. |
-| Estoque | alterada | RN-37 | **Exatamente um por produto** (quantidade 0 = esgotado); o restaurante vem do produto. **Muda ao longo do tempo** por eventos do restaurante (reposição, ajuste, esgotamento), não a cada venda. Produto sem estoque não entra em novo checkout. |
+| Janela de Funcionamento | **nova** | RN-41 | Entidade fraca do Perfil: período de serviço do dia (início e fim, horário de Brasília). Uma ou duas por restaurante, iguais todos os dias na v1. Fora delas o restaurante não recebe pedido e é quando acontece a reposição. |
+| Item de Estoque | alterada (era `Estoque`) | RN-37, RN-40 | O que o restaurante **estoca**, com unidade (unidade, grama, porção): o próprio produto pronto, um pré-pronto ou um insumo. Pertence a **um** restaurante. O saldo é o resultado dos movimentos. |
+| Ficha Técnica | **nova** | RN-37, RN-38 | Liga produto e item de estoque com a **quantidade consumida** por unidade vendida. Todo produto tem ao menos uma linha; produto pronto tem uma linha apontando para si mesmo como item de estoque. Produto e item são do mesmo restaurante. |
+| Movimento de Estoque | **nova** | RN-38, RN-39, RN-40 | Cada mudança do saldo: **baixa** (quando o atendimento entra em preparo, aponta o atendimento; no máximo uma por atendimento e item) ou **reposição** (só fora das janelas). O saldo nunca fica negativo. |
 | Motorista | alterada | RN-06, RN-07, RN-35 | Quem entrega. Deixa de ser atributo do pedido; a ligação é pela atribuição. O `city` em texto passa a ser referência a `Cidade`. |
 | Turno | alterada | RN-36 | Entidade fraca de Motorista, que o motorista **abre e fecha**. Só motorista com turno aberto recebe atribuição. Pedidos e ganho do turno são **derivados** das entregas e repasses reais. |
 
@@ -142,7 +152,7 @@ erDiagram
 | Checkout | **nova** | RN-15 | **Intenção de compra** de um cliente. Gera **no máximo um** pedido e um pagamento principal, mesmo que a aprovação chegue repetida (idempotência é conceito de negócio aqui). **Sem carrinho na v1**: guarda só a intenção e o valor; itens por tentativa ficam como evolução. |
 | Tentativa de Pagamento | **nova** | RN-15 | Toda tentativa é registrada, aprovada ou recusada: valor, resultado, motivo da recusa, momento. A recusada nunca tem pedido. |
 | Pedido | alterada | RN-02, RN-03, RN-11, RN-16, RN-24, RN-30 | Pertence a um cliente; só existe com pagamento aprovado. Tem 1 ou 2 atendimentos (mesma cidade) e no máximo 1 motorista por vez. **Status derivado** dos atendimentos até "a caminho"; depois, dirigido por eventos do pedido (entregue, concluído, não entregue). Guarda o **motivo** quando termina em não entregue (cliente ausente ou motorista impossibilitado). |
-| Atendimento | **nova** | RN-05, RN-10, RN-12, RN-13, RN-28, RN-34 | Parte do pedido atendida por **um** restaurante (um por restaurante e por pedido). Tem ciclo de vida próprio: em análise, aceito, em preparo, pronto, retirado; terminais cancelado e rejeitado. Guarda tempo estimado de preparo (fixado no aceite), quem e por que cancelou, e os instantes de chegada do motorista e de retirada (base do tempo de espera, RN-17). |
+| Atendimento | **nova** | RN-05, RN-10, RN-12, RN-13, RN-28, RN-34 | Parte do pedido atendida por **um** restaurante (um por restaurante e por pedido). Tem ciclo de vida próprio: em análise, aceito, em preparo, pronto, retirado; terminais cancelado e rejeitado. Guarda tempo estimado de preparo (fixado no aceite), quem e por que cancelou ou rejeitou (inclusive "sem estoque", RN-39), e os instantes de chegada do motorista e de retirada (base do tempo de espera, RN-17). |
 | Item de Pedido | alterada | RN-04, RN-32 | Entidade fraca de Atendimento. Passa a **guardar cópia** do nome do produto e do preço unitário da compra, além do identificador do produto, do restaurante vendedor, da quantidade e do total contratado. |
 | Transição de Status de Atendimento | **nova** | RN-18 | Histórico das mudanças de status do atendimento (de, para, quem, quando). |
 | Transição de Status de Pedido | **nova** | RN-18 | Histórico das mudanças de status do pedido. |
@@ -159,7 +169,7 @@ erDiagram
 | Componente Reembolsado | **nova** | RN-33 | Quanto de cada componente do pagamento (item, taxa de serviço, taxa de entrega) o reembolso devolve. É o que garante que o acumulado por item nunca excede o valor do componente e que a ordem dos cancelamentos não muda o resultado. |
 | Repasse ao Restaurante | **nova** | RN-29 | Valor devido ao restaurante: itens do atendimento menos comissão. Um por atendimento **retirado**; atendimento rejeitado, cancelado ou ainda não retirado não gera repasse. O restaurante recebe muitos ao longo do tempo. É obrigação reconhecida, não liquidação. |
 | Repasse ao Motorista | **nova** | RN-29 | Ligado à **entrega**. Parcela fixa da taxa de entrega, devida só quando a entrega é concluída ou termina em cliente ausente. Não existe se todos os atendimentos forem cancelados nem se o motorista ficar impossibilitado. Vai ao motorista vigente na finalização. |
-| Gorjeta | **nova** | RN-22, RN-26 | Pertence à **entrega**: no máximo uma por entrega, só de entrega concluída, direto ao motorista dela (que recebe muitas ao longo do tempo, uma por entrega). **Fora do pagamento**, não retida, não estornada. Não é oferecida se a nota do motorista for 3 ou menor. |
+| Gorjeta | **nova** | RN-22, RN-26 | Pertence à **entrega**: no máximo uma por entrega, só de entrega finalizada com sucesso (pedido entregue ou concluído), direto ao motorista dela (que recebe muitas ao longo do tempo, uma por entrega). **Fora do pagamento**, não retida, não estornada. Não é oferecida se a nota do motorista for 3 ou menor. |
 | Recibo | mantida | RN-08 | **Documento único da compra** (1:1 com pedido e pagamento). Reembolsos não o alteram: vivem na entidade Reembolso. |
 
 ### 3.4 Pós-entrega
@@ -190,12 +200,14 @@ restaurante têm donos, cardinalidades e prazos de existência diferentes.
 | Cliente / Motorista ↔ Cidade | texto solto no motorista; nada no cliente | Referência canônica a Cidade nos dois | RN-35 |
 | Perfil de Restaurante ↔ Produto | menu solto, sem ligação | Via **Item de Cardápio** (apresentação de um produto do próprio restaurante) | RN-23 |
 | Turno ↔ Atribuição | sem ligação | Atribuição ocorre dentro de um turno aberto | RN-36 |
+| Produto ↔ Estoque | 1:1 (um número por produto) | **N:N via Ficha Técnica** com Item de Estoque; saldo por **movimentos** | RN-37, RN-38 |
+| Atendimento ↔ Estoque | sem ligação | Atendimento gera **baixas** ao entrar em preparo | RN-38 |
 
 ---
 
 ## 5. O que muda em relação ao modelo atual
 
-Modelo atual: 14 entidades. Modelo-alvo: **30**, sendo 17 novas, 11 alteradas e 2 mantidas.
+Modelo atual: 14 entidades. Modelo-alvo: **33**, sendo 20 novas, 11 alteradas e 2 mantidas.
 
 | Entidade atual | Destino |
 |---|---|
@@ -209,12 +221,12 @@ Modelo atual: 14 entidades. Modelo-alvo: **30**, sendo 17 novas, 11 alteradas e 
 | Entrega | alterada (nasce com o pedido; leva as atribuições) |
 | Avaliação | **dividida** em Avaliação do Motorista e do Restaurante |
 | Recibo | mantida |
-| Estoque | alterada (muda por eventos do restaurante) |
+| Estoque | alterada, renomeada para Item de Estoque (pronto, pré-pronto ou insumo; saldo por movimentos) |
 | Turno | alterada (abre e fecha; derivado das entregas reais) |
 | Incidente | alterada (desfecho, motivos novos, itens apontados) |
-| Perfil de Restaurante | alterada (obrigatório; menu referencia produto) |
+| Perfil de Restaurante | alterada (obrigatório; menu referencia produto; janelas de funcionamento) |
 
-**Novas (17):** Cidade, Item de Cardápio, Checkout, Tentativa de Pagamento, Atendimento, Transição de Status de Atendimento, Transição de Status de Pedido,
+**Novas (20):** Cidade, Item de Cardápio, Janela de Funcionamento, Ficha Técnica, Movimento de Estoque, Checkout, Tentativa de Pagamento, Atendimento, Transição de Status de Atendimento, Transição de Status de Pedido,
 Atribuição de Motorista, Componente do Pagamento, Reembolso, Componente Reembolsado, Repasse ao Restaurante, Repasse ao Motorista,
 Gorjeta, Incidente por Item, Avaliação do Motorista e Avaliação do Restaurante. O tempo de espera do motorista
 fica como atributo do Atendimento (decisão 3).
@@ -230,7 +242,8 @@ fica como atributo do Atendimento (decisão 3).
 - A categoria de Incidente **"Payment Issue"** do gerador antigo não tem regra que a sustente (pagamento recusado nem gera
   pedido) e foi **retirada** por decisão do usuário. A categoria **"Other"** também foi retirada (sem efeito financeiro definido).
 - O **Turno** deixa de ser um registro solto, com `num_orders` e ganho sorteados, e passa a ser derivado das entregas reais.
-- O **Estoque** deixa de ser um instantâneo estático (quantidade aleatória, nunca atualizada) e passa a mudar no tempo.
+- O **Estoque** deixa de ser um instantâneo estático (quantidade aleatória, nunca atualizada) e passa a ser de itens de
+  estoque com ficha técnica, alterados por baixa no preparo e reposição fora das janelas (ADR 007).
 
 ---
 
@@ -260,7 +273,9 @@ fica como atributo do Atendimento (decisão 3).
 | RN-32 | Item de Pedido |
 | RN-35 | Cidade, Cliente, Motorista, Restaurante |
 | RN-36 | Turno, Atribuição de Motorista |
-| RN-37 | Estoque, Produto, Checkout |
+| RN-37 | Item de Estoque, Ficha Técnica, Produto, Checkout |
+| RN-38, RN-39 | Movimento de Estoque, Ficha Técnica, Atendimento |
+| RN-40, RN-41 | Movimento de Estoque, Janela de Funcionamento, Perfil de Restaurante |
 
 ---
 
@@ -271,7 +286,8 @@ fica como atributo do Atendimento (decisão 3).
 - Chaves, tipos, centavos e regra de "última parcela absorve a diferença" (RN-33).
 - Restrições de RN-27 (quem registrou primeiro) e de limites de tempo (RN-28).
 - Janelas de 24 h, 20 min e 10 min como parâmetros, não como colunas.
-- Como a mudança de estoque é registrada (atributo atualizado ou movimentos) e como a janela do turno restringe a atribuição.
+- Se o saldo do item de estoque é coluna mantida pelo simulador ou só a soma dos movimentos, e como se calcula o comprometido (RN-39).
+- Como a janela do turno restringe a atribuição.
 - Em qual banco mora cada entidade (ADR 006).
 
 ---
@@ -287,10 +303,20 @@ Respostas do usuário às perguntas do rascunho (2026-10-30):
 | 3 | Espera do motorista: atributo ou evento? | **Atributo do Atendimento** (chegada e retirada) |
 | 4 | Retirar a categoria "pagamento" do Incidente? | **Retiradas**: "Payment Issue" e "Other" |
 | 5 | Recibo reflete reembolsos? | **Não.** Documento único da compra |
-| 6 | Estoque e Turno | **Turno: sim** (RN-36). **Estoque: muda por eventos do restaurante** (RN-37), não por venda |
+| 6 | Estoque e Turno | **Turno: sim** (RN-36). **Estoque:** *revisado em 2026-11-02*, ver abaixo |
 
 Decididos depois, na revisão da PR: a categoria **"Other"** também sai; o motorista **só aceita entrega dentro da sua cidade**
 (RN-35 confirmada). Um **limite por quilometragem** fica fora da v1: exigiria posição do motorista e distância até o
 restaurante, que o modelo não tem.
+
+Revisão de 2026-11-02 (durante o modelo lógico, [ADR 007](../../../docs/adr/007-estoque-por-movimentos-e-gerador-hibrido.md)):
+
+| # | Pergunta | Decisão |
+|---|---|---|
+| 7 | O que se estoca? | **Varia por produto**: pronto, pré-pronto ou insumo, todos como Item de Estoque, com ficha técnica |
+| 8 | Quando o estoque baixa? | Quando o atendimento entra em **em preparo** (RN-38) |
+| 9 | Falta de estoque depois do checkout | Restaurante **rejeita no aceite** com motivo "sem estoque" (RN-39) |
+| 10 | Cancelamento depois do preparo devolve estoque? | **Não** (RN-38) |
+| 11 | Quando repõe? | Só **fora das janelas** de funcionamento, 1 ou 2 por dia, iguais todos os dias (RN-40, RN-41) |
 
 **Pendências:** nenhuma de decisão de negócio nesta etapa.

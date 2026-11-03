@@ -1,6 +1,6 @@
 # Databricks — Teams, ambientes (DSV/PRD) e pipelines sem retry
 
-> **Documentação humana** do template Agent Spec. Fonte canónica para agentes: [`.cursor/kb/teams-notifications/patterns/databricks-ambientes-e-smoke-test.md`](../.cursor/kb/teams-notifications/patterns/databricks-ambientes-e-smoke-test.md).
+> **Documentação humana** do template Agent Spec. Fonte canónica para agentes: [`.cursor/kb/teams-notifications/patterns/databricks-ambientes-e-smoke-test.md`](../../.cursor/kb/teams-notifications/patterns/databricks-ambientes-e-smoke-test.md).
 
 Use este guia ao **criar ou clonar** um projeto Databricks com Asset Bundle que deve alertar o Microsoft Teams em falha e **não** reexecutar o job em loop.
 
@@ -22,13 +22,13 @@ Use este guia ao **criar ou clonar** um projeto Databricks com Asset Bundle que 
 
 | Tema | Caminho |
 |------|---------|
-| Ambientes, smoke, checklist | [`.cursor/kb/teams-notifications/patterns/databricks-ambientes-e-smoke-test.md`](../.cursor/kb/teams-notifications/patterns/databricks-ambientes-e-smoke-test.md) |
-| Sem retry + campos do card | [`.cursor/kb/databricks/patterns/pipeline-failure-teams-no-retry.md`](../.cursor/kb/databricks/patterns/pipeline-failure-teams-no-retry.md) |
-| Falha genérica | [`.cursor/kb/teams-notifications/patterns/falha-de-pipeline.md`](../.cursor/kb/teams-notifications/patterns/falha-de-pipeline.md) |
-| Quick reference | [`.cursor/kb/teams-notifications/quick-reference.md`](../.cursor/kb/teams-notifications/quick-reference.md) |
-| Formato conciso (todos cards) | [`.cursor/kb/data-engineering-practices/teams-card-format.md`](../.cursor/kb/data-engineering-practices/teams-card-format.md) |
-| Agente | `@teams-notifications-expert` — [`.cursor/agents/domain/teams-notifications-expert.md`](../.cursor/agents/domain/teams-notifications-expert.md) |
-| Variáveis `.env` | [`.env.example`](../.env.example) |
+| Ambientes, smoke, checklist | [`.cursor/kb/teams-notifications/patterns/databricks-ambientes-e-smoke-test.md`](../../.cursor/kb/teams-notifications/patterns/databricks-ambientes-e-smoke-test.md) |
+| Sem retry + campos do card | [`.cursor/kb/databricks/patterns/pipeline-failure-teams-no-retry.md`](../../.cursor/kb/databricks/patterns/pipeline-failure-teams-no-retry.md) |
+| Falha genérica | [`.cursor/kb/teams-notifications/patterns/falha-de-pipeline.md`](../../.cursor/kb/teams-notifications/patterns/falha-de-pipeline.md) |
+| Quick reference | [`.cursor/kb/teams-notifications/quick-reference.md`](../../.cursor/kb/teams-notifications/quick-reference.md) |
+| Formato conciso (todos cards) | [`.cursor/kb/data-engineering-practices/teams-card-format.md`](../../.cursor/kb/data-engineering-practices/teams-card-format.md) |
+| Agente | `@teams-notifications-expert` — [`.cursor/agents/domain/teams-notifications-expert.md`](../../.cursor/agents/domain/teams-notifications-expert.md) |
+| Variáveis `.env` | [`.env.example`](../../.env.example) |
 
 ---
 
@@ -48,7 +48,7 @@ Ao iniciar um projeto novo: copiar a **estrutura** (módulo notify + guard + bun
 
 ## Mensagem de erro — o que o analista deve ver
 
-**Formato Tier B** (resumo + detalhe): ver [teams-card-format.md](../.cursor/kb/data-engineering-practices/teams-card-format.md).
+**Formato Tier B** (resumo + detalhe): ver [teams-card-format.md](../../.cursor/kb/data-engineering-practices/teams-card-format.md).
 
 1. **Resumo:** camada/processo, tabela, ambiente, erro (1 linha), onde corrigir  
 2. **Detalhe (após `---`):** stack `varonis_pipeline`, traceback, run tags Databricks quando disponíveis  

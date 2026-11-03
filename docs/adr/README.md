@@ -15,3 +15,5 @@ revista não é editada — ganha uma ADR nova que a substitui.
 | [004](004-kernel-evidence-gate.md) | Kernel evidence-gate (collect/check + foundation) | Aceita | 2026-08-13 |
 | [005](005-kernel-fluxo-events.md) | Kernel fluxo-events (telemetria live SDD) | Aceita | 2026-08-13 |
 | [006](006-inversao-de-dominios-entre-oracle-e-postgres.md) | Inversão de domínios entre Oracle e Postgres (pedido e catálogo no Postgres) | Aceita | 2026-10-18 |
+| [007](007-estoque-por-movimentos-e-gerador-hibrido.md) | Estoque por ficha técnica e movimentos, com gerador híbrido | Aceita | 2026-11-02 |
+| [008](008-historico-de-status-em-tabelas-de-transicao.md) | Histórico de status em tabelas de transição, não só em CDC | Aceita | 2026-11-02 |

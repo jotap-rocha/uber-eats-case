@@ -1,3 +1,8 @@
+> ⚠️ **Desenho anterior à ADR 006.** Este documento descreve a distribuição antiga (usuários e motoristas no Postgres; pedido,
+> pagamento e catálogo no Oracle). A distribuição vigente é a inversa: **pedido e catálogo no Postgres, pessoas no Oracle**
+> ([ADR 006](../../../docs/adr/006-inversao-de-dominios-entre-oracle-e-postgres.md)), com os dois bancos regenerados do zero.
+> Será reescrito depois do modelo físico e da regeração dos dados.
+
 # Airbyte - Ingestao de Dados
 
 Ferramenta para ingerir dados: PostgreSQL + MinIO → Databricks.

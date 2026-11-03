@@ -1,3 +1,6 @@
+> 📜 **Histórico.** Insumo da revisão adversarial das regras de negócio (concluída em 2026-10-19). As decisões vigentes estão em
+> [`01-regras-de-negocio.md`](01-regras-de-negocio.md); este arquivo não é atualizado.
+
 Aqui está a segunda rodada da revisão adversarial. Focarei estritamente nas novas mecânicas de tempo, derivação, atribuição e matemática, ignorando o que já foi corrigido, a menos que a nova correção tenha gerado um buraco pior.
 
 1. As 10 Falhas, Lacunas ou Riscos Mais Graves

@@ -1,3 +1,8 @@
+> ⚠️ **Substituído em 2026-11-02.** Este é o modelo antigo (13 entidades, pedido com um só restaurante). O modelo vigente é o de
+> [`modelagem/02-modelo-conceitual.md`](modelagem/02-modelo-conceitual.md) (33 entidades, atendimento por restaurante), com as
+> regras em [`modelagem/01-regras-de-negocio.md`](modelagem/01-regras-de-negocio.md) e as tabelas em
+> [`modelagem/03-modelo-logico.md`](modelagem/03-modelo-logico.md). Mantido como histórico e para os bugs do gerador atual.
+
 # Modelo Conceitual do Domínio — Uber Eats
 
 > Fonte: ciclo SDD arquivado em `.claude/sdd/archive/MODELO_CONCEITUAL_UBER_EATS/` (modelagem inicial), `.claude/sdd/features/*_INTEGRIDADE_REFERENCIAL_SHADOW_TRAFFIC.md` (correção estrutural, Onda 1), `.claude/sdd/features/*_UNIFICACAO_IDENTIDADE_POSTGRES_MINIO.md` (unificação de identidade, Onda 2) e `.claude/sdd/features/*_DIVERSIFICACAO_FONTES_UBEREATS.md` (diversificação de fontes + mutação real, Onda 3).

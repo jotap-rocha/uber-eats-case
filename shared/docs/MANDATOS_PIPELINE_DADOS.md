@@ -2,7 +2,7 @@
 
 Checklist obrigatório ao **criar ou evoluir** um repositório de pipeline Databricks ou Spark local.
 
-**Fonte machine-readable:** [`.cursor/sdd/architecture/PIPELINE_MANDATORY_PRACTICES.yaml`](../.cursor/sdd/architecture/PIPELINE_MANDATORY_PRACTICES.yaml)
+**Fonte machine-readable:** [`.cursor/sdd/architecture/PIPELINE_MANDATORY_PRACTICES.yaml`](../../.cursor/sdd/architecture/PIPELINE_MANDATORY_PRACTICES.yaml)
 
 **Referência de implementação:** repositório `databricks-varonis-dataflow-prd` (Varonis).
 

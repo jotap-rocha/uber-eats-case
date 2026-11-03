@@ -39,6 +39,13 @@ Este documento descreve o negócio, não o banco. Qual tabela mora em qual banco
   pode mais ser desfeita antes da retirada (parâmetro do gerador).
 - **RN-36.** O motorista tem **turnos**, que ele abre e fecha. Só um motorista com **turno aberto** pode receber atribuição
   (RN-06). Os pedidos e o ganho de um turno são **derivados das entregas e dos repasses reais**, nunca valores independentes.
+- **RN-42.** *(2026-11-02, revisão da L1b do modelo lógico)* O motorista leva **uma entrega por vez**: só passa por dois
+  restaurantes quando eles são do mesmo pedido (RN-03); não há agrupamento de entregas na v1. Detalhes:
+  - Fica livre para a próxima entrega na **finalização** (entregue ou cliente ausente), sem esperar a confirmação do cliente (RN-24).
+  - Quem **desiste** (RN-07) continua no turno e pode receber outra entrega, mas **nunca volta** a uma entrega da qual desistiu.
+  - Se a plataforma o registra como **impossibilitado** (RN-30), o **turno fecha** na mesma hora; para voltar, ele abre outro.
+  - O motorista **não fecha o turno** com entrega atribuída; antes da retirada, o caminho é desistir e depois fechar.
+  - Só motorista **ativo** no cadastro abre turno. Uma suspensão no meio do turno não interrompe o turno na v1.
 
 ## Cancelamento
 
@@ -154,11 +161,26 @@ Os valores abaixo são **parâmetros do gerador** (ajustáveis sem mudar as regr
 
 ## Restaurante e cardápio
 
-- **RN-23.** **Todo restaurante tem perfil** (cardápio e horários); restaurante sem perfil não recebe pedido. O **menu é só
+- **RN-23.** **Todo restaurante tem perfil** (cardápio e janelas de funcionamento, RN-41); restaurante sem perfil não recebe pedido. O **menu é só
   apresentação** dos produtos do restaurante e **referencia o produto** (`product_id`), que carrega nome e preço.
-- **RN-37.** O **estoque** de um produto em um restaurante muda ao longo do tempo por **eventos do restaurante** (reposição,
-  ajuste, esgotamento), e não a cada venda. Produto **sem estoque** não pode entrar em um novo checkout; um pedido já aprovado
-  não é afetado.
+- **RN-37.** *(revisada em 2026-11-02, [ADR 007](../../../docs/adr/007-estoque-por-movimentos-e-gerador-hibrido.md))* O estoque é de **itens de estoque** do
+  restaurante. O que se estoca **varia por produto**: o próprio produto pronto (ex.: refrigerante em lata), um pré-pronto
+  (ex.: feijão cozido, em porções) ou insumos (ex.: frango, arroz, batata). **Todo produto tem ficha técnica**: uma ou mais
+  linhas de item de estoque × quantidade. O produto só pode ser vendido se **cada item da ficha** tiver saldo disponível
+  (RN-39) para a quantidade da ficha × a quantidade pedida; produto sem estoque **não entra em um novo checkout**.
+- **RN-38.** A **baixa** do estoque acontece quando o atendimento entra em **"em preparo"**: para cada item do atendimento, abate
+  ficha técnica × quantidade, e cada baixa aponta o atendimento que a causou (no máximo uma baixa por atendimento e item de
+  estoque). Atendimento cancelado ou rejeitado **antes** do preparo não gera baixa; cancelado **depois** do preparo **não
+  devolve** o estoque (a comida já foi produzida).
+- **RN-39.** No **aceite**, o restaurante verifica o estoque de novo, porque outro pedido pode tê-lo consumido desde o checkout.
+  Se faltar, **rejeita** o atendimento com o motivo **"sem estoque"**, com os efeitos de toda rejeição (reembolso, RN-10, e RN-34).
+  O saldo **disponível** é o saldo menos o que está **comprometido** por atendimentos já aceitos e ainda não em preparo; assim
+  o saldo **nunca fica negativo**.
+- **RN-40.** A **reposição** acontece só **fora das janelas de funcionamento**: antes da primeira janela do dia e no intervalo
+  entre janelas, nunca durante o serviço. Na v1 o estoque muda só por **baixa** (RN-38) e **reposição**; ajuste e descarte
+  ficam fora.
+- **RN-41.** Cada restaurante tem **uma ou duas janelas de funcionamento** por dia (ex.: 11h–15h e 18h–23h, horário de
+  Brasília), iguais em todos os dias na v1. Fora das janelas o restaurante **não recebe pedido**.
 
 ## Valor do pedido e reembolso
 
@@ -173,7 +195,7 @@ Os valores abaixo são **parâmetros do gerador** (ajustáveis sem mudar as regr
   atendimento a entregar. Se **todos** os atendimentos forem cancelados, o reembolso é **total**, incluindo a taxa de entrega.
 - **RN-22.** Existe **gorjeta**, opcional, em **valor livre**, paga **no final** (depois da entrega) e **direto ao motorista**.
   É um valor **à parte do pedido**: não entra no pagamento do pedido (RN-08), não passa por reembolso de itens e a plataforma
-  não retém parte dela. Há **no máximo uma gorjeta por entrega** (1:1 com o pedido), e **só para entregas concluídas**, destinada ao motorista dela, e não é oferecida se a nota do motorista for 3 ou menor (RN-26). O valor tem **mínimo positivo e máximo**, definidos como parâmetros. A gorjeta é um registro de
+  não retém parte dela. Há **no máximo uma gorjeta por entrega** (1:1 com o pedido), e **só para entregas finalizadas com sucesso** (pedido entregue ou concluído; a janela de 20 minutos da RN-26 pode terminar depois da confirmação automática de 10 minutos, RN-24), destinada ao motorista dela, e não é oferecida se a nota do motorista for 3 ou menor (RN-26). O valor tem **mínimo positivo e máximo**, definidos como parâmetros. A gorjeta é um registro de
   valor já liquidado: não se modela recusa nem cancelamento dela, e ela **não é estornada**, nem em incidente procedente.
 
 ## Distribuição do dinheiro
@@ -216,7 +238,7 @@ Atendimento, transições permitidas (qualquer outra é inválida; o terminal n�
 | De | Para | Quem |
 |---|---|---|
 | em análise | aceito | restaurante |
-| em análise | rejeitado | restaurante, ou automático após 5 minutos (RN-28) |
+| em análise | rejeitado | restaurante (inclusive por falta de estoque, RN-39), ou automático após 5 minutos (RN-28) |
 | em análise | cancelado | cliente (RN-12) |
 | aceito | em preparo | restaurante |
 | aceito, em preparo | cancelado | restaurante (RN-13), cliente por atraso (RN-12, RN-28), ou cliente quando o outro atendimento foi cancelado ou rejeitado pelo restaurante (RN-34) |

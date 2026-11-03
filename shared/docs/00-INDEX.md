@@ -6,42 +6,42 @@ Este arquivo faz parte do triangulo de contexto: `CONTEXT.md` + `.cursorrules` +
 
 | Recurso | Descricao |
 |---------|-----------|
-| [`../README.md`](../README.md) | Visao geral e setup |
-| [`../CONTEXT.md`](../CONTEXT.md) | Contexto rapido |
-| [`../get_started/START_HERE.md`](../get_started/START_HERE.md) | Onboarding agentic |
-| [`../get_started/DEV_LOOP_Guia_Comandos.md`](../get_started/DEV_LOOP_Guia_Comandos.md) | Guia passo a passo Dev Loop (L2) |
-| [`../.cursor/commands/workflow-dev-loop/`](../.cursor/commands/workflow-dev-loop/) | Workflow `/workflow-dev-loop` e comandos `devloop-*` |
-| [`../get_started/SDD_Guia_Comandos.md`](../get_started/SDD_Guia_Comandos.md) | Guia de comandos SDD (L3) |
-| [`../get_started/HOW_TO_USE_AGENTS.md`](../get_started/HOW_TO_USE_AGENTS.md) | Como usar agentes |
-| [`../.cursor/kb/teams-notifications/index.md`](../.cursor/kb/teams-notifications/index.md) | Alertas Microsoft Teams (pymsteams, webhooks Sentinel/Trilha) |
+| [`../README.md`](../../README.md) | Visao geral e setup |
+| [`../CONTEXT.md`](../../CONTEXT.md) | Contexto rapido |
+| [`../get_started/START_HERE.md`](../../get_started/START_HERE.md) | Onboarding agentic |
+| [`../get_started/DEV_LOOP_Guia_Comandos.md`](../../get_started/DEV_LOOP_Guia_Comandos.md) | Guia passo a passo Dev Loop (L2) |
+| [`../.cursor/commands/workflow-dev-loop/`](../../.cursor/commands/workflow-dev-loop/) | Workflow `/workflow-dev-loop` e comandos `devloop-*` |
+| [`../get_started/SDD_Guia_Comandos.md`](../../get_started/SDD_Guia_Comandos.md) | Guia de comandos SDD (L3) |
+| [`../get_started/HOW_TO_USE_AGENTS.md`](../../get_started/HOW_TO_USE_AGENTS.md) | Como usar agentes |
+| [`../.cursor/kb/teams-notifications/index.md`](../../.cursor/kb/teams-notifications/index.md) | Alertas Microsoft Teams (pymsteams, webhooks Sentinel/Trilha) |
 | [`DATABRICKS_TEAMS_PIPELINES.md`](DATABRICKS_TEAMS_PIPELINES.md) | **Macro** — Databricks: Teams, DSV/PRD, smoke test, job sem retry |
 | [`MANDATOS_PIPELINE_DADOS.md`](MANDATOS_PIPELINE_DADOS.md) | **Mandatos obrigatórios** — contrato, quarentena, drift, Teams, sentinela |
 | [`data-contract-TEMPLATE.md`](data-contract-TEMPLATE.md) | Template contrato de dados versionado |
-| [`../.cursor/kb/teams-notifications/patterns/databricks-ambientes-e-smoke-test.md`](../.cursor/kb/teams-notifications/patterns/databricks-ambientes-e-smoke-test.md) | KB agentes (mesmo conteúdo macro) |
-| [`../.env.example`](../.env.example) | Modelo de variaveis `URL_WEBHOOK_*` (copiar para `.env`) |
-| [`../.cursor/agents/domain/teams-notifications-expert.md`](../.cursor/agents/domain/teams-notifications-expert.md) | Agente especialista em alertas Teams em pipelines |
+| [`../.cursor/kb/teams-notifications/patterns/databricks-ambientes-e-smoke-test.md`](../../.cursor/kb/teams-notifications/patterns/databricks-ambientes-e-smoke-test.md) | KB agentes (mesmo conteúdo macro) |
+| [`../.env.example`](../../.env.example) | Modelo de variaveis `URL_WEBHOOK_*` (copiar para `.env`) |
+| [`../.cursor/agents/domain/teams-notifications-expert.md`](../../.cursor/agents/domain/teams-notifications-expert.md) | Agente especialista em alertas Teams em pipelines |
 
 ## Recursos Cursor / SDD
 
 | Recurso | Descricao |
 |---------|-----------|
-| [`../.cursor/CURSOR.MD`](../.cursor/CURSOR.MD) | Contexto canonico |
-| [`../.cursor/agents/domain/uber-eats-case-expert.md`](../.cursor/agents/domain/uber-eats-case-expert.md) | Agente especialista |
-| [`../.cursor/commands/core/router.md`](../.cursor/commands/core/router.md) | Router de agentes |
-| [`../.cursor/sdd/architecture/AGENT_ROUTER.yaml`](../.cursor/sdd/architecture/AGENT_ROUTER.yaml) | Router estruturado |
-| [`../.cursor/sdd/architecture/PIPELINE_MANDATORY_PRACTICES.yaml`](../.cursor/sdd/architecture/PIPELINE_MANDATORY_PRACTICES.yaml) | Mandatos pipeline Databricks/Spark |
-| [`../.cursor/kb/data-engineering-practices/index.md`](../.cursor/kb/data-engineering-practices/index.md) | KB patterns operacionais |
+| [`../.cursor/CURSOR.MD`](../../.cursor/CURSOR.MD) | Contexto canonico |
+| [`../.cursor/agents/domain/uber-eats-case-expert.md`](../../.cursor/agents/domain/uber-eats-case-expert.md) | Agente especialista |
+| [`../.cursor/commands/core/router.md`](../../.cursor/commands/core/router.md) | Router de agentes |
+| [`../.cursor/sdd/architecture/AGENT_ROUTER.yaml`](../../.cursor/sdd/architecture/AGENT_ROUTER.yaml) | Router estruturado |
+| [`../.cursor/sdd/architecture/PIPELINE_MANDATORY_PRACTICES.yaml`](../../.cursor/sdd/architecture/PIPELINE_MANDATORY_PRACTICES.yaml) | Mandatos pipeline Databricks/Spark |
+| [`../.cursor/kb/data-engineering-practices/index.md`](../../.cursor/kb/data-engineering-practices/index.md) | KB patterns operacionais |
 
 ## Instalacao greenfield (Agent Spec)
 
 | Recurso | Descricao |
 |---------|-----------|
-| [`../agentspec/INSTALL_AGENTSPEC.md`](../agentspec/INSTALL_AGENTSPEC.md) | Instalar SDD + Dev Loop + agentes/KB em projeto vazio |
-| [`../agentspec/install_agentspec.py`](../agentspec/install_agentspec.py) | Script CLI de instalacao |
-| [`../get_started/AGENTIC_UPGRADE_Guia.md`](../get_started/AGENTIC_UPGRADE_Guia.md) | **Atualizar** projeto ja agentic (audit → apply → validate + `/intake`) |
-| [`../agentspec/INSTALL_UPGRADE.md`](../agentspec/INSTALL_UPGRADE.md) | Referencia tecnica do upgrade (flags, politica de merge) |
-| [`../agentspec/upgrade_agentic.py`](../agentspec/upgrade_agentic.py) | Script CLI de upgrade com relatorio em `.agentic-upgrade/` |
-| [`../install_dev_loop/INSTALL_DEV_LOOP.md`](../install_dev_loop/INSTALL_DEV_LOOP.md) | Apenas workflow Dev Loop em projeto que ja tem `.cursor/` |
+| [`../agentspec/INSTALL_AGENTSPEC.md`](../../agentspec/INSTALL_AGENTSPEC.md) | Instalar SDD + Dev Loop + agentes/KB em projeto vazio |
+| [`../agentspec/install_agentspec.py`](../../agentspec/install_agentspec.py) | Script CLI de instalacao |
+| [`../get_started/AGENTIC_UPGRADE_Guia.md`](../../get_started/AGENTIC_UPGRADE_Guia.md) | **Atualizar** projeto ja agentic (audit → apply → validate + `/intake`) |
+| [`../agentspec/INSTALL_UPGRADE.md`](../../agentspec/INSTALL_UPGRADE.md) | Referencia tecnica do upgrade (flags, politica de merge) |
+| [`../agentspec/upgrade_agentic.py`](../../agentspec/upgrade_agentic.py) | Script CLI de upgrade com relatorio em `.agentic-upgrade/` |
+| [`../install_dev_loop/INSTALL_DEV_LOOP.md`](../../install_dev_loop/INSTALL_DEV_LOOP.md) | Apenas workflow Dev Loop em projeto que ja tem `.cursor/` |
 
 ## Guias do projeto
 
@@ -50,4 +50,7 @@ Este arquivo faz parte do triangulo de contexto: `CONTEXT.md` + `.cursorrules` +
 | `inventario-ambiente.md.example` | Template de inventario local | Copiar para `docs/inventario-ambiente.md` quando necessario |
 | [`GUIA_SKILLS_KB_SDD_DEVLOOP.md`](GUIA_SKILLS_KB_SDD_DEVLOOP.md) | Convenção Skill vs KB, estudo de caso e integração ao SDD/Dev Loop; portabilidade Claude Code/Cursor/Copilot | Criar Skill nova, ou entender como Skill/KB se ligam ao SDD e ao Dev Loop |
 | [`MODELO_CONCEITUAL_UBER_EATS.md`](MODELO_CONCEITUAL_UBER_EATS.md) | Modelo conceitual do domínio (13 entidades, relacionamentos, chave canônica, bugs e gaps do Shadow Traffic) — Fase 0 do roadmap multi-cloud | Reaproveitar o modelo nas 9 combinações arquitetura×cloud (`docs/ROADMAP_ARQUITETURA_MULTICLOUD.md`), ou corrigir integridade referencial do gerador |
+| [`modelagem/01-regras-de-negocio.md`](modelagem/01-regras-de-negocio.md) | Regras de negocio RN-01 a RN-42 do dominio de delivery | Entender ou mudar uma regra (mudanca passa por `/grill-with-docs`) |
+| [`modelagem/02-modelo-conceitual.md`](modelagem/02-modelo-conceitual.md) | Modelo conceitual novo (33 entidades, 3 diagramas), que substitui o de 13 entidades | Ver o que existe no negocio e como se relaciona |
+| [`modelagem/03-modelo-logico.md`](modelagem/03-modelo-logico.md) | Modelo logico L0 a L4: tabelas por banco, restricoes, parametros e decisoes de revisao | Partir para o modelo fisico e a regeracao dos dados (ADRs 006 a 008 em `docs/adr/`) |
 | [`ROADMAP_ARQUITETURA_MULTICLOUD.md`](ROADMAP_ARQUITETURA_MULTICLOUD.md) | Roadmap completo: Warehouse/Lakehouse/Kappa × Azure/AWS/GCP, fases, estimativas e lacunas de conhecimento | Entender o plano geral do projeto, ou decidir o que vem depois da Fase 0 |

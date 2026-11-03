@@ -1,3 +1,6 @@
+> 📜 **Histórico.** Insumo da revisão adversarial das regras de negócio (concluída em 2026-10-19). As decisões vigentes estão em
+> [`01-regras-de-negocio.md`](01-regras-de-negocio.md); este arquivo não é atualizado.
+
 Revisão adversarial — uber-eats-case (2ª rodada)
 Veredito: houve correções importantes, mas eu ainda não congelaria as regras para iniciar a modelagem lógica. A tabela de derivação pré-entrega melhorou bastante; os problemas mais graves agora estão nas fronteiras entre operação, tempo e dinheiro.
 Há uma distinção importante: a máquina de estados dos atendimentos e a tabela de combinações do pedido são praticamente completas para o limite de dois restaurantes. Isso não significa que o ciclo de vida inteiro do pedido esteja fechado.

@@ -1,3 +1,6 @@
+> 📜 **Histórico.** Insumo da revisão adversarial das regras de negócio (concluída em 2026-10-19). As decisões vigentes estão em
+> [`01-regras-de-negocio.md`](01-regras-de-negocio.md); este arquivo não é atualizado.
+
 Revisão adversarial — uber-eats-case
 Veredito: não congelaria essas regras para iniciar a modelagem conceitual. Existem problemas na máquina de estados, na semântica dos reembolsos e na relação entre atendimento, pedido e motorista. São decisões estruturais: se forem incorporadas incorretamente ao modelo físico, o pipeline analítico herdará as inconsistências.
 A revisão considera os dois documentos anexados e o contexto declarado de dados sintéticos, três bancos de origem e arquitetura Bronze → Silver → Gold. Não estou presumindo informações que não aparecem neles.

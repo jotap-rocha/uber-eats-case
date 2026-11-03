@@ -14,14 +14,14 @@ Veja também o índice completo em [`get_started/README.md`](get_started/README.
 
 ## Arquitetura (alto nível)
 
-- Fontes: PostgreSQL (OLTP) e MinIO (Data Lake).
-- Ingestão: Airbyte para extrair e carregar os dados.
+- Fontes (Docker local, Fase 0): PostgreSQL (pedido e catálogo), Oracle Free (pessoas), MongoDB (perfil de restaurante) e MinIO (Data Lake), com dados sintéticos do ShadowTraffic e de um simulador de operação ([ADR 006](docs/adr/006-inversao-de-dominios-entre-oracle-e-postgres.md) e [ADR 007](docs/adr/007-estoque-por-movimentos-e-gerador-hibrido.md)).
+- Ingestão: Debezium + Kafka Connect (CDC de Postgres e Oracle) e Airbyte (MongoDB e MinIO).
 - Processamento: Databricks Lakehouse como plataforma central.
 - Transformação: Arquitetura Medalhão (Bronze → Silver → Gold).
 - Governança: Unity Catalog (qualidade, linhagem e segurança).
 - Consumo: Power BI e Databricks AI/BI Genie.
 
-Modelo conceitual do domínio (entidades, relacionamentos e chave canônica): [`docs/MODELO_CONCEITUAL_UBER_EATS.md`](docs/MODELO_CONCEITUAL_UBER_EATS.md).
+Modelagem do domínio (regras de negócio, modelo conceitual e modelo lógico): [`shared/docs/modelagem/`](shared/docs/modelagem/). O modelo antigo de 13 entidades ([`MODELO_CONCEITUAL_UBER_EATS.md`](shared/docs/MODELO_CONCEITUAL_UBER_EATS.md)) está substituído e mantido como histórico.
 
 ---
 
@@ -44,7 +44,7 @@ Instale e configure **antes** de rodar o projeto:
 |------------|----------------|
 | **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** | Orquestra os containers do projeto. Deve estar **instalado e em execução** antes de qualquer script. |
 | **Imagens Postgres + MinIO** | Não é preciso instalar Postgres ou MinIO no Windows. O `docker-compose.yml` baixa e sobe automaticamente `postgres:15` e `minio/minio` na primeira execução de `.\scripts\start-all.ps1`. |
-| **[DBeaver](https://dbeaver.io/download/)** | Cliente gráfico para consultar o PostgreSQL local — equivalente ao SSMS no ecossistema SQL Server. Veja [docs/postgres/README.md](docs/postgres/README.md). |
+| **[DBeaver](https://dbeaver.io/download/)** | Cliente gráfico para consultar o PostgreSQL local — equivalente ao SSMS no ecossistema SQL Server. Veja [docs/postgres/README.md](shared/docs/postgres/README.md). |
 | **PowerShell** 5.1+ ou 7+ (`pwsh`) | Executa os scripts de automação em `scripts/`. |
 | **Licença ShadowTraffic** | [Free Trial](https://shadowtraffic.io) para gerar dados sintéticos. |
 | **Workspace Databricks** | Opcional nesta fase; necessário para Lakeflow/DLT (camadas Bronze → Gold). |
@@ -109,14 +109,14 @@ powershell -ExecutionPolicy Bypass -File .\gen\setup-configs.ps1
 
 Após configurar as credenciais, consulte a **documentação completa** em `docs/` para provisionar cada componente:
 
-📚 **[Acesse a documentação completa aqui: docs/README.md](docs/README.md)**
+📚 **[Acesse a documentação completa aqui: docs/README.md](shared/docs/README.md)**
 
 **Ordem recomendada**:
-1. [docs/automacao/README.md](docs/automacao/README.md) - Scripts de automação e Docker Compose
-2. [docs/postgres/README.md](docs/postgres/README.md) - PostgreSQL (banco OLTP)
-3. [docs/minio/README.md](docs/minio/README.md) - MinIO (Data Lake)
+1. [docs/automacao/README.md](shared/docs/automacao/README.md) - Scripts de automação e Docker Compose
+2. [docs/postgres/README.md](shared/docs/postgres/README.md) - PostgreSQL (banco OLTP)
+3. [docs/minio/README.md](shared/docs/minio/README.md) - MinIO (Data Lake)
 4. [shared/docs/shadowtraffic/README.md](shared/docs/shadowtraffic/README.md) - ShadowTraffic (gerador de dados)
-5. [docs/airbyte/README.md](docs/airbyte/README.md) - Airbyte (ingestão de dados)
+5. [docs/airbyte/README.md](shared/docs/airbyte/README.md) - Airbyte (ingestão de dados)
 
 **Inicio rápido**:
 ```powershell

@@ -1,3 +1,6 @@
+> 📜 **Histórico.** Insumo da revisão adversarial das regras de negócio (concluída em 2026-10-19). As decisões vigentes estão em
+> [`01-regras-de-negocio.md`](01-regras-de-negocio.md); este arquivo não é atualizado.
+
 # Pedido de revisão adversarial — regras de negócio do "uber-eats-case"
 
 Você é um revisor sênior cético (modelagem de dados, plataformas de marketplace/delivery de comida, sistemas financeiros e engenharia de dados). Abaixo estão as **regras de negócio** de uma plataforma de delivery com pedidos de vários restaurantes, e o contexto de uso. Ainda NÃO existe modelo conceitual, lógico nem físico para estas regras: elas serão a base de todos. Seu trabalho é **contestar as regras**, não elogiá-las.

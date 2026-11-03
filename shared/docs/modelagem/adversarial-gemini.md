@@ -1,3 +1,6 @@
+> 📜 **Histórico.** Insumo da revisão adversarial das regras de negócio (concluída em 2026-10-19). As decisões vigentes estão em
+> [`01-regras-de-negocio.md`](01-regras-de-negocio.md); este arquivo não é atualizado.
+
 Aqui está a revisão adversarial das regras de negócio, focada em expor falhas lógicas, estados impossíveis e riscos financeiros no modelo.
 
 1. As 10 Falhas, Lacunas ou Riscos Mais Graves
