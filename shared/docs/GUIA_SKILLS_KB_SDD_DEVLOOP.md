@@ -5,8 +5,8 @@
 > ligado ao **SDD** e ao **Dev Loop**. Escrito para ser lido de forma autocontida, sem precisar da
 > conversa original que gerou este trabalho.
 
-**Fonte machine-readable da convenção:** [`.claude/rules/skill-first.md`](../.claude/rules/skill-first.md)
-**Registro de Skills próprias do projeto:** [`.claude/sdd/architecture/AGENT_ROUTER.yaml`](../.claude/sdd/architecture/AGENT_ROUTER.yaml) (`skill_reference`)
+**Fonte machine-readable da convenção:** [`.claude/rules/skill-first.md`](../../.claude/rules/skill-first.md)
+**Registro de Skills próprias do projeto:** [`.claude/sdd/architecture/AGENT_ROUTER.yaml`](../../.claude/sdd/architecture/AGENT_ROUTER.yaml) (`skill_reference`)
 
 ---
 
@@ -29,7 +29,7 @@ conversa onde isso foi decidido.
 
 ### 2.1 Critério de decisão
 
-A regra vive em [`.claude/rules/skill-first.md`](../.claude/rules/skill-first.md) e resume-se a uma
+A regra vive em [`.claude/rules/skill-first.md`](../../.claude/rules/skill-first.md) e resume-se a uma
 pergunta:
 
 | Pergunta | Se SIM → | Local |
@@ -78,7 +78,7 @@ apontando para `.claude/kb/<dominio>/index.md`. Por isso a KB **precisa** ser mi
 ### 4.1 O que ela cobre
 
 Primeira Skill própria do projeto:
-[`.claude/skills/git-boas-praticas-versionamento/SKILL.md`](../.claude/skills/git-boas-praticas-versionamento/SKILL.md)
+[`.claude/skills/git-boas-praticas-versionamento/SKILL.md`](../../.claude/skills/git-boas-praticas-versionamento/SKILL.md)
 
 Nasceu de um pedido simples — "quero uma skill de git para boas práticas de versionamento, usada no
 SDD e no Dev Loop" — e, depois de alinhar escopo com o usuário, cobre:
@@ -128,7 +128,7 @@ direto de "executar tarefas" para "gerar relatório", e o ship arquivava sem che
 
 ### 5.1 `build-agent` — passo 4.1 "Commit Progress"
 
-Arquivo: [`.claude/agents/workflow/build-agent.md`](../.claude/agents/workflow/build-agent.md)
+Arquivo: [`.claude/agents/workflow/build-agent.md`](../../.claude/agents/workflow/build-agent.md)
 
 Inserido entre o passo "4. Execute Each Task" e o passo "5. Full Validation":
 
@@ -139,7 +139,7 @@ Inserido entre o passo "4. Execute Each Task" e o passo "5. Full Validation":
 
 ### 5.2 `ship-agent` — passo 1.1 "Verify Git State"
 
-Arquivo: [`.claude/agents/workflow/ship-agent.md`](../.claude/agents/workflow/ship-agent.md)
+Arquivo: [`.claude/agents/workflow/ship-agent.md`](../../.claude/agents/workflow/ship-agent.md)
 
 Inserido logo após o passo "1. Verify Completion", antes de criar a estrutura de arquivo:
 
@@ -153,7 +153,7 @@ Inserido logo após o passo "1. Verify Completion", antes de criar a estrutura d
 
 ### 6.1 `dev-loop-executor` — commit por tarefa (`hitl` vs `afk`)
 
-Arquivo: [`.claude/agents/dev/dev-loop-executor.md`](../.claude/agents/dev/dev-loop-executor.md)
+Arquivo: [`.claude/agents/dev/dev-loop-executor.md`](../../.claude/agents/dev/dev-loop-executor.md)
 
 Esta era a lacuna mais concreta encontrada: a documentação do Dev Loop (`_index.md`) já dizia, na
 tabela de modos de execução, que `afk` significa **"commit per task"** — mas o pseudocódigo do loop
@@ -181,7 +181,7 @@ aguarda confirmação, exatamente como qualquer outra ação do modo humano-no-l
 
 ### 6.2 `devloop-fixer` — passo 3 "Commitar a correção"
 
-Arquivo: [`.claude/agents/workflow-dev-loop/devloop-fixer.md`](../.claude/agents/workflow-dev-loop/devloop-fixer.md)
+Arquivo: [`.claude/agents/workflow-dev-loop/devloop-fixer.md`](../../.claude/agents/workflow-dev-loop/devloop-fixer.md)
 
 O processo original ia de "2. Implementar só o escopo pedido" direto para "3. Atualizar PROGRESS".
 Passo novo inserido entre os dois:
@@ -197,7 +197,7 @@ si só; se um round corrigir algo diretamente, a mesma regra do fixer se aplica 
 
 ## 7. Relação com `create-pr.md`
 
-O comando [`.claude/commands/workflow/create-pr.md`](../.claude/commands/workflow/create-pr.md) já
+O comando [`.claude/commands/workflow/create-pr.md`](../../.claude/commands/workflow/create-pr.md) já
 existia e já cobria **a mecânica de abrir um PR**: passos de `git checkout -b`, `git commit`,
 `git push`, `gh pr create`, template de descrição, e a tabela completa de Conventional Commits.
 
@@ -315,7 +315,7 @@ Skill não.)
 
 **Outras referências:**
 
-- [`.claude/rules/skill-first.md`](../.claude/rules/skill-first.md) — convenção Skill vs KB
-- [`.claude/skills/git-boas-praticas-versionamento/SKILL.md`](../.claude/skills/git-boas-praticas-versionamento/SKILL.md) — texto completo da Skill
-- [`.claude/commands/workflow/create-pr.md`](../.claude/commands/workflow/create-pr.md) — mecânica de PR
-- [`.claude/sdd/dev-loop-runs/dl-2026-08-18-doc-skills-kb/`](../.claude/sdd/dev-loop-runs/dl-2026-08-18-doc-skills-kb/) — RUN do Dev Loop que produziu este documento (requirements, design, PROMPT)
+- [`.claude/rules/skill-first.md`](../../.claude/rules/skill-first.md) — convenção Skill vs KB
+- [`.claude/skills/git-boas-praticas-versionamento/SKILL.md`](../../.claude/skills/git-boas-praticas-versionamento/SKILL.md) — texto completo da Skill
+- [`.claude/commands/workflow/create-pr.md`](../../.claude/commands/workflow/create-pr.md) — mecânica de PR
+- [`.claude/sdd/dev-loop-runs/dl-2026-08-18-doc-skills-kb/`](../../.claude/sdd/dev-loop-runs/dl-2026-08-18-doc-skills-kb/) — RUN do Dev Loop que produziu este documento (requirements, design, PROMPT)

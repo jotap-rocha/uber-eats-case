@@ -1,3 +1,8 @@
+> ⚠️ **Escrito para o modelo antigo.** Os scripts desta pasta e este README seguem a distribuição anterior à
+> [ADR 006](../../docs/adr/006-inversao-de-dominios-entre-oracle-e-postgres.md) e ao [modelo lógico](../docs/modelagem/03-modelo-logico.md)
+> (`users`, `order_items` com `uuid`, `inventory`, fontes `kafka/shift`, `kafka/route`, `mysql/ratings` e `mongodb/support`).
+> O pipeline será reescrito **depois** do modelo físico e da regeração dos dados; não desenvolver sobre estes scripts sem esse alinhamento.
+
 # Pipeline Databricks - Delta Live Tables (Lakeflow)
 
 Scripts SQL de processamento para o Databricks Lakehouse utilizando **Lakeflow Spark Declarative Pipelines** (DLT).

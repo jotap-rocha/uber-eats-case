@@ -1,3 +1,6 @@
+> 📜 **Histórico.** Resposta da revisão adversarial da arquitetura (Setembro/2026). As decisões vigentes estão no
+> [`ROADMAP_ARQUITETURA_MULTICLOUD.md`](../ROADMAP_ARQUITETURA_MULTICLOUD.md) e em `docs/adr/`.
+
 Meu prompt: Cara, quero que você assuma mais do que nunca o papel de arquiteto especialista que questiona cada decisão tomada acerca de uma arquitetura de dados.
 
 Quero que você me ajude só a alcançar resultados melhores, coesos e coerentes.

@@ -36,9 +36,9 @@ python3 scripts/tooling/validate-agent-router.py
 
 | Ambiente | Uso | Observacao |
 |----------|-----|------------|
-| `local` | Desenvolvimento | Ajustar conforme o projeto |
-| `dev` | Testes integrados | Ajustar conforme o projeto |
-| `prd` | Producao | Ajustar conforme o projeto |
+| `local` | Fontes da Fase 0 em Docker (Postgres, Oracle, MongoDB, MinIO), gerador e CDC | Tratadas como producao: sem `DROP`/`TRUNCATE`/`down -v` sem confirmacao |
+| `dsv` | Desenvolvimento (Databricks `DEV`, perfil em `~/.databrickscfg`) | Escrita livre pelo agente; codigo unico parametrizado por ambiente |
+| `prd` | Producao (Databricks `PRD`) | O agente nunca escreve direto; so promove por pipeline de deploy, com confirmacao a cada deploy. Criado por fase e sob decisao do usuario |
 
 ## Agentic / SDD
 
