@@ -19,3 +19,4 @@ revista não é editada — ganha uma ADR nova que a substitui.
 | [008](008-historico-de-status-em-tabelas-de-transicao.md) | Histórico de status em tabelas de transição, não só em CDC | Aceita | 2026-11-02 |
 | [009](009-simulador-cria-a-compra-numa-transacao.md) | O simulador de operação cria a compra numa transação | Aceita (`kafka/gps` revisto pela 010) | 2026-11-03 |
 | [010](010-minio-fora-do-escopo-da-geracao.md) | MinIO fora do escopo da geração e do modelo | Aceita | 2026-11-04 |
+| [011](011-cdc-debezium-3-7-e-replica-set-no-mongodb.md) | CDC na regeração: Debezium 3.7 e MongoDB em replica set | Aceita | 2026-11-04 |
