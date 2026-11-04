@@ -1387,8 +1387,10 @@ Tudo nesta tabela é código versionado, feito e testado na branch antes de toca
 | `scripts/ingestion/register-postgres-connector.ps1` | **Criado nesta fase** (sem registrar nada), igual ao do Oracle: injeta `POSTGRES_DEBEZIUM_PASSWORD` e `POSTGRES_DB` no template |
 | `shared/gen/.env` (fora do git) | Entram `POSTGRES_DEBEZIUM_PASSWORD`, `TRACKING_SALT_ORDER` e `TRACKING_SALT_PAYMENT`; sai `RESTAURANT_COUNT`. O usuário do CDC é fixo no template (`dbz_ubereats`), então `POSTGRES_DEBEZIUM_USER` (F4.0 #8) não é necessário |
 
-O simulador roda **no Windows** (ambiente virtual Python) na v1: conecta em `localhost` nas portas publicadas e no Mongo
-com `directConnection=true` (F4.4). Virar serviço do compose fica para depois, quando o laço estiver estável.
+O simulador roda **no Windows** (ambiente virtual Python em `shared/gen/.venv`) na v1: conecta em `127.0.0.1` nas portas
+publicadas e no Mongo com `directConnection=true` (F4.4). **Depois (F5.2):** `127.0.0.1`, não `localhost`: no Windows
+`localhost` resolve primeiro para `::1`, e a conexão com a porta publicada só em IPv4 ficava pendurada (visto no teste
+do seed). `SIMULATOR_<FONTE>_HOST`/`_PORT` mudam o destino sem tocar no `.env`. Virar serviço do compose fica para depois, quando o laço estiver estável.
 
 ### F5.3 Ordem da regeração
 
@@ -1403,12 +1405,12 @@ o comando e espera o "ok" do usuário.
 | 3 | **Subir os bancos** (`docker compose up -d postgres-ubereats oracle-ubereats mongo-ubereats`); o init cria tudo | Postgres: 28 tabelas em `ubereats`, `SHOW timezone` = `America/Sao_Paulo`, `SHOW max_slot_wal_keep_size` = `4GB`, publicação `dbz_ubereats` existe. Oracle: 3 tabelas, `ARCHIVELOG`, gatilho de logon válido. Mongo: `rs.status()` com `PRIMARY`, coleção com validador |
 | 4 | **Subir** `redpanda` e `kafka-connect` (3.7) | `GET :8083/connector-plugins` lista os conectores Postgres e Oracle na versão 3.7 |
 | 5 | **Registrar os conectores** (`register-postgres-connector.ps1`, `register-oracle-connector.ps1`), com as tabelas ainda vazias (F4.0 #5) | Os dois `RUNNING`; slot `dbz_ubereats` ativo em `pg_replication_slots` |
-| 6 | **Seed de cidades** nos dois bancos, a partir do `cities.csv` | T17 (parte das cidades) passa; eventos `c` em `postgres.ubereats.cities` e `oracle.UBEREATS.CITIES` |
+| 6 | **Seed de cidades** nos dois bancos, a partir do `cities.csv` (`python -m simulator.seed cities`, em `shared/gen`) | T17 (parte das cidades) passa; eventos `c` em `postgres.ubereats.cities` e `oracle.UBEREATS.CITIES` |
 | 7 | **ShadowTraffic, carga inicial** em lote (`maxEvents` da F5.8), pela skill `shadowtraffic-ajustar-geracao` (tabelas vazias: `startingFrom` = 1) | Contagens de `customers`, `drivers` e `restaurants` iguais aos parâmetros |
-| 8 | **Seed de catálogo e perfis** (F5.4): produtos, itens de estoque, fichas, estoque inicial e `restaurant_profiles` | T4b, T6, T18 e T19 passam (gate da carga) |
+| 8 | **Seed de catálogo e perfis** (F5.4): produtos, itens de estoque, fichas, estoque inicial e `restaurant_profiles` (`python -m simulator.seed catalog` e `profiles`; o conteúdo vem de `shared/gen/reference/catalog.yaml`) | `python -m simulator.gate` passa (gate da carga: T1 a T19 com as tabelas de operação ainda vazias) |
 | 9 | **Airbyte**: fonte MongoDB por change stream, modo *Lookup*, `directConnection=true`, com um destino de conferência (Local JSON). Na primeira sync, conferir os nomes `_ab_cdc_*` (risco da ADR 011) | Metadados conferidos; F4.6 corrigida se os nomes forem outros. O destino de verdade vem com a fase de cada nuvem |
 | 10 | **Simulador**: histórico (F5.6) e depois tempo real | Logs sem recusa do banco; eventos nos tópicos `postgres.ubereats.*` |
-| 11 | **Gate da regeração**: T1 a T19 com 0 linhas; contagens por status dentro do esperado pelas probabilidades (F5.8); compra no CDC com o mesmo `source.txId` em todos os tópicos | Regeração aprovada; `CLAUDE.md` e `HANDOFF.md` atualizados (o Oracle novo continua tratado como produção, como todos os bancos) |
+| 11 | **Gate da regeração**: `python -m simulator.gate` (T1 a T19) com 0 linhas; contagens por status dentro do esperado pelas probabilidades (F5.8); compra no CDC com o mesmo `source.txId` em todos os tópicos | Regeração aprovada; `CLAUDE.md` e `HANDOFF.md` atualizados (o Oracle novo continua tratado como produção, como todos os bancos) |
 | 12 | **Operação contínua**: ShadowTraffic em ritmo lento (cadastros novos e `last_login`) e simulador ligados; no fim da sessão, os dois param | Skill de operação do simulador (consequência da ADR 007) |
 
 Não há volta de dado: tudo é sintético. Se um passo de 3 a 8 falhar, corrige-se o código e a regeração recomeça no passo 2

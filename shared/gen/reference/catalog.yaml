@@ -1,0 +1,114 @@
+# Catálogo de referência do seed (F5.4 do modelo físico). Por tipo de cozinha (restaurants.cuisine_type),
+# os pratos que o seed pode sortear para um restaurante, com a ficha técnica (RN-37):
+#   - ready: o próprio produto é o item de estoque (kind ready, unit unit), ficha com 1 unidade.
+#   - recipe: itens de estoque do restaurante em gramas (ingredient) ou porções (prepared).
+# Preço em reais (texto, vira Decimal). section segue as seções do cardápio (F3.1).
+# Os tipos de cozinha precisam ser os mesmos que o template do ShadowTraffic sorteia.
+
+shared:                                  # entram em toda cozinha
+  - {name: Refrigerante lata, section: drinks, price: "6.50", calories: 140, prep: 1, veg: true, gf: true, ready: true}
+  - {name: Água mineral, section: drinks, price: "4.00", calories: 0, prep: 1, veg: true, gf: true, ready: true}
+  - {name: Suco natural, section: drinks, price: "9.90", calories: 120, prep: 4, veg: true, gf: true,
+     recipe: {Fruta da estação: [ingredient, 250]}, custom: [sem açúcar, sem gelo]}
+  - {name: Brownie, section: desserts, price: "12.90", calories: 380, prep: 2, veg: true, gf: false, ready: true}
+
+cuisines:
+  brazilian:
+    - {name: Prato feito de frango, section: mains, price: "29.90", calories: 750, prep: 15, veg: false, gf: true,
+       recipe: {Frango: [ingredient, 200], Arroz cozido: [prepared, 1], Feijão cozido: [prepared, 1]}, custom: [sem feijão, farofa extra]}
+    - {name: Feijoada individual, section: mains, price: "39.90", calories: 980, prep: 10, veg: false, gf: true,
+       recipe: {Feijoada: [prepared, 1], Arroz cozido: [prepared, 1], Couve: [ingredient, 60]}}
+    - {name: Picanha acebolada, section: mains, price: "54.90", calories: 920, prep: 20, veg: false, gf: true,
+       recipe: {Picanha: [ingredient, 220], Cebola: [ingredient, 60], Arroz cozido: [prepared, 1]}, custom: [ao ponto, bem passada]}
+    - {name: Moqueca de peixe, section: mains, price: "49.90", calories: 680, prep: 25, veg: false, gf: true,
+       recipe: {Peixe: [ingredient, 220], Leite de coco: [ingredient, 100], Arroz cozido: [prepared, 1]}}
+    - {name: Escondidinho de carne seca, section: mains, price: "36.90", calories: 820, prep: 15, veg: false, gf: true,
+       recipe: {Carne seca: [ingredient, 150], Purê de mandioca: [prepared, 1]}}
+    - {name: Virado vegetariano, section: mains, price: "27.90", calories: 640, prep: 15, veg: true, gf: true,
+       recipe: {Feijão cozido: [prepared, 1], Arroz cozido: [prepared, 1], Ovo: [ingredient, 100], Couve: [ingredient, 60]}}
+    - {name: Pão de queijo (6 un.), section: starters, price: "14.90", calories: 420, prep: 12, veg: true, gf: true,
+       recipe: {Massa de pão de queijo: [ingredient, 180]}}
+    - {name: Mandioca frita, section: sides, price: "18.90", calories: 520, prep: 12, veg: true, gf: true,
+       recipe: {Mandioca: [ingredient, 300]}}
+    - {name: Pudim, section: desserts, price: "11.90", calories: 330, prep: 2, veg: true, gf: true, ready: true}
+    - {name: Guaraná lata, section: drinks, price: "6.50", calories: 150, prep: 1, veg: true, gf: true, ready: true}
+  italian:
+    - {name: Espaguete à bolonhesa, section: mains, price: "42.90", calories: 860, prep: 15, veg: false, gf: false,
+       recipe: {Massa seca: [ingredient, 140], Molho bolonhesa: [prepared, 1]}, custom: [parmesão extra]}
+    - {name: Lasanha de berinjela, section: mains, price: "39.90", calories: 640, prep: 20, veg: true, gf: false,
+       recipe: {Lasanha de berinjela: [prepared, 1]}}
+    - {name: Risoto de cogumelos, section: mains, price: "48.90", calories: 720, prep: 25, veg: true, gf: true,
+       recipe: {Arroz arbóreo: [ingredient, 120], Cogumelos: [ingredient, 100], Parmesão: [ingredient, 40]}}
+    - {name: Pizza margherita, section: mains, price: "49.90", calories: 1100, prep: 18, veg: true, gf: false,
+       recipe: {Massa de pizza: [prepared, 1], Molho de tomate: [prepared, 1], Mussarela: [ingredient, 200]}, custom: [borda recheada, sem manjericão]}
+    - {name: Pizza calabresa, section: mains, price: "52.90", calories: 1250, prep: 18, veg: false, gf: false,
+       recipe: {Massa de pizza: [prepared, 1], Molho de tomate: [prepared, 1], Mussarela: [ingredient, 150], Calabresa: [ingredient, 150]}}
+    - {name: Nhoque ao sugo, section: mains, price: "38.90", calories: 700, prep: 15, veg: true, gf: false,
+       recipe: {Nhoque: [prepared, 1], Molho de tomate: [prepared, 1]}}
+    - {name: Bruschetta, section: starters, price: "22.90", calories: 380, prep: 10, veg: true, gf: false,
+       recipe: {Pão italiano: [ingredient, 120], Tomate: [ingredient, 100]}}
+    - {name: Tiramisù, section: desserts, price: "19.90", calories: 450, prep: 2, veg: true, gf: false, ready: true}
+    - {name: Água com gás, section: drinks, price: "5.00", calories: 0, prep: 1, veg: true, gf: true, ready: true}
+  japanese:
+    - {name: Combinado 20 peças, section: combos, price: "79.90", calories: 900, prep: 25, veg: false, gf: false,
+       recipe: {Salmão: [ingredient, 180], Arroz de sushi: [prepared, 2], Alga nori: [ingredient, 10]}, custom: [sem cream cheese, shoyu light]}
+    - {name: Temaki de salmão, section: mains, price: "32.90", calories: 420, prep: 8, veg: false, gf: false,
+       recipe: {Salmão: [ingredient, 90], Arroz de sushi: [prepared, 1], Alga nori: [ingredient, 5]}}
+    - {name: Yakisoba de frango, section: mains, price: "39.90", calories: 780, prep: 15, veg: false, gf: false,
+       recipe: {Macarrão de yakisoba: [ingredient, 150], Frango: [ingredient, 150], Legumes: [ingredient, 120]}}
+    - {name: Yakisoba de legumes, section: mains, price: "34.90", calories: 620, prep: 15, veg: true, gf: false,
+       recipe: {Macarrão de yakisoba: [ingredient, 150], Legumes: [ingredient, 200]}}
+    - {name: Hot roll (10 un.), section: starters, price: "36.90", calories: 610, prep: 12, veg: false, gf: false,
+       recipe: {Salmão: [ingredient, 80], Arroz de sushi: [prepared, 1], Cream cheese: [ingredient, 40]}}
+    - {name: Guioza (6 un.), section: starters, price: "26.90", calories: 380, prep: 10, veg: false, gf: false,
+       recipe: {Guioza congelado: [ingredient, 180]}}
+    - {name: Missoshiru, section: sides, price: "12.90", calories: 90, prep: 5, veg: true, gf: true,
+       recipe: {Missô: [ingredient, 30], Tofu: [ingredient, 50]}}
+    - {name: Chá verde gelado, section: drinks, price: "8.90", calories: 60, prep: 1, veg: true, gf: true, ready: true}
+  burger:
+    - {name: Cheeseburger, section: mains, price: "32.90", calories: 820, prep: 12, veg: false, gf: false,
+       recipe: {Pão de hambúrguer: [ingredient, 80], Blend bovino: [ingredient, 160], Queijo cheddar: [ingredient, 40]}, custom: [sem cebola, ponto da carne mal passado]}
+    - {name: Bacon burger, section: mains, price: "38.90", calories: 980, prep: 12, veg: false, gf: false,
+       recipe: {Pão de hambúrguer: [ingredient, 80], Blend bovino: [ingredient, 160], Bacon: [ingredient, 50]}, custom: [sem cebola]}
+    - {name: Burger vegetariano, section: mains, price: "34.90", calories: 690, prep: 12, veg: true, gf: false,
+       recipe: {Pão de hambúrguer: [ingredient, 80], Hambúrguer de grão-de-bico: [ingredient, 150]}}
+    - {name: Combo cheeseburger, section: combos, price: "44.90", calories: 1350, prep: 15, veg: false, gf: false,
+       recipe: {Pão de hambúrguer: [ingredient, 80], Blend bovino: [ingredient, 160], Queijo cheddar: [ingredient, 40], Batata congelada: [ingredient, 200]}}
+    - {name: Batata frita, section: sides, price: "16.90", calories: 480, prep: 8, veg: true, gf: true,
+       recipe: {Batata congelada: [ingredient, 250]}, custom: [sem sal]}
+    - {name: Onion rings, section: sides, price: "19.90", calories: 520, prep: 8, veg: true, gf: false,
+       recipe: {Onion rings congelado: [ingredient, 200]}}
+    - {name: Milk-shake de chocolate, section: drinks, price: "19.90", calories: 640, prep: 4, veg: true, gf: true,
+       recipe: {Sorvete: [ingredient, 250], Leite: [ingredient, 150]}}
+  arabic:
+    - {name: Esfiha de carne (unidade), section: starters, price: "7.90", calories: 230, prep: 10, veg: false, gf: false,
+       recipe: {Massa de esfiha: [prepared, 1], Carne moída: [ingredient, 50]}}
+    - {name: Esfiha de queijo (unidade), section: starters, price: "7.90", calories: 240, prep: 10, veg: true, gf: false,
+       recipe: {Massa de esfiha: [prepared, 1], Queijo branco: [ingredient, 50]}}
+    - {name: Kibe frito (4 un.), section: starters, price: "21.90", calories: 520, prep: 10, veg: false, gf: false,
+       recipe: {Kibe cru: [ingredient, 240]}}
+    - {name: Shawarma de frango, section: mains, price: "32.90", calories: 720, prep: 12, veg: false, gf: false,
+       recipe: {Pão sírio: [ingredient, 90], Frango: [ingredient, 180], Coalhada: [ingredient, 50]}, custom: [sem alho]}
+    - {name: Prato árabe misto, section: mains, price: "46.90", calories: 900, prep: 15, veg: false, gf: false,
+       recipe: {Kafta: [ingredient, 180], Arroz com lentilha: [prepared, 1], Tabule: [prepared, 1]}}
+    - {name: Homus com pão sírio, section: sides, price: "19.90", calories: 420, prep: 5, veg: true, gf: false,
+       recipe: {Homus: [prepared, 1], Pão sírio: [ingredient, 90]}}
+    - {name: Falafel (6 un.), section: sides, price: "24.90", calories: 480, prep: 10, veg: true, gf: true,
+       recipe: {Massa de falafel: [ingredient, 200]}}
+    - {name: Baklava, section: desserts, price: "14.90", calories: 360, prep: 2, veg: true, gf: false, ready: true}
+  healthy:
+    - {name: Bowl de frango grelhado, section: mains, price: "38.90", calories: 560, prep: 12, veg: false, gf: true,
+       recipe: {Frango: [ingredient, 160], Quinoa cozida: [prepared, 1], Legumes: [ingredient, 150]}, custom: [sem molho]}
+    - {name: Bowl vegano, section: mains, price: "36.90", calories: 520, prep: 10, veg: true, gf: true,
+       recipe: {Grão-de-bico: [ingredient, 120], Quinoa cozida: [prepared, 1], Legumes: [ingredient, 150]}}
+    - {name: Salada caesar, section: mains, price: "34.90", calories: 480, prep: 8, veg: false, gf: false,
+       recipe: {Alface: [ingredient, 120], Frango: [ingredient, 120], Parmesão: [ingredient, 30]}}
+    - {name: Wrap integral de atum, section: mains, price: "29.90", calories: 450, prep: 8, veg: false, gf: false,
+       recipe: {Tortilha integral: [ingredient, 70], Atum: [ingredient, 100], Alface: [ingredient, 40]}}
+    - {name: Salmão com legumes, section: mains, price: "56.90", calories: 610, prep: 18, veg: false, gf: true,
+       recipe: {Salmão: [ingredient, 180], Legumes: [ingredient, 200]}}
+    - {name: Sopa de abóbora, section: starters, price: "21.90", calories: 210, prep: 6, veg: true, gf: true,
+       recipe: {Sopa de abóbora: [prepared, 1]}}
+    - {name: Salada de frutas, section: desserts, price: "13.90", calories: 180, prep: 3, veg: true, gf: true,
+       recipe: {Fruta da estação: [ingredient, 250]}}
+    - {name: Kombucha, section: drinks, price: "14.90", calories: 40, prep: 1, veg: true, gf: true, ready: true}
