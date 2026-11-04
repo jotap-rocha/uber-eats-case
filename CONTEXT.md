@@ -101,7 +101,7 @@ python3 scripts/tooling/validate-agent-router.py
 | Trilho real-time | Caminho do CDC ate o barramento (Event Hub, Kinesis, Pub/Sub) que alimenta o Kappa | Trilho Kappa | Nao le o storage batch |
 | Trilho batch | Caminho ate o storage (ADLS, S3, GCS) que alimenta Warehouse e Lakehouse | Landing batch | Nao alimenta o Kappa |
 | Contrato canonico de CDC | Campos `cdc_operation`, `cdc_commit_ts`, `cdc_sequence`, `cdc_source_system` na Bronze, iguais para qualquer ferramenta de ingestao | Contrato CDC | Nao e o formato nativo (`_ab_cdc_*`, `op/before/after`) |
-| Captura unica | Uma so captura CDC por fonte; o trilho batch consome o mesmo topico | | Nao e uma segunda conexao/replication slot |
+| Captura dedicada ao Kappa | Na Azure, o trilho batch vem do Debezium/Airbyte locais ate o storage, e o Kappa tem um conector proprio so com as tabelas dele, publicando no Event Hubs (ADR 012) | | Substitui a antiga "captura unica"; cada conector do Postgres tem seu slot |
 | Warehouse | Arquitetura dimensional (estrela, SCD2): Synapse, Redshift, BigQuery | DW | Nao e o Lakehouse |
 | Lakehouse | Arquitetura medalhao sobre storage aberto: Databricks (Azure), Glue/Iceberg/Athena (AWS), BigLake/Dataproc (GCP) | | |
 | Kappa | Arquitetura so de streaming: Event Hubs + Stream Analytics, Kinesis, Pub/Sub + Dataflow | | Nao e Lambda (nao mistura trilho batch) |
