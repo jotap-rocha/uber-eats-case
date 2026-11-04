@@ -1,0 +1,75 @@
+# Parâmetros da geração de dados (F5.8 do modelo físico, shared/docs/modelagem/04-modelo-fisico.md).
+# Lido pelo simulador, pelos seeds e pelos testes. Sem segredos: os sais do código de rastreio
+# ficam no shared/gen/.env (TRACKING_SALT_ORDER, TRACKING_SALT_PAYMENT).
+# Valores são sugestão inicial (L4, decisão 5), salvo os marcados "regra", fixados pelas RN.
+# Dinheiro e percentuais vão entre aspas para serem lidos como Decimal, nunca float (L0 #3).
+
+scale:                                   # carga inicial (ShadowTraffic e seeds)
+  cities_file: shared/gen/reference/cities.csv
+  customers: 20000
+  drivers: 1500
+  restaurants_per_city: 50
+  products_per_restaurant: [8, 20]
+  recipe_lines: [1, 4]
+  restaurants_with_two_windows: 0.6
+
+clock:
+  backfill_days: 30                      # F5.6; 0 = só tempo real
+
+demand:
+  peak_orders_per_hour_per_city: 30
+  hourly_factor: {"11": 0.8, "12": 1.0, "13": 0.9, "19": 0.9, "20": 1.0, "21": 0.7}
+  default_hourly_factor: 0.2             # demais horas (só restaurantes com janela aberta recebem)
+  second_restaurant_share: 0.08          # pedidos com 2 atendimentos (RN-03)
+  items_per_restaurant_order: [1, 4]
+  quantity_per_item: [1, 3]
+
+behavior:                                # probabilidades por oportunidade
+  attempt_declined: 0.08
+  max_payment_attempts: 3
+  customer_cancels_in_analysis: 0.02
+  restaurant_declines: 0.03
+  restaurant_ignores: 0.01               # vira analysis_timeout (RN-28)
+  restaurant_issue_after_accept: 0.005
+  prep_overrun_lognormal_sigma: 0.35
+  driver_gives_up: 0.03
+  customer_absent: 0.01
+  driver_unable: 0.005
+  customer_confirms: 0.6                 # o resto confirma sozinho em auto_confirm_delay_min
+  incident: 0.04
+  incident_upheld: 0.7
+  driver_rating: 0.5
+  restaurant_rating: 0.4
+  tip: 0.3
+  shift_hours: [3, 8]
+
+money:                                   # L4, mais a taxa de entrega (F5.7)
+  rounding: ROUND_HALF_UP                # F5, decisão 4
+  tax_rate: "0.0800"
+  service_fee_rate: "0.1200"
+  payment_fee_rate: {card: "0.0299", pix: "0.0099", wallet: "0.0250"}
+  commission_rate: "0.2500"
+  driver_share_rate: "0.8000"
+  delivery_fee_base: "4.99"
+  delivery_fee_per_km: "1.00"
+  tip_min: "1.00"
+  tip_max: "100.00"
+
+stock:
+  restock_target_days: 2                 # repõe até cobrir N dias de consumo médio
+
+timing:
+  incident_window_h: 24                  # regra (RN-14)
+  rating_tip_window_min: 20              # regra (RN-26), inclusivo
+  auto_confirm_delay_min: 10             # regra (RN-24)
+  analysis_timeout_min: 5                # regra (RN-28)
+  prep_tolerance: "0.5"                  # regra (RN-28)
+  max_restaurants_per_order: 2           # regra (RN-03)
+  max_driver_give_ups: 3                 # regra (RN-07)
+  average_speed_kmh: 25
+  promise_slack_min: 10
+  route_detour_factor: "1.3"
+  profile_cache_refresh_min: 15
+
+text:
+  rating_comment_by_band: shared/gen/reference/rating_comments.yaml

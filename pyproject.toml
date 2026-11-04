@@ -6,6 +6,10 @@ line-length = 100
 target-version = "py312"
 extend-exclude = [".agents", ".claude", ".cursor", ".github", "abctl-v0.30.3-windows-amd64"]
 
+[tool.pytest.ini_options]
+# Pacote do simulador e dos seeds da regeração (F5 do modelo físico).
+pythonpath = ["shared/gen"]
+
 [tool.mypy]
 python_version = "3.12"
 ignore_missing_imports = true
