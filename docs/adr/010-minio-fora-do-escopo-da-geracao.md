@@ -27,7 +27,7 @@ usado por nenhuma regra (RN-01 a RN-42):
 ## Decisão
 
 1. **O MinIO sai do escopo da Fase 0 por agora.** Nenhum arquivo do bucket faz parte do modelo nem da regeração. O
-   ShadowTraffic fica só com os cadastros (Oracle e Postgres) e o MongoDB (`restaurant_profiles`); os 8 geradores com
+   ShadowTraffic fica só com os cadastros (Oracle e Postgres); o MongoDB passou a um seed em Python (adendo da ADR 009). Os 8 geradores com
    `connection: minio` saem do template na regeração.
 2. **A lógica fica guardada** em [`shared/docs/minio/historico-geracao.md`](../../shared/docs/minio/historico-geracao.md):
    arquivos, campos, distribuições, formato e a ligação com o modelo novo, o suficiente para voltar a gerar no futuro.
@@ -50,7 +50,7 @@ usado por nenhuma regra (RN-01 a RN-42):
 
 **Positivas**
 
-- Uma fonte e uma ferramenta a menos na Fase 0 (sem Airbyte para MinIO); o template fica só com cadastros e MongoDB.
+- Uma fonte e uma ferramenta a menos na Fase 0 (sem Airbyte para MinIO); o template fica só com os cadastros.
 - O modelo físico perde a parte de MinIO da F3, que fica só com o MongoDB.
 
 **Negativas**

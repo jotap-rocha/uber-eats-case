@@ -1,6 +1,6 @@
 # 009 — O simulador de operação cria a compra numa transação
 
-**Status:** Aceita; o MinIO (`kafka/gps`, decisão 2) saiu do escopo pela [ADR 010](010-minio-fora-do-escopo-da-geracao.md)  
+**Status:** Aceita; o MinIO (`kafka/gps`, decisão 2) saiu do escopo pela [ADR 010](010-minio-fora-do-escopo-da-geracao.md); o MongoDB passa ao seed em Python (adendo de 2026-11-04)  
 **Data:** 2026-11-03  
 **Autores:** time  
 **Revisa:** a fronteira do gerador híbrido da [ADR 007](007-estoque-por-movimentos-e-gerador-hibrido.md) (decisão 3 e adendo)
@@ -82,3 +82,11 @@ do turno e do pós-entrega no simulador.
 - Se o ShadowTraffic ganhar estado compartilhado ou transação entre geradores, reavaliar devolver a compra a ele.
 - Se a licença do ShadowTraffic deixar de ser renovável, a alternativa C volta a ser considerada (o simulador já gera a
   maior parte).
+
+## Adendo (2026-11-04, F3 do modelo físico)
+
+A decisão 2 errou num ponto: **o ShadowTraffic não tem conexão para MongoDB**. O perfil do restaurante
+(`restaurant_profiles`) passa a ser gravado por um **seed em Python no pacote do simulador**, rodado depois da carga dos
+cadastros: ele lê `restaurants` e `products` no Postgres e grava um perfil por restaurante com todos os produtos dele
+(RN-23, T18), de forma idempotente. O ShadowTraffic fica só com os cadastros do Oracle e do Postgres (o MinIO já tinha saído
+pela [ADR 010](010-minio-fora-do-escopo-da-geracao.md)). Detalhe na F3 do [modelo físico](../../shared/docs/modelagem/04-modelo-fisico.md).

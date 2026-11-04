@@ -11,7 +11,7 @@ como produção).
 | F0 | Decisões transversais adiadas pelo lógico | aprovada |
 | F1 | DDL Postgres: catálogo, operação, dinheiro, pós-entrega | aprovada |
 | F2 | DDL Oracle: `customers`, `drivers`, `cities` | aprovada |
-| F3 | MongoDB (`restaurant_profiles`). O MinIO saiu do escopo ([ADR 010](../../../docs/adr/010-minio-fora-do-escopo-da-geracao.md); lógica guardada em [`minio/historico-geracao.md`](../minio/historico-geracao.md)) | pendente |
+| F3 | MongoDB (`restaurant_profiles`). O MinIO saiu do escopo ([ADR 010](../../../docs/adr/010-minio-fora-do-escopo-da-geracao.md); lógica guardada em [`minio/historico-geracao.md`](../minio/historico-geracao.md)) | aprovada |
 | F4 | CDC: configuração do Debezium, tópicos, contrato `cdc_*` visto da fonte | pendente |
 | F5 | Plano da regeração: ordem de carga, divisão gerador × simulador, testes T1 a T18 como consultas | pendente |
 
@@ -946,3 +946,151 @@ DDL aplicado num contêiner descartável `gvenzl/oracle-free:23.4-full` (sem vol
 | 4 | Diferenças em relação ao lógico | **Aceitas** as da F2.3: `address_line2` nula, lista de `gender`, placa `CHAR(7)` e CNH `CHAR(11)` únicas, `last_login` ≥ data de cadastro |
 
 **Para a F4:** `date_of_birth` (`DATE` do Oracle) chega como `io.debezium.time.Timestamp` em ms; a Bronze converte para `DATE`.
+
+---
+
+## F3. MongoDB
+
+Uma coleção: **`restaurant_profiles`** no banco `ubereats` (L1a), um documento por restaurante com as janelas de funcionamento
+(RN-41) e o cardápio (RN-23). O MinIO saiu do escopo ([ADR 010](../../../docs/adr/010-minio-fora-do-escopo-da-geracao.md)).
+
+### F3.0 Quem gera o perfil
+
+**Achado.** A ADR 009 (decisão 2) pôs o MongoDB com o ShadowTraffic, mas **o ShadowTraffic não tem conexão para MongoDB**
+(a lista de conexões da doc tem Kafka, Postgres, MySQL, Oracle, S3, filesystem, Redis, webhook, Pub/Sub e outras, sem Mongo).
+Hoje o perfil vem de um seed estático em JavaScript (`shared/mongo/init/01_perfil_restaurante.js.template`), rodado uma vez
+na criação do contêiner, com cardápio sem `product_id` (contradiz a RN-23). Além disso, o cardápio tem de listar os produtos
+**do próprio restaurante**, cada um uma vez (T18), o que os `lookup` independentes do ShadowTraffic não garantem.
+
+**Proposta (recomendada): seed em Python, no pacote do simulador**, rodado depois da carga dos cadastros: lê `restaurants` e
+`products` no Postgres e grava um perfil por restaurante, com todos os produtos dele, 1 ou 2 janelas e as seções. Idempotente
+(`replaceOne` com `upsert` por `_id`), então pode rodar de novo se entrarem restaurantes. Corrige a ADR 009 com um adendo.
+
+Alternativas: manter o seed em JavaScript (o `mongosh` não lê o Postgres; o cardápio teria de adivinhar os ids); ou o
+simulador criar o perfil quando encontra restaurante sem perfil (mais peça no laço principal, sem ganho).
+
+**Achado para a F5.** A mesma coerência vale para o catálogo no Postgres: todo produto precisa de ficha técnica com itens de
+estoque do mesmo restaurante, e os `lookup` independentes do ShadowTraffic também não garantem isso. A divisão da carga do
+catálogo (ShadowTraffic ou seed em Python) fica para a F5.
+
+### F3.1 Documento
+
+| Campo | Tipo BSON | Regra |
+|---|---|---|
+| `_id` | `long` | **O `restaurant_id`** (`ext → Postgres.restaurants`). Chave natural: unicidade de graça e chave simples no CDC |
+| `service_windows` | array, 1 a 2 | RN-41 |
+| `service_windows[].start_time`, `end_time` | `string` `HH:MM` | Hora de Brasília; `end_time` > `start_time` no mesmo dia (sem virar a meia-noite na v1) |
+| `menu_items` | array, ao menos 1 | Item de Cardápio (RN-23) |
+| `menu_items[].product_id` | `long` | `ext → Postgres.products`, do mesmo restaurante; único em toda a coleção |
+| `menu_items[].section` | `string` | `starters`, `mains`, `sides`, `desserts`, `drinks`, `combos` |
+| `menu_items[].display_order` | `int` | ≥ 1 |
+| `menu_items[].highlighted` | `bool` | |
+| `menu_items[].customizations` | array de `string` | Rótulos sem preço (ex.: "sem cebola"); sem repetição |
+| `created_at`, `updated_at` | `date` | Instante BSON (UTC por definição); quem grava é o seed |
+
+Nome e preço **não** ficam no item (vêm do produto, RN-23); o validador recusa campos extras.
+
+### F3.2 Validador e índice
+
+```javascript
+// Banco ubereats, coleção restaurant_profiles (um documento por restaurante).
+db = db.getSiblingDB("ubereats");
+
+const hhmm = "^([01][0-9]|2[0-3]):[0-5][0-9]$";
+
+db.createCollection("restaurant_profiles", {
+  validationLevel: "strict",
+  validationAction: "error",
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["_id", "service_windows", "menu_items", "created_at", "updated_at"],
+      additionalProperties: false,
+      properties: {
+        _id: { bsonType: "long", minimum: 1, description: "restaurant_id (ext → Postgres.restaurants)" },
+        service_windows: {
+          bsonType: "array", minItems: 1, maxItems: 2,
+          items: {
+            bsonType: "object",
+            required: ["start_time", "end_time"],
+            additionalProperties: false,
+            properties: {
+              start_time: { bsonType: "string", pattern: hhmm },
+              end_time: { bsonType: "string", pattern: hhmm }
+            }
+          }
+        },
+        menu_items: {
+          bsonType: "array", minItems: 1,
+          items: {
+            bsonType: "object",
+            required: ["product_id", "section", "display_order", "highlighted", "customizations"],
+            additionalProperties: false,
+            properties: {
+              product_id: { bsonType: "long", minimum: 1 },
+              section: { enum: ["starters", "mains", "sides", "desserts", "drinks", "combos"] },
+              display_order: { bsonType: "int", minimum: 1 },
+              highlighted: { bsonType: "bool" },
+              customizations: {
+                bsonType: "array", uniqueItems: true,
+                items: { bsonType: "string", minLength: 1, maxLength: 60 }
+              }
+            }
+          }
+        },
+        created_at: { bsonType: "date" },
+        updated_at: { bsonType: "date" }
+      }
+    }
+  }
+});
+
+// Um produto aparece no máximo uma vez em todo o conjunto de cardápios (cada produto é de um só restaurante).
+db.restaurant_profiles.createIndex({ "menu_items.product_id": 1 }, { name: "uq_restaurant_profiles_product", unique: true });
+print("ok: coleção e índice criados");
+```
+
+O validador (`$jsonSchema`, `strict` e `error`) faz o papel do `CHECK` da F1: tipo, obrigatoriedade, lista de valores,
+formato da hora e quantidade de janelas. O que ele não vê fica com o seed e os testes:
+
+| Regra | Quem garante |
+|---|---|
+| Produto do mesmo restaurante; todo restaurante tem perfil | Seed e T18 |
+| Mesmo produto duas vezes **no mesmo** perfil | Seed e T18 (o índice único do MongoDB não compara itens do mesmo documento) |
+| Janelas sem sobreposição e `end_time` > `start_time` | Seed e teste novo da F5 |
+
+### F3.3 Diferenças em relação ao lógico
+
+| Campo | Lógico | Físico proposto | Motivo |
+|---|---|---|---|
+| `restaurant_id` | campo `integer`, único | vira o **`_id`** (`long`) | Unicidade pelo próprio `_id` |
+| `product_id` | `integer` | `long` | Mesmo tamanho do `bigint` do Postgres |
+| `section` | `string` livre | lista em minúsculas | Domínio, como os demais |
+| `customizations` | lista | lista de `string` sem preço | Sem dinheiro no MongoDB |
+| `created_at`, `updated_at` | — | `date` (instante UTC) | Rastro, como nas outras tabelas. Exceção à L0 #4: o tipo de data do BSON é sempre instante; a Bronze converte para `America/Sao_Paulo` |
+
+### F3.4 Validação
+
+Contêiner descartável `mongo:7` (sem volume; o `mongo-ubereats` não foi tocado), em 2026-11-04.
+
+| Teste | Resultado |
+|---|---|
+| Perfil com 2 janelas e com 1 janela | Aceitos |
+| Restaurante repetido; mesmo produto em outro perfil | Recusados (`E11000`) |
+| 3 janelas, nenhuma janela, `24:00`, cardápio vazio, seção fora da lista, `product_id` `double`, preço no item, campo `restaurant_id` solto | Recusados (`Document failed validation`) |
+| Mesmo produto duas vezes no mesmo perfil | **Aceito**: fica com o seed e o T18 |
+
+**Para a F4:** o CDC do MongoDB (change streams, que o Airbyte usa) exige **replica set**; o `mongo-ubereats` de hoje roda
+sozinho (sem `--replSet`).
+
+### Decisões da revisão da F3 (2026-11-04)
+
+| # | Tema | Decisão |
+|---|---|---|
+| 1 | Quem gera o perfil | **Seed em Python no pacote do simulador**, depois da carga dos cadastros: lê `restaurants` e `products` no Postgres e grava um perfil por restaurante (`replaceOne` com `upsert` por `_id`). Substitui o seed em JavaScript. Adendo na [ADR 009](../../../docs/adr/009-simulador-cria-a-compra-numa-transacao.md) |
+| 2 | Chave do documento | **`_id` = `restaurant_id`** (`long`) |
+| 3 | Datas de rastro | **`date` do BSON** (instante UTC); a Bronze converte para `America/Sao_Paulo`. Única exceção à L0 #4 |
+| 4 | Validador e diferenças | **Aceitos**: `$jsonSchema` estrito, índice único `uq_restaurant_profiles_product`, seções em minúsculas, personalizações como texto sem preço |
+
+**Para a F4:** o MongoDB precisa de replica set para o CDC. **Para a F5:** quem carrega o catálogo do Postgres com fichas
+técnicas coerentes (ShadowTraffic ou seed em Python).

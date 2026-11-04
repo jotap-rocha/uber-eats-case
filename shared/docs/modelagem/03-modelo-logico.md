@@ -14,7 +14,8 @@ Terceira etapa do fluxo (regras → adversarial → conceitual → **lógico** �
 
 > **Revisado depois da aprovação** pela [F0 do físico](04-modelo-fisico.md#f0-decisões-transversais) e pela [ADR 009](../../../docs/adr/009-simulador-cria-a-compra-numa-transacao.md) (2026-11-03): chaves do Oracle em `NUMBER(18)`; o simulador
 > cria a compra inteira numa transação e o ShadowTraffic fica só com cadastros, MongoDB e `kafka/gps`. Depois, a [ADR 010](../../../docs/adr/010-minio-fora-do-escopo-da-geracao.md) (2026-11-04) tirou o MinIO do escopo:
-> `kafka/gps` também sai, e a lógica antiga fica em [`minio/historico-geracao.md`](../minio/historico-geracao.md). Os trechos
+> `kafka/gps` também sai, e a lógica antiga fica em [`minio/historico-geracao.md`](../minio/historico-geracao.md). A F3 do físico pôs o MongoDB num seed em Python
+> (o ShadowTraffic não grava em MongoDB; adendo da ADR 009). Os trechos
 > afetados estão marcados com "(F0)".
 
 ---
