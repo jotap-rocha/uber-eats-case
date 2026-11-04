@@ -8,6 +8,6 @@ Modelagem de dados: regras (RN-01 a RN-42), conceitual e **modelo logico L0 a L4
 
 ## Proximos passos
 
-1. **Modelo fisico** (`shared/docs/modelagem/04-modelo-fisico.md`), em fases com revisao por perguntas. **F0 aprovada** (2026-11-03; ADR 009: o simulador cria a compra numa transacao). Proxima: F1, DDL Postgres; depois F2 Oracle, F3 MongoDB/MinIO, F4 CDC, F5 plano da regeracao.
+1. **Modelo fisico** (`shared/docs/modelagem/04-modelo-fisico.md`), em fases com revisao por perguntas. **F0 aprovada** (2026-11-03; ADR 009: o simulador cria a compra numa transacao). **F1 aprovada** (2026-11-04; DDL Postgres, schema `ubereats`). Proxima: F2 Oracle, F3 MongoDB/MinIO, F4 CDC, F5 plano da regeracao.
 2. **Regeracao dos dados do zero** (ADR 006/007/009): ShadowTraffic (cadastros, MongoDB, GPS) + simulador de operacao (compra e ciclo). Renovar a licenca do ShadowTraffic antes (vence por volta de 2026-11-07).
 3. **Pipeline** (`shared/pipeline/`, hoje no modelo antigo): so depois do fisico e da regeracao.
