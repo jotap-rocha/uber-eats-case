@@ -26,9 +26,9 @@ Pipeline completo de engenharia de dados construido como portfolio profissional,
 
 | Camada | Tecnologia |
 |--------|------------|
-| Fontes (Docker local) | Postgres, Oracle Free 23ai (`gvenzl/oracle-free`), MongoDB, MinIO |
+| Fontes (Docker local) | Postgres, Oracle Free 23ai (`gvenzl/oracle-free`), MongoDB. MinIO fora do escopo ([ADR 010](docs/adr/010-minio-fora-do-escopo-da-geracao.md)); contêiner e volume mantidos |
 | Geração de dados | ShadowTraffic (`gen-unified`, `shared/gen/unified/uber-eats.json.template`) |
-| Ingestão / CDC | Debezium + Kafka Connect (Postgres e Oracle, ADR 006), Airbyte OSS (MongoDB, MinIO) |
+| Ingestão / CDC | Debezium + Kafka Connect (Postgres e Oracle, ADR 006), Airbyte OSS (MongoDB) |
 | Lakehouse | Databricks (Lakeflow/DLT, Unity Catalog), Bronze -> Silver -> Gold em `shared/pipeline/` |
 | Clouds (fases) | Azure (Fase 1), AWS (Fase 2), GCP (Fase 3), cada uma com Warehouse, Lakehouse e Kappa |
 | IaC | Terraform (`{aws,azure,gcp}/infra/`); DAB só para jobs Databricks |

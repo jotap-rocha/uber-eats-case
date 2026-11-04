@@ -1,5 +1,8 @@
 # MinIO - Data Lake S3
 
+> **Fora do escopo desde 2026-11-04** ([ADR 010](../../../docs/adr/010-minio-fora-do-escopo-da-geracao.md)). A lógica do que era gerado aqui está em
+> [`historico-geracao.md`](historico-geracao.md). O contêiner e o volume continuam; este guia vale para a operação deles.
+
 Data Lake local para eventos JSON (~20 streams).
 
 > **Nota sobre “fontes” no pipeline:** MySQL, MongoDB e Kafka **não rodam como containers** neste projeto. O ShadowTraffic simula todas essas origens gravando JSONL no bucket `uber-eats`, organizado por prefixos (`mysql/`, `mongodb/`, `kafka/`). Os scripts DLT em `shared/pipeline/silver/` usam esses nomes apenas para indicar a **origem lógica** dos dados — tudo já está embarcado no MinIO após `.\scripts\start-all.ps1`.

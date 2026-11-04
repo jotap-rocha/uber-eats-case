@@ -13,7 +13,8 @@ Terceira etapa do fluxo (regras → adversarial → conceitual → **lógico** �
 | L4 | Visão integrada: restrições entre tabelas, parâmetros, ADR do histórico de status | aprovada |
 
 > **Revisado depois da aprovação** pela [F0 do físico](04-modelo-fisico.md#f0-decisões-transversais) e pela [ADR 009](../../../docs/adr/009-simulador-cria-a-compra-numa-transacao.md) (2026-11-03): chaves do Oracle em `NUMBER(18)`; o simulador
-> cria a compra inteira numa transação e o ShadowTraffic fica só com cadastros, MongoDB e `kafka/gps`. Os trechos
+> cria a compra inteira numa transação e o ShadowTraffic fica só com cadastros, MongoDB e `kafka/gps`. Depois, a [ADR 010](../../../docs/adr/010-minio-fora-do-escopo-da-geracao.md) (2026-11-04) tirou o MinIO do escopo:
+> `kafka/gps` também sai, e a lógica antiga fica em [`minio/historico-geracao.md`](../minio/historico-geracao.md). Os trechos
 > afetados estão marcados com "(F0)".
 
 ---
@@ -531,7 +532,7 @@ e da abertura do turno. Com elas, a RN-03, a RN-35 e a RN-36 são checadas dentr
 | 10 | Uma entrega por vez por motorista | **RN-42** (grill de 2026-11-02): uma atribuição vigente por motorista; livre na finalização; quem desiste não volta à mesma entrega; impossibilitado fecha o turno (`shifts.close_reason`); turno não fecha com atribuição vigente; só motorista ativo abre turno |
 | 11 | Turno, entrega e atribuição | **Simulador de operação**; adendo na [ADR 007](../../../docs/adr/007-estoque-por-movimentos-e-gerador-hibrido.md) |
 | 12 | Código de rastreio | **12 caracteres base32 Crockford** do SHA-256 de `order_id` com sal, calculado fora do banco; mesmo formato para o pagamento na L2 |
-| 13 | `kafka/shift` e `kafka/route` no MinIO | **Saem**; `kafka/gps` fica e passa a apontar `delivery_id` (`ext → Postgres.deliveries`) |
+| 13 | `kafka/shift` e `kafka/route` no MinIO | **Saem**; `kafka/gps` fica e passa a apontar `delivery_id` (`ext → Postgres.deliveries`). **(ADR 010)** o MinIO inteiro saiu do escopo, `kafka/gps` incluído |
 
 ---
 
@@ -919,7 +920,7 @@ Testes conferem as cópias: `customer_id` contra `orders`, `driver_id` contra a 
 | `mysql/ratings` | `rating_id` sequencial + `uuid`, uma nota por `order_id`, data aleatória desde 2021 | **sai**; vira `driver_ratings` e `restaurant_ratings` no Postgres |
 | `mongodb/support` | `ticket_id` uuid; categorias `Late Delivery`, `Wrong Item`, `Missing Item`, `Payment Issue`, `Other`; status `Open`/`In Progress`/`Resolved`/`Closed`; descrição em Lorem | **sai**; vira `incidents` e `incident_items`. As categorias viram `late_delivery`, `wrong_item` e `missing_item` (as outras duas já saíram no conceitual) |
 
-Com isso, o MinIO fica só com `kafka/gps` (L1b, decisão 13). Nada é editado agora: o gerador muda na regeração.
+Com isso, o MinIO fica só com `kafka/gps` (L1b, decisão 13). **(ADR 010)** Depois o MinIO saiu do escopo. Nada é editado agora: o gerador muda na regeração.
 
 ### Decisões da revisão da L3 (2026-11-02)
 

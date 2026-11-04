@@ -17,4 +17,5 @@ revista não é editada — ganha uma ADR nova que a substitui.
 | [006](006-inversao-de-dominios-entre-oracle-e-postgres.md) | Inversão de domínios entre Oracle e Postgres (pedido e catálogo no Postgres) | Aceita | 2026-10-18 |
 | [007](007-estoque-por-movimentos-e-gerador-hibrido.md) | Estoque por ficha técnica e movimentos, com gerador híbrido | Aceita (fronteira do gerador revista pela 009) | 2026-11-02 |
 | [008](008-historico-de-status-em-tabelas-de-transicao.md) | Histórico de status em tabelas de transição, não só em CDC | Aceita | 2026-11-02 |
-| [009](009-simulador-cria-a-compra-numa-transacao.md) | O simulador de operação cria a compra numa transação | Aceita | 2026-11-03 |
+| [009](009-simulador-cria-a-compra-numa-transacao.md) | O simulador de operação cria a compra numa transação | Aceita (`kafka/gps` revisto pela 010) | 2026-11-03 |
+| [010](010-minio-fora-do-escopo-da-geracao.md) | MinIO fora do escopo da geração e do modelo | Aceita | 2026-11-04 |

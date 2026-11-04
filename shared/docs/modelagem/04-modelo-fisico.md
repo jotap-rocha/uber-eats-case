@@ -11,7 +11,7 @@ como produção).
 | F0 | Decisões transversais adiadas pelo lógico | aprovada |
 | F1 | DDL Postgres: catálogo, operação, dinheiro, pós-entrega | aprovada |
 | F2 | DDL Oracle: `customers`, `drivers`, `cities` | pendente |
-| F3 | MongoDB (`restaurant_profiles`) e MinIO (`kafka/gps`, mais o destino de `mysql/menu`, `mongodb/recommendations` e `kafka/search`, que o lógico não cobriu) | pendente |
+| F3 | MongoDB (`restaurant_profiles`). O MinIO saiu do escopo ([ADR 010](../../../docs/adr/010-minio-fora-do-escopo-da-geracao.md); lógica guardada em [`minio/historico-geracao.md`](../minio/historico-geracao.md)) | pendente |
 | F4 | CDC: configuração do Debezium, tópicos, contrato `cdc_*` visto da fonte | pendente |
 | F5 | Plano da regeração: ordem de carga, divisão gerador × simulador, testes T1 a T18 como consultas | pendente |
 
@@ -40,7 +40,7 @@ pagamento, componentes e recibo. Três problemas saem daí:
 itens, entrega, linha 1 das duas tabelas de transição, pagamento, componentes e recibo nascem juntos, em Python, com
 `BEGIN ... COMMIT`. O ShadowTraffic fica com o que não tem estado: cadastros (Oracle `customers`, `drivers`, `cities`;
 Postgres `cities`, `restaurants`, `products`, `stock_items`, `product_recipes`), o MongoDB (`restaurant_profiles`) e o
-MinIO (`kafka/gps`).
+MinIO (`kafka/gps`). **Depois:** o MinIO saiu do escopo ([ADR 010](../../../docs/adr/010-minio-fora-do-escopo-da-geracao.md)).
 
 | Consequência | Efeito |
 |---|---|

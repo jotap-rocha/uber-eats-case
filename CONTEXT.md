@@ -75,7 +75,7 @@ python3 scripts/tooling/validate-agent-router.py
 | `.cursor/CURSOR.MD` | Contexto principal para agentes |
 | `shared/docs/00-INDEX.md` | Indice da documentacao |
 | `shared/docs/modelagem/` | Regras de negocio (RN-01 a RN-42), modelo conceitual e modelo logico (L0 a L4 aprovadas; fisico pendente) |
-| `docs/adr/` | Decisoes arquiteturais; as de modelagem sao ADR 006 (dominios Oracle/Postgres), 007 (estoque e gerador hibrido) e 008 (historico de status) |
+| `docs/adr/` | Decisoes arquiteturais; as de modelagem sao ADR 006 (dominios Oracle/Postgres), 007 (estoque e gerador hibrido) e 008 (historico de status), 009 (simulador cria a compra) e 010 (MinIO fora do escopo) |
 
 ## Proximos passos recomendados
 
@@ -96,7 +96,7 @@ python3 scripts/tooling/validate-agent-router.py
 
 | Termo | Definicao | Sinonimos | O que NAO e |
 |---|---|---|---|
-| Fase 0 (Fundacao) | Ambiente local com 4 fontes (Postgres, Oracle, MongoDB, MinIO) e CDC real. Fonte unica do dado para as 3 clouds | Fundacao, ambiente local | Nao migra para a nuvem |
+| Fase 0 (Fundacao) | Ambiente local com 3 fontes (Postgres, Oracle, MongoDB) e CDC real; o MinIO saiu do escopo (ADR 010). Fonte unica do dado para as 3 clouds | Fundacao, ambiente local | Nao migra para a nuvem |
 | Onda 1 / 2 / 3 | Etapas da Fase 0: integridade referencial; unificacao de identidade Postgres x MinIO; diversificacao de fontes | | Nao sao fases das clouds |
 | Trilho real-time | Caminho do CDC ate o barramento (Event Hub, Kinesis, Pub/Sub) que alimenta o Kappa | Trilho Kappa | Nao le o storage batch |
 | Trilho batch | Caminho ate o storage (ADLS, S3, GCS) que alimenta Warehouse e Lakehouse | Landing batch | Nao alimenta o Kappa |

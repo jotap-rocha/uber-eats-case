@@ -1,6 +1,6 @@
 # 009 — O simulador de operação cria a compra numa transação
 
-**Status:** Aceita  
+**Status:** Aceita; o MinIO (`kafka/gps`, decisão 2) saiu do escopo pela [ADR 010](010-minio-fora-do-escopo-da-geracao.md)  
 **Data:** 2026-11-03  
 **Autores:** time  
 **Revisa:** a fronteira do gerador híbrido da [ADR 007](007-estoque-por-movimentos-e-gerador-hibrido.md) (decisão 3 e adendo)
