@@ -12,7 +12,7 @@ como produção).
 | F1 | DDL Postgres: catálogo, operação, dinheiro, pós-entrega | aprovada |
 | F2 | DDL Oracle: `customers`, `drivers`, `cities` | aprovada |
 | F3 | MongoDB (`restaurant_profiles`). O MinIO saiu do escopo ([ADR 010](../../../docs/adr/010-minio-fora-do-escopo-da-geracao.md); lógica guardada em [`minio/historico-geracao.md`](../minio/historico-geracao.md)) | aprovada |
-| F4 | CDC: configuração do Debezium, tópicos, contrato `cdc_*` visto da fonte | pendente |
+| F4 | CDC: configuração do Debezium, tópicos, contrato `cdc_*` visto da fonte | aprovada |
 | F5 | Plano da regeração: ordem de carga, divisão gerador × simulador, testes T1 a T18 como consultas | pendente |
 
 ---
@@ -73,7 +73,9 @@ destino por coluna (`DECIMAL(12,2)`, `DECIMAL(12,3)`, `DECIMAL(9,6)`, `DECIMAL(5
 **Achado que vai para a F2.** No conector Oracle, `NUMBER(p,0)` só vira inteiro (`int64`) com p ≤ 18; `NUMBER(19)` e
 `INTEGER` (que no Oracle é `NUMBER(38)`) caem no `decimal.handling.mode` e chegariam como texto. Proposta: chaves do
 Oracle em **`NUMBER(18)`** (teto de 10^18 − 1, folgado) e inteiros pequenos em `NUMBER(9)` (o `city_id` do IBGE tem 7
-dígitos). Isso corrige a tradução "`bigint` → `NUMBER(19)`" da L1a e do handoff.
+dígitos). Isso corrige a tradução "`bigint` → `NUMBER(19)`" da L1a e do handoff. **Depois:** o teste da F4 mostrou que,
+com `decimal.handling.mode=string`, o Debezium 3.7 entrega também `NUMBER(18)` e `NUMBER(9)` como texto; a Bronze faz `CAST`
+(F4.3 e decisões da F4).
 
 ### F0.3 Código de rastreio
 
@@ -1094,3 +1096,228 @@ sozinho (sem `--replSet`).
 
 **Para a F4:** o MongoDB precisa de replica set para o CDC. **Para a F5:** quem carrega o catálogo do Postgres com fichas
 técnicas coerentes (ShadowTraffic ou seed em Python).
+
+---
+
+## F4. CDC
+
+Captura das três fontes regeneradas: **Debezium** (Kafka Connect) no Postgres e no Oracle, **Airbyte** no MongoDB
+([ADR 006](../../../docs/adr/006-inversao-de-dominios-entre-oracle-e-postgres.md), decisão 4). Os templates dos conectores
+locais e as propriedades do Debezium Server (GCP) já seguem esta seção; os da Azure ficam para a Fase 1 (F4.7); o `docker-compose.yml` e os scripts de init dos bancos mudam só na
+regeração (F5). Nada foi registrado nem aplicado em `postgres-ubereats`, `oracle-ubereats`, `mongo-ubereats` ou
+`kafka-connect`.
+
+### F4.0 Convenções
+
+| # | Tema | Proposta |
+|---|---|---|
+| 1 | Versão | **Debezium 3.7** (`quay.io/debezium/connect:3.7`, `quay.io/debezium/server:3.7`), ver F4.1 |
+| 2 | Formato da mensagem | **JSON sem schema** (`schemas.enable=false`) e **envelope completo** (`before`, `after`, `source`, `op`), sem o SMT `ExtractNewRecordState`. A Bronze lê o envelope e grava as colunas `cdc_*`; a Silver nunca lê o formato nativo |
+| 3 | Decimal | `decimal.handling.mode=string` nos dois conectores (F0, decisão 2) |
+| 4 | Tempo | Sem transform (F0, decisão 3). `time.precision.mode` no padrão: `timestamp` vira `MicroTimestamp` (µs); `DATE` do Oracle vira `Timestamp` (ms) |
+| 5 | Snapshot | `snapshot.mode=initial`, com o conector **registrado depois do DDL e antes da carga**: todo evento da regeração chega como `c`, com `ts_ms` e posição de log reais. Um `r` (snapshot de recuperação) é tratado como `c` |
+| 6 | Tópicos | `<prefixo>.<schema>.<tabela>`, criados pelo próprio conector (`topic.creation.default.*`): 1 partição, `cleanup.policy=delete`, retenção de 7 dias (F4.5) |
+| 7 | Exclusão | Tombstone ligado (padrão): depois do `d` vem uma mensagem de valor nulo com a mesma chave. A Bronze descarta valor nulo |
+| 8 | Segredos | Templates com `REPLACE_*`; as senhas ficam no `shared/gen/.env` (`POSTGRES_DEBEZIUM_USER`, `POSTGRES_DEBEZIUM_PASSWORD`, `ORACLE_DBZ_PASSWORD`) |
+
+### F4.1 Versão do Debezium
+
+Hoje: `quay.io/debezium/connect:3.0` (`kafka-connect`, `kafka-connect-azure`) e `debezium/server:3.0` (Docker Hub, Fase 3).
+O `BOOLEAN` nativo do Oracle 23 continua sem suporte no 3.7 (F2, decisão 2), então o motivo para subir é outro:
+
+- **Custo zero agora.** Com a regeração do zero não há offset, slot nem histórico de schema para migrar. Depois que os
+  conectores estiverem rodando, a troca de versão passa a exigir teste de compatibilidade de offsets.
+- **Suporte.** O projeto Debezium só corrige a série mais recente; o 3.0 é de 2024 e usa Kafka Connect 3.x. O 3.7
+  (GA no fim de setembro de 2026) roda sobre Kafka Connect 4.3.
+- **Imagens.** O Docker Hub não tem `debezium/server:3.7` nem `debezium/connect:3.7`: as imagens novas só saem no
+  `quay.io`. A troca corrige também a origem da imagem do Debezium Server.
+- **Testado aqui.** O 3.7.0.Final passou na validação da F4.8 com os DDL da F1 e da F2.
+
+Alternativa: manter o 3.0 (funciona com tudo da F4, mas fica numa série sem correções e a troca futura custa mais).
+
+### F4.2 Conector Postgres
+
+Não existia template local (o Postgres era capturado pelo Airbyte antes da ADR 006). Novo arquivo
+[`config/shared/debezium/postgres-connector.json.template`](../../../config/shared/debezium/postgres-connector.json.template).
+
+**No banco** (script de init da regeração, rodado pelo dono das tabelas):
+
+```sql
+-- Usuário só do CDC: replicação + leitura para o snapshot.
+CREATE ROLE dbz_ubereats WITH LOGIN REPLICATION PASSWORD :'dbz_password';   -- POSTGRES_DEBEZIUM_PASSWORD
+GRANT USAGE ON SCHEMA ubereats TO dbz_ubereats;
+GRANT SELECT ON ALL TABLES IN SCHEMA ubereats TO dbz_ubereats;
+ALTER DEFAULT PRIVILEGES IN SCHEMA ubereats GRANT SELECT ON TABLES TO dbz_ubereats;
+
+-- Publicação do schema inteiro (Postgres 15+): tabela nova do schema entra sozinha.
+CREATE PUBLICATION dbz_ubereats FOR TABLES IN SCHEMA ubereats;
+```
+
+**No servidor** (`command` do `postgres-ubereats`): `wal_level=logical` (já existe) e **`max_slot_wal_keep_size=4GB`**. Sem
+esse teto, um conector parado faz o slot reter WAL sem limite no VHDX da D: (risco da ADR 006). Com ele, se o atraso passar
+de 4 GB o slot é invalidado e o conector precisa de novo snapshot: perde-se a continuidade, não o disco.
+
+**`REPLICA IDENTITY`:** fica o **padrão** (chave primária), porque toda tabela da F1 tem PK. No `u`, o `after` vem completo;
+no `d`, o `before` traz **só a chave** (as outras colunas chegam com zero ou texto vazio, visto no teste). A Bronze usa só a
+chave no `d`. `FULL` aumentaria o WAL de `orders` sem uso na Bronze SCD1.
+
+Propriedades do conector (o template completo traz também os conversores JSON):
+
+| Propriedade | Valor |
+|---|---|
+| `connector.class` | `io.debezium.connector.postgresql.PostgresConnector` |
+| `database.user` / `database.dbname` | `dbz_ubereats` / o `POSTGRES_DB` do `.env` |
+| `topic.prefix` | `postgres` |
+| `plugin.name` | `pgoutput` |
+| `publication.name` / `publication.autocreate.mode` | `dbz_ubereats` / `disabled` (a publicação nasce no init, e o usuário do CDC não precisa ser dono das tabelas) |
+| `slot.name` | `dbz_ubereats` (um slot por consumidor: `dbz_ubereats_kappa` no conector do Kappa na Fase 1, `dbz_ubereats_gcp` na Fase 3, todos sobre a mesma publicação) |
+| `schema.include.list` | `ubereats` |
+| `snapshot.mode` | `initial` |
+| `decimal.handling.mode` | `string` |
+| `heartbeat.interval.ms` | `60000` (mantém o slot avançando quando nada muda; tópico `__debezium-heartbeat.postgres`) |
+| `topic.creation.default.*` | `replication.factor=1`, `partitions=1`, `cleanup.policy=delete`, `retention.ms=604800000` |
+
+### F4.3 Conector Oracle
+
+Mudanças no [`config/shared/debezium/oracle-connector.json.template`](../../../config/shared/debezium/oracle-connector.json.template)
+(o resto fica: `c##dbzuser`, `FREE`/`FREEPDB1`, prefixo `oracle`, `online_catalog`, `snapshot.mode=initial`, conversores JSON):
+
+| Propriedade | Antes | Agora |
+|---|---|---|
+| `table.include.list` | `RESTAURANTS`, `PRODUCTS`, `INVENTORY`, `ORDERS`, `PAYMENTS`, `ORDER_ITEMS`, `RECEIPTS` | `UBEREATS.CITIES,UBEREATS.CUSTOMERS,UBEREATS.DRIVERS` |
+| `decimal.handling.mode` | `double` | `string` |
+| `converters` | — | `boolean` |
+| `boolean.type` | — | `io.debezium.connector.oracle.converters.NumberOneToBooleanConverter` |
+| `boolean.selector` | — | `.*CUSTOMERS.EMAIL_VERIFIED,.*CUSTOMERS.PHONE_VERIFIED` |
+| `schema.history.internal.store.only.captured.tables.ddl` | — | `true` (o histórico guarda só o DDL das 3 tabelas) |
+| `topic.creation.default.*` | — | Iguais aos do Postgres |
+
+O `00_enable_archivelog.sql` e o `01_create_user.sh` (archivelog, supplemental logging `ALL COLUMNS`, grants do
+`c##dbzuser`) continuam valendo. Com `ALL COLUMNS`, o `before` do Oracle vem completo também no `d`.
+
+**Achado do teste (corrige a F0.2).** Com `decimal.handling.mode=string`, **`NUMBER(18)` e `NUMBER(9)` também chegam como
+texto** (`"CUSTOMER_ID": "1"`, inclusive na chave da mensagem): no 3.7, a regra "`NUMBER(p,0)` com p ≤ 18 vira `int64`"
+não vale nesse modo. A Bronze faz `CAST` para `BIGINT`/`INT` (ela já declara o tipo de cada coluna). Os tipos `NUMBER(18)` e
+`NUMBER(9)` da F2 continuam: valem pelo `CHECK` de tamanho e pela tradução para os warehouses.
+
+### F4.4 MongoDB
+
+O Airbyte exige **replica set** para o conector MongoDB, até em full refresh (a doc lista replica set ou cluster shardado;
+nó único serve para desenvolvimento). O `mongo-ubereats` roda sozinho, então a regeração muda o serviço:
+
+```yaml
+  mongo-ubereats:
+    image: mongo:7
+    command: ["--replSet", "rs0", "--bind_ip_all", "--oplogSizeMB", "1024"]
+    healthcheck:
+      # O entrypoint roda os scripts de init sem --replSet; o rs.initiate fica no healthcheck (idempotente).
+      test: ["CMD", "mongosh", "--quiet", "--eval",
+             "try { rs.status().ok } catch (e) { rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'mongo-ubereats:27017'}]}).ok }"]
+      interval: 10s
+      retries: 20
+      start_period: 10s
+```
+
+| Ponto | Proposta |
+|---|---|
+| Nome do membro | `mongo-ubereats:27017`. Quem está fora da rede do compose (Airbyte via `abctl`, seed e simulador no Windows) conecta com **`directConnection=true`**, sem descoberta do replica set (senão o driver tenta resolver `mongo-ubereats`) |
+| Oplog | `--oplogSizeMB 1024`: o padrão é 5% do disco, alto para a D: |
+| Autenticação | O Mongo roda **sem** autenticação hoje. Se for ligada, replica set exige `keyFile`; fica fora da F4 |
+| Captura no Airbyte | **Incremental por change stream** (CDC), modo de atualização *Lookup* (documento inteiro). O seed é idempotente e pode reescrever perfis (`replaceOne`); o CDC entrega essas mudanças e as exclusões, e o full refresh releria a coleção inteira a cada sync. Substitui a decisão antiga "MongoDB sem CDC" (`azure/docs/data-contract-cdc-azure.md`) |
+
+### F4.5 Tópicos
+
+| Fonte | Tópico | Observação |
+|---|---|---|
+| Postgres | `postgres.ubereats.<tabela>` (28) | Minúsculas, como no banco |
+| Postgres | `__debezium-heartbeat.postgres` | Heartbeat (F4.2) |
+| Oracle | `oracle.UBEREATS.CITIES`, `.CUSTOMERS`, `.DRIVERS` | Maiúsculas, como o Oracle guarda |
+| Oracle | `schema-changes.oracle-ubereats` | Histórico de schema; criado pelo conector |
+| MongoDB | — | O Airbyte grava direto no destino (sem barramento na Fase 0) |
+| Connect | `connect_configs`, `connect_offsets`, `connect_status` | Já existem |
+
+Partição e retenção no Redpanda: **1 partição** (a ordem por chave vale de qualquer jeito; uma partição mantém a ordem total
+de cada tópico) e **`delete` com 7 dias**, que cobrem uma semana de pipeline parado. Sem compactação: o histórico de
+mudanças é o dado do Kappa.
+
+### F4.6 Contrato `cdc_*` visto da fonte
+
+| Coluna | Postgres (Debezium) | Oracle (Debezium) | MongoDB (Airbyte) | Tipo na Bronze |
+|---|---|---|---|---|
+| `cdc_operation` | `op` (`c`, `u`, `d`; `r` → `c`) | `op` (idem) | `_ab_cdc_deleted_at` preenchido → `d`, senão `u` | `STRING` |
+| `cdc_commit_ts` | `source.ts_ms` (commit) | `source.ts_ms` (= `commit_ts_ms`, precisão de segundo) | `_ab_cdc_updated_at` | `TIMESTAMP` (instante UTC) |
+| `cdc_sequence` | `source.lsn` (número) | `source.scn` (texto) | `_ab_cdc_cursor` | `DECIMAL(20,0)` |
+| `cdc_source_system` | `'postgres-ubereats'` | `'oracle-ubereats'` | `'mongodb-ubereats'` | `STRING` |
+
+- **Ordem por chave.** LSN e SCN da **mudança** crescem para a mesma linha (duas transações não mexem na mesma linha ao
+  mesmo tempo), então servem de `SEQUENCE BY`. Duas mudanças da mesma linha **na mesma transação** poderiam repetir o SCN no
+  Oracle; lá só o ShadowTraffic escreve, uma linha por comando, então o risco fica registrado e não tratado.
+- **Transação.** A compra inteira (ADR 009) chega com o mesmo `source.txId` e o mesmo `ts_ms` em todos os tópicos (visto no
+  teste). A Bronze guarda `source.txId` como `cdc_tx_id`, fora do contrato canônico, para quem quiser remontar a compra.
+- **`DECIMAL(20,0)`** porque LSN e SCN são inteiros sem sinal de 64 bits.
+- **MongoDB.** Os nomes dos metadados do Airbyte (`_ab_cdc_*`) ficam a confirmar na primeira sync da regeração.
+
+Tipos de dado no evento e na Bronze:
+
+| Origem | Exemplo no evento | Bronze |
+|---|---|---|
+| `numeric(p,s)` / `NUMBER(p,s)` | `"39.90"` | `DECIMAL(p,s)` |
+| `bigint`, `integer`, `smallint` (Postgres) | `1` | `BIGINT`, `INT`, `SMALLINT` |
+| `NUMBER(18)`, `NUMBER(9)` (Oracle) | `"1"` | `CAST` para `BIGINT`, `INT` (F4.3) |
+| `boolean` / `NUMBER(1)` com o conversor | `true` | `BOOLEAN` |
+| `timestamp` / `TIMESTAMP` (`*_at` de negócio) | µs da hora do relógio lida como UTC | `TIMESTAMP_NTZ`, convertido com fuso de sessão UTC (F0, decisão 3) |
+| `DATE` do Oracle (`date_of_birth`) | ms da meia-noite | `DATE` |
+| `date` do BSON (MongoDB) | instante UTC | `TIMESTAMP_NTZ` em `America/Sao_Paulo` (F3, decisão 3) |
+| `char(n)`, `varchar(n)` | texto | `STRING` |
+
+### F4.7 Trilhas de nuvem
+
+| Arquivo | Mudança | Quando |
+|---|---|---|
+| `config/azure/debezium/*` | **Não mudam na F4.** O desenho da Fase 1 mudou ([ADR 012](../../../docs/adr/012-captura-dedicada-ao-kappa-na-fase-1.md)): os templates da Azure são refeitos no planejamento da Fase 1 | Fase 1 |
+| `config/gcp/debezium-server/postgres/application.properties` | `schema.include.list=ubereats`, `publication.name=dbz_ubereats`, `publication.autocreate.mode=disabled`, `slot.name=dbz_ubereats_gcp`, `decimal.handling.mode=string`; sai `database.server.name` (removida no 2.0); tópicos Pub/Sub `postgres-gcp.ubereats.<tabela>` | Feito |
+| `config/gcp/debezium-server/oracle/application.properties` | As mudanças da F4.3, mais **histórico de schema em arquivo** (`FileSchemaHistory`), que faltava e o conector Oracle exige; sai `database.server.name` | Feito |
+| `cdc_source_system` | O `InsertField` do GCP passa a gravar a **fonte** (`postgres-ubereats`, `oracle-ubereats`), como nas outras trilhas; a trilha já está no caminho do dado | Feito |
+| `docker-compose.yml` | `kafka-connect` e `kafka-connect-azure` em `quay.io/debezium/connect:3.7`; `debezium-server-*` em `quay.io/debezium/server:3.7`; `max_slot_wal_keep_size` no Postgres; replica set no Mongo (F4.4); `kafka-connect` depende também do `postgres-ubereats` | Regeração |
+| Scripts de init (`shared/sql/postgres/`, `shared/mongo/init/`) | Usuário e publicação do CDC (F4.2) | Regeração |
+| Fase 1, Event Hubs | **Desenho da [ADR 012](../../../docs/adr/012-captura-dedicada-ao-kappa-na-fase-1.md).** Warehouse e lakehouse recebem pelo Debezium e pelo Airbyte locais, que gravam no storage; o Kappa tem um **conector dedicado**, só com as tabelas do problema de negócio, publicando no Event Hubs. O Standard tem teto de **10 event hubs por namespace** e retenção máxima de 7 dias: tirando os 3 internos do Connect (e o heartbeat, se houver tabela do Postgres), sobram até 6 ou 7 tabelas. O conector do Kappa é registrado só quando a fase do Kappa começar. Se ele capturar tabela do Oracle, o histórico de schema fica em **arquivo local** (`FileSchemaHistory`), não no Event Hubs: o conector o relê a cada restart e o perderia depois de 7 dias | Fase 1 |
+| AWS (DMS) | Fora da F4: a Fase 2 não usa Debezium | Fase 2 |
+
+### F4.8 Validação
+
+Contêineres descartáveis em 2026-11-04, numa rede própria (`f4net`), sem volume nomeado e sem porta no host:
+`postgres:15` e `gvenzl/oracle-free:23.4-full` com `TZ=America/Sao_Paulo`, `redpandadata/redpanda`, `mongo:7` e
+`quay.io/debezium/connect:3.7`. Removidos ao final, com os volumes anônimos; os contêineres e volumes do projeto não foram
+tocados. DDL da F1 (6 tabelas) e da F2 (3 tabelas), com os conectores da F4.2 e da F4.3.
+
+| Teste | Resultado |
+|---|---|
+| Conectores Postgres e Oracle no 3.7.0.Final | `RUNNING`; tópicos e heartbeat criados com 1 partição |
+| `numeric(12,2)` / `NUMBER(9,6)` | Texto exato (`"39.90"`, `"-23.550520"`) |
+| `boolean` (Postgres) e `NUMBER(1)` com o conversor | `true` / `false` |
+| `placed_at = '2026-11-04 12:34:56.789'` nos dois bancos | `1793795696789000` µs: a hora do relógio, lida como UTC (F0.4 confirmada) |
+| Default `created_at` | Hora de Brasília (13:05 com UTC 16:05) |
+| `source.ts_ms` com o contêiner em Brasília | Instante UTC real nos dois bancos |
+| Compra numa transação (pedido, atendimento, item) | Mesmo `txId` e `ts_ms`; LSN crescente dentro da transação |
+| `DELETE` no Postgres | `before` só com a chave; tombstone em seguida |
+| `DELETE` no Oracle | `before` completo |
+| `NUMBER(18)`, `NUMBER(9)` no Oracle | **Texto** (F4.3) |
+| `DATE` do Oracle | ms da meia-noite (`1990-05-17`) |
+| Mongo com `--replSet rs0` e `rs.initiate` no healthcheck | `PRIMARY`; change stream com `directConnection=true` entregou insert e update |
+
+### Decisões da revisão da F4 (2026-11-04)
+
+| # | Tema | Decisão |
+|---|---|---|
+| 1 | Versão do Debezium | **3.7** (`quay.io/debezium/connect:3.7` e `quay.io/debezium/server:3.7`), trocada na regeração. Registrada na [ADR 011](../../../docs/adr/011-cdc-debezium-3-7-e-replica-set-no-mongodb.md) com o replica set do MongoDB |
+| 2 | Chaves do Oracle como texto | **`CAST` na Bronze** para `BIGINT`/`INT`; sem SMT no conector e sem `precise`. Corrige a F0.2 |
+| 3 | Captura do MongoDB | **Replica set `rs0` de 1 nó** (init no healthcheck, `directConnection=true` fora do compose) e **CDC por change stream** no Airbyte, modo *Lookup* ([ADR 011](../../../docs/adr/011-cdc-debezium-3-7-e-replica-set-no-mongodb.md)) |
+| 4 | Quando aplicar | **Templates agora** (conectores locais e GCP, nesta branch, sem registrar nada); `docker-compose.yml` e scripts de init na regeração. Os da Azure ficam para a Fase 1 (decisão 5) |
+| 5 | Fase 1 (Azure) | **Captura dedicada ao Kappa** ([ADR 012](../../../docs/adr/012-captura-dedicada-ao-kappa-na-fase-1.md)): warehouse e lakehouse pelo Debezium e Airbyte locais até o storage; o Kappa com conector próprio, só as tabelas do problema, dentro do Event Hubs Standard, registrado quando a fase do Kappa começar. Revê a decisão 5 da ADR 006 |
+
+Valem como propostas aceitas o resto da F4: JSON sem schema com envelope completo, `REPLICA IDENTITY` padrão, publicação do
+schema com usuário próprio, `max_slot_wal_keep_size=4GB`, 1 partição com 7 dias, contrato `cdc_*` da F4.6 e
+`cdc_source_system` pela fonte em todas as trilhas.
+
+**Para a F5:** ordem da regeração com os conectores registrados depois do DDL e antes da carga; scripts de init do CDC no
+Postgres e o replica set no compose; conferir os metadados `_ab_cdc_*` na primeira sync do Airbyte.
