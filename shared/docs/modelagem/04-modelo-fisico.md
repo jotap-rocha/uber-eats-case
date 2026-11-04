@@ -13,7 +13,7 @@ como produção).
 | F2 | DDL Oracle: `customers`, `drivers`, `cities` | aprovada |
 | F3 | MongoDB (`restaurant_profiles`). O MinIO saiu do escopo ([ADR 010](../../../docs/adr/010-minio-fora-do-escopo-da-geracao.md); lógica guardada em [`minio/historico-geracao.md`](../minio/historico-geracao.md)) | aprovada |
 | F4 | CDC: configuração do Debezium, tópicos, contrato `cdc_*` visto da fonte | aprovada |
-| F5 | Plano da regeração: ordem de carga, divisão gerador × simulador, testes T1 a T18 como consultas | pendente |
+| F5 | Plano da regeração: ordem de carga, divisão gerador × simulador, testes T1 a T19 como consultas | aprovada |
 
 ---
 
@@ -1321,3 +1321,744 @@ schema com usuário próprio, `max_slot_wal_keep_size=4GB`, 1 partição com 7 d
 
 **Para a F5:** ordem da regeração com os conectores registrados depois do DDL e antes da carga; scripts de init do CDC no
 Postgres e o replica set no compose; conferir os metadados `_ab_cdc_*` na primeira sync do Airbyte.
+
+---
+
+## F5. Plano da regeração
+
+Como regenerar as três fontes com o modelo das F0 a F4: o que muda nos arquivos, em que ordem a regeração roda, quem carrega
+cada tabela, como o dinheiro é arredondado e como se prova que o dado saiu certo (T1 a T19). **Nada desta seção foi
+aplicado:** a execução é a etapa seguinte do fluxo, e cada operação destrutiva (remoção de volume, de contêiner ou de
+conector) pede confirmação na hora, como manda o `CLAUDE.md`.
+
+### F5.0 O que sai e o que entra
+
+| Peça | Hoje | Depois da regeração |
+|---|---|---|
+| `postgres-ubereats` | `public.users` e `public.drivers` (~69 MB, domínio Pessoas antigo) | Schema `ubereats` com as 28 tabelas da F1, usuário e publicação do CDC (F4.2), `TZ` e `max_slot_wal_keep_size` |
+| `oracle-ubereats` | Schema `UBEREATS` com as 7 tabelas antigas do domínio Pedido (~11,8 GB, no teto de 12 GB) | `CITIES`, `CUSTOMERS`, `DRIVERS` (F2), gatilho de logon e `TZ` |
+| `mongo-ubereats` | Perfil do seed em JavaScript (500 fixo, cardápio sem `product_id`), nó sozinho | `restaurant_profiles` com validador (F3), replica set `rs0` (F4.4) |
+| `redpanda` | Tópicos do modelo antigo e `connect_offsets` com o SCN do Oracle antigo | Vazio; tópicos novos criados pelos conectores (F4.5) |
+| `kafka-connect` | Debezium 3.0 com `oracle-ubereats-connector` antigo | Debezium 3.7 com os conectores Postgres e Oracle novos |
+| `gen-unified` | Template com Pessoas no Postgres, Pedido no Oracle e 8 geradores do MinIO | Só `customers`, `drivers` (Oracle) e `restaurants` (Postgres) |
+| Simulador | Não existe | Pacote Python: seeds, compra e ciclo (ADR 009) |
+| Airbyte | Conexão antiga com o Postgres | Fonte MongoDB por change stream (ADR 011) |
+| `minio-ubereats` | Bucket com o histórico | **Intocado** (ADR 010); o `gen-unified` deixa de depender dele |
+
+### F5.1 Estratégia: recriar os volumes
+
+**Proposta (recomendada): recriar os volumes dos três bancos e o contêiner do Redpanda, com os scripts de init como fonte
+única do schema.**
+
+- **O Oracle precisa liberar os 11,8 GB de qualquer jeito.** O schema novo é o mesmo usuário `UBEREATS` (F2.0 #1) e não
+  cabe ao lado das tabelas antigas. Apagar tabela por tabela deixa o volume com o histórico de archivelog e a área de
+  recuperação do banco antigo.
+- **O init do Postgres e do MongoDB só roda com volume vazio.** Com o volume atual, o DDL teria de ser aplicado por fora, e o
+  repositório deixaria de reproduzir o banco do zero.
+- **O Redpanda guarda os offsets do conector antigo.** O conector Oracle novo tem o mesmo nome (`oracle-ubereats-connector`)
+  e leria do `connect_offsets` um SCN do banco antigo. O Redpanda não tem volume no compose: recriar o contêiner zera
+  tópicos, configs e offsets de uma vez.
+- **Quem clonar o repositório reproduz o mesmo banco**, que é o objetivo de portfólio.
+
+Alternativa: manter os volumes e aplicar o DDL por script (schema `ubereats` ao lado de `public` no Postgres; no Oracle,
+`DROP` das 7 tabelas antigas mais purga do archivelog; no Redpanda, apagar os offsets pela API do Connect). São mais passos
+destrutivos, um por um, e o init deixa de ser a fonte.
+
+**Achado do Oracle.** O compose monta `shared/sql/oracle` em `/container-entrypoint-startdb.d`. Na imagem `gvenzl/oracle-free`
+essa pasta roda **a cada partida do contêiner** (conferido no `container-entrypoint.sh` da imagem 23.4); só
+`/container-entrypoint-initdb.d` roda uma vez, na criação do banco. Hoje o `SHUTDOWN`/`STARTUP` do archivelog e os `CREATE`
+rodam em todo start. Na regeração a montagem passa para `initdb.d`.
+
+### F5.2 Arquivos que mudam antes da execução
+
+Tudo nesta tabela é código versionado, feito e testado na branch antes de tocar em contêiner.
+
+| Arquivo | Mudança |
+|---|---|
+| `docker-compose.yml` | `TZ=America/Sao_Paulo` no Postgres e no Oracle (F0, decisão 3); `-c max_slot_wal_keep_size=4GB` no Postgres (F4.2); Oracle montado em `/container-entrypoint-initdb.d` (F5.1); Mongo com `--replSet rs0` e o healthcheck da F4.4; `kafka-connect` e `kafka-connect-azure` em `quay.io/debezium/connect:3.7`, `debezium-server-*` em `quay.io/debezium/server:3.7` (ADR 011); `kafka-connect` depende do Postgres e do Oracle saudáveis; `gen-unified` sem `minio-setup` no `depends_on` |
+| `shared/sql/postgres/` | Saem `create_users_table.sql` e `create_drivers_table.sql` (vão para `shared/sql/legacy/postgres/`). Entram `00_schema.sql` (schema, `search_path` do usuário da aplicação e `set_updated_at`), `01_catalogo.sql`, `02_operacao.sql`, `03_dinheiro.sql`, `04_pos_entrega.sql`, `05_indices_triggers.sql` (F1.1 a F1.5) e `06_cdc.sh` (usuário `dbz_ubereats` com a senha do `.env` e a publicação, F4.2) |
+| `shared/sql/oracle/` | Ficam `00_enable_archivelog.sql` e `01_create_user.sh`. `02_create_tables.sh` e `03_create_tables_pedido_pagamento.sh` vão para `shared/sql/legacy/oracle/`; entra um `02_create_tables.sh` novo com o DDL e o gatilho de logon da F2 |
+| `shared/mongo/init/` | `01_perfil_restaurante.js(.template)` vai para `shared/mongo/legacy/`; entra `01_restaurant_profiles.js` (validador e índice da F3.2). O `setup-configs.ps1` deixa de renderizar o seed do Mongo |
+| `shared/gen/unified/uber-eats.json.template` | Fica só com `customers` e `drivers` (Oracle) e `restaurants` (Postgres), nas colunas da F1 e da F2; sai a conexão `minio` e os 8 geradores dela (ADR 010). Edição pela skill `shadowtraffic-adicionar-generator-seguro` |
+| `shared/gen/reference/cities.csv` | **Novo** (F5.4): código do IBGE, nome, UF e centro (latitude, longitude) de cada cidade |
+| `shared/gen/parameters.yaml` | **Novo** (F5.8) |
+| `shared/gen/simulator/` | **Novo pacote Python**: `seed` (cidades, catálogo, estoque inicial, perfis), `money` (F5.7), `tracking` (F0.3), `clock` (F5.6), o laço do simulador e os testes (`pytest`, `ruff`) |
+| `shared/gen/checks/` | **Novo**: uma consulta por invariante (F5.9), rodadas por `shared/gen/tests/test_invariants.py` |
+| `scripts/ingestion/register-postgres-connector.ps1` | **Criado nesta fase** (sem registrar nada), igual ao do Oracle: injeta `POSTGRES_DEBEZIUM_PASSWORD` e `POSTGRES_DB` no template |
+| `shared/gen/.env` (fora do git) | Entram `POSTGRES_DEBEZIUM_PASSWORD`, `TRACKING_SALT_ORDER` e `TRACKING_SALT_PAYMENT`; sai `RESTAURANT_COUNT`. O usuário do CDC é fixo no template (`dbz_ubereats`), então `POSTGRES_DEBEZIUM_USER` (F4.0 #8) não é necessário |
+
+O simulador roda **no Windows** (ambiente virtual Python) na v1: conecta em `localhost` nas portas publicadas e no Mongo
+com `directConnection=true` (F4.4). Virar serviço do compose fica para depois, quando o laço estiver estável.
+
+### F5.3 Ordem da regeração
+
+Cada passo tem uma checagem que precisa passar antes do próximo. "**Confirmação**" marca passo destrutivo: o agente mostra
+o comando e espera o "ok" do usuário.
+
+| # | Passo | Checagem |
+|---|---|---|
+| 0 | **Pré-requisitos.** Licença do ShadowTraffic renovada (vence por volta de 2026-11-07; skill `shadowtraffic-renovar-licenca`); F5.2 mesclada com `pytest` e `ruff` verdes; conexão antiga do Airbyte com o Postgres **desativada**; espaço livre na D: | `docker compose config` sem erro; `pytest shared/gen` verde |
+| 1 | **Parar** `gen-unified` (já parado), `kafka-connect`, `debezium-server-*` e os três bancos (`docker compose stop`) | `docker ps` sem esses contêineres |
+| 2 | **Remover** os contêineres `postgres-ubereats`, `oracle-ubereats`, `mongo-ubereats`, `redpanda` e `kafka-connect`, e os volumes `postgres_data`, `oracle_data` e `mongo_data`. **Confirmação por volume** | `docker volume ls` sem os três; `minio_data` intocado |
+| 3 | **Subir os bancos** (`docker compose up -d postgres-ubereats oracle-ubereats mongo-ubereats`); o init cria tudo | Postgres: 28 tabelas em `ubereats`, `SHOW timezone` = `America/Sao_Paulo`, `SHOW max_slot_wal_keep_size` = `4GB`, publicação `dbz_ubereats` existe. Oracle: 3 tabelas, `ARCHIVELOG`, gatilho de logon válido. Mongo: `rs.status()` com `PRIMARY`, coleção com validador |
+| 4 | **Subir** `redpanda` e `kafka-connect` (3.7) | `GET :8083/connector-plugins` lista os conectores Postgres e Oracle na versão 3.7 |
+| 5 | **Registrar os conectores** (`register-postgres-connector.ps1`, `register-oracle-connector.ps1`), com as tabelas ainda vazias (F4.0 #5) | Os dois `RUNNING`; slot `dbz_ubereats` ativo em `pg_replication_slots` |
+| 6 | **Seed de cidades** nos dois bancos, a partir do `cities.csv` | T17 (parte das cidades) passa; eventos `c` em `postgres.ubereats.cities` e `oracle.UBEREATS.CITIES` |
+| 7 | **ShadowTraffic, carga inicial** em lote (`maxEvents` da F5.8), pela skill `shadowtraffic-ajustar-geracao` (tabelas vazias: `startingFrom` = 1) | Contagens de `customers`, `drivers` e `restaurants` iguais aos parâmetros |
+| 8 | **Seed de catálogo e perfis** (F5.4): produtos, itens de estoque, fichas, estoque inicial e `restaurant_profiles` | T4b, T6, T18 e T19 passam (gate da carga) |
+| 9 | **Airbyte**: fonte MongoDB por change stream, modo *Lookup*, `directConnection=true`, com um destino de conferência (Local JSON). Na primeira sync, conferir os nomes `_ab_cdc_*` (risco da ADR 011) | Metadados conferidos; F4.6 corrigida se os nomes forem outros. O destino de verdade vem com a fase de cada nuvem |
+| 10 | **Simulador**: histórico (F5.6) e depois tempo real | Logs sem recusa do banco; eventos nos tópicos `postgres.ubereats.*` |
+| 11 | **Gate da regeração**: T1 a T19 com 0 linhas; contagens por status dentro do esperado pelas probabilidades (F5.8); compra no CDC com o mesmo `source.txId` em todos os tópicos | Regeração aprovada; `CLAUDE.md` e `HANDOFF.md` atualizados (o Oracle novo continua tratado como produção, como todos os bancos) |
+| 12 | **Operação contínua**: ShadowTraffic em ritmo lento (cadastros novos e `last_login`) e simulador ligados; no fim da sessão, os dois param | Skill de operação do simulador (consequência da ADR 007) |
+
+Não há volta de dado: tudo é sintético. Se um passo de 3 a 8 falhar, corrige-se o código e a regeração recomeça no passo 2
+(de novo com confirmação).
+
+### F5.4 Catálogo: quem carrega o quê
+
+**Problema (achado da F3).** Todo produto precisa de ficha técnica com itens de estoque do **mesmo restaurante** (T4), o
+produto pronto aponta para um item de estoque dele mesmo (ADR 007, decisão 2) e o nome do item tem de combinar com o
+produto. Os `lookup` do ShadowTraffic são independentes entre si e não garantem nada disso. As cidades têm outro problema:
+precisam ser **idênticas nos dois bancos** (T17), e duas listas geradas por geradores separados podem divergir.
+
+**Proposta (recomendada).**
+
+| Tabela | Quem carrega | Por quê |
+|---|---|---|
+| `cities` (Oracle e Postgres) | **Seed** a partir de `shared/gen/reference/cities.csv` | Uma fonte, dois bancos: idênticas por construção. O `setup-configs.ps1` injeta a mesma lista no template, para os cadastros sortearem cidade e coordenada perto do centro |
+| `customers`, `drivers` (Oracle) | **ShadowTraffic** | Cadastro plano com dado falso: o forte da ferramenta |
+| `restaurants` (Postgres) | **ShadowTraffic** | Idem; carga inicial em lote (o catálogo depende dele) |
+| `products`, `stock_items`, `product_recipes` | **Seed de catálogo** (Python) | Por restaurante, coerente com `cuisine_type`: produto pronto com item `ready` de mesmo nome; pré-pronto em porções; insumos em gramas; ficha com 1 a 4 linhas |
+| Estoque inicial | **Seed de catálogo** | Um movimento `restock` por item, com `occurred_at` às 00:00 do dia da carga (antes de qualquer janela, que o seed nunca abre antes das 06:00), e `quantity_on_hand` atualizado na mesma transação (T6) |
+| `restaurant_profiles` (MongoDB) | **Seed de perfis** (F3, decisão 1) | Lê `restaurants` e `products` depois do catálogo |
+
+Muda a ADR 009 (decisão 2): o ShadowTraffic deixa de carregar `cities`, `products`, `stock_items` e `product_recipes`. Fica
+registrado num segundo adendo.
+
+Alternativas: o ShadowTraffic carregar também `products` e `stock_items`, com o seed fazendo só as fichas (nomes de
+produto e de item não combinariam, e o produto pronto não acharia "ele mesmo"); ou o seed carregar todo o Postgres,
+inclusive `restaurants` (o ShadowTraffic ficaria só com o Oracle).
+
+**Restaurante novo depois da carga.** A v1 carrega restaurantes só no lote inicial. Se o ShadowTraffic voltar a criar
+restaurantes, o seed (idempotente) roda de novo, e o simulador ignora restaurante sem perfil ou sem catálogo (RN-23).
+
+### F5.5 Divisão gerador × simulador
+
+Atualiza as tabelas "Quem escreve" da L1b, da L2 e da L3 (a ADR 009 já as tinha deixado desatualizadas).
+
+| Peça | Tabelas | Operações |
+|---|---|---|
+| ShadowTraffic | Oracle `customers`, `drivers`; Postgres `restaurants` | INSERT com `sequentialInteger`; UPDATE só de `status` e `last_login`. **Nunca** muda `city_id` nem endereço: o T17 compara a cidade do pedido com a cidade atual do cliente |
+| Seed (pacote do simulador) | `cities` (dois bancos), `products`, `stock_items`, `product_recipes`, o `restock` inicial, `restaurant_profiles` | INSERT idempotente (`ON CONFLICT DO NOTHING`; `replaceOne` com `upsert` no Mongo) |
+| Simulador | As outras 22 tabelas do Postgres; `restock` recorrente e baixa em `stock_movements`; UPDATE de `stock_items.quantity_on_hand` | INSERT com identidade (F0, decisão 8), UPDATE de ciclo; lê `customers` e `drivers` no Oracle e as janelas no Mongo |
+
+`stock_movements` tem dois escritores do mesmo pacote (o seed só no `restock` inicial). Os dois usam a identidade do
+banco, então não há colisão de chave, que era o motivo da regra "um dono de INSERT por tabela".
+
+**Um processo, um escritor.** O simulador é um laço único sobre uma fila de ações por instante (próximo pedido, prazo de
+aceite, fim de preparo, chegada do motorista, confirmação automática...). Sem concorrência entre escritores no Postgres:
+nenhuma corrida de saldo de estoque nem de atribuição, e a ordem da identidade acompanha a ordem de commit (o T6b usa isso).
+
+### F5.6 Relógio: histórico e tempo real
+
+**Problema.** Ligado só em tempo real, o simulador começa sem passado: a Gold e o BI da primeira semana teriam um dia de
+dado, e as regras de prazo longo (incidente em até 24 h) só apareceriam no dia seguinte.
+
+**Proposta (recomendada): histórico simulado de N dias e depois tempo real.** O simulador recebe o relógio por injeção
+(`clock`). No modo histórico, ele percorre o tempo simulado a partir de `backfill_days` atrás o mais rápido que o banco
+aguenta, com as mesmas regras, e grava os `*_at` de negócio no tempo simulado. Quando alcança o relógio de parede, troca
+para tempo real e segue sem parar.
+
+| Consequência | Efeito |
+|---|---|
+| `created_at`/`updated_at` | Default do banco = hora real da escrita (rastro técnico). No histórico diferem dos `*_at` de negócio; a Silver e a Gold usam os de negócio |
+| CDC | O histórico chega como rajada de eventos `c`/`u` com `cdc_commit_ts` real; a retenção de 7 dias (F4.5) cobre. A ordem por chave continua valendo |
+| Cadastros | O simulador só usa cliente com `signup_date` ≤ instante da compra e motorista com `registration_date` ≤ abertura do turno; o ShadowTraffic gera essas datas espalhadas nos anos anteriores |
+| Estoque | O `restock` inicial passa a ser às 00:00 do **primeiro dia do histórico** |
+| Testes | Iguais nos dois modos: nenhum T usa `created_at` |
+
+Alternativas: só tempo real (simples, mas sem passado); ou relógio acelerado contínuo (o dado nunca fica "ao vivo", o que
+tira o sentido do Kappa).
+
+### F5.7 Dinheiro: arredondamento, última parcela e taxa de entrega
+
+Fecha a F0.7. Tudo em `Decimal`, dentro da transação da compra, na ordem abaixo.
+
+1. **Modo de arredondamento: `ROUND_HALF_UP`** para centavos. É o que o Postgres (`round(numeric, 2)`), o Spark e o SQL do
+   Databricks (`round`) fazem com valor positivo: os testes da F5.9 e a Silver recalculam sem divergir nem num centavo.
+2. **Ordem dos componentes** (`component_number`): para cada item em (`restaurant_order_id`, `line_number`), o `item` e
+   depois o `service_fee`; o `delivery_fee` por último.
+3. **Taxa de serviço:** total = `round(itens × service_fee_rate)`; rateada pelos itens na proporção do bruto, cada parcela
+   arredondada e **a última absorve a diferença** (RN-33).
+4. **Taxa de entrega:** `round(delivery_fee_base + delivery_fee_per_km × distância estimada)`, com a distância da menor rota
+   (L4, decisão 2), em linha reta × `route_detour_factor`, calculada na compra. Fica congelada (RN-33): se um atendimento for
+   rejeitado depois, o `distance_km` da entrega pode mudar, e o valor cobrado não. **Lacuna do lógico:** a L4 não tinha fórmula
+   nem parâmetro para esse valor.
+5. **Imposto:** total = `round(total_amount × tax_rate)`; por componente, `round(bruto × tax_rate)` (alíquota sobre o bruto,
+   RN-09), e o último (`delivery_fee`, o maior componente fixo) absorve a diferença. Assim a soma do imposto dos componentes é
+   o imposto do total, e a absorção nunca deixa o imposto negativo.
+6. **Custo do meio, comissão e parte do motorista:** `round(base × taxa)`, uma parcela só.
+7. **Reembolso de componente inteiro** (atendimento cancelado, motivos de entrega): devolve o bruto e o imposto exatos do
+   componente.
+8. **Reembolso parcial** (incidente de `q` de `Q` unidades, com `r` já devolvidas): **diferença de acumulados**,
+   `round(G × (r + q) / Q) − round(G × r / Q)`, no bruto `G` e no imposto. A soma das parcelas fecha exatamente o componente
+   quando todas as unidades voltam, e o total não depende da ordem dos incidentes (T9).
+
+Exemplo (conferido em `Decimal` e gravado no teste da F5.9): itens de 10,00, 15,00 e 4,99; taxa de serviço 12%; entrega
+7,49; imposto 8%.
+
+| # | Componente | Bruto | Imposto | Conta |
+|---|---|---|---|---|
+| 1 | item, linha 1 | 10,00 | 0,80 | |
+| 2 | service_fee, linha 1 | 1,20 | 0,10 | 3,60 × 10,00 / 29,99 = 1,2004 |
+| 3 | item, linha 2 | 15,00 | 1,20 | |
+| 4 | service_fee, linha 2 | 1,80 | 0,14 | 3,60 × 15,00 / 29,99 = 1,8006 |
+| 5 | item, linha 3 | 4,99 | 0,40 | |
+| 6 | service_fee, linha 3 | 0,60 | 0,05 | última: 3,60 − 3,00 |
+| 7 | delivery_fee | 7,49 | 0,60 | última: 3,29 − 2,69 |
+| | **Total** | **41,08** | **3,29** | serviço = round(29,99 × 0,12) = 3,60; imposto = round(41,08 × 0,08) = 3,29 |
+
+Reembolso parcial de 10,00 (Q = 3) em três incidentes de uma unidade: 3,33, 3,34 e 3,33; soma 10,00.
+
+### F5.8 Parâmetros (`shared/gen/parameters.yaml`)
+
+Os da L4 mais os novos desta fase. Valores são **sugestão inicial** (L4, decisão 5): ajustam-se na regeração sem mudar o
+código. Percentuais são copiados para a linha quando usados.
+
+```yaml
+scale:                         # carga inicial (ShadowTraffic e seeds)
+  cities_file: shared/gen/reference/cities.csv   # 5 capitais na v1: SP, RJ, BH, Curitiba, Porto Alegre
+  customers: 20000
+  drivers: 1500
+  restaurants_per_city: 50
+  products_per_restaurant: [8, 20]
+  recipe_lines: [1, 4]
+  restaurants_with_two_windows: 0.6
+clock:
+  backfill_days: 30            # F5.6; 0 = só tempo real
+demand:
+  peak_orders_per_hour_per_city: 30
+  hourly_factor: {"11": 0.8, "12": 1.0, "13": 0.9, "19": 0.9, "20": 1.0, "21": 0.7}   # demais horas: 0.2
+  second_restaurant_share: 0.08          # pedidos com 2 atendimentos (RN-03)
+  items_per_restaurant_order: [1, 4]
+  quantity_per_item: [1, 3]
+behavior:                      # probabilidades por oportunidade
+  attempt_declined: 0.08
+  max_payment_attempts: 3
+  customer_cancels_in_analysis: 0.02
+  restaurant_declines: 0.03
+  restaurant_ignores: 0.01               # vira analysis_timeout (RN-28)
+  restaurant_issue_after_accept: 0.005
+  prep_overrun_lognormal_sigma: 0.35     # atraso de preparo; o cliente pode cancelar por restaurant_late
+  driver_gives_up: 0.03
+  customer_absent: 0.01
+  driver_unable: 0.005
+  customer_confirms: 0.6                 # o resto confirma sozinho em auto_confirm_delay
+  incident: 0.04
+  incident_upheld: 0.7
+  driver_rating: 0.5
+  restaurant_rating: 0.4
+  tip: 0.3
+  shift_hours: [3, 8]
+money:                         # L4, mais a taxa de entrega (F5.7)
+  rounding: ROUND_HALF_UP
+  tax_rate: "0.0800"
+  service_fee_rate: "0.1200"
+  payment_fee_rate: {card: "0.0299", pix: "0.0099", wallet: "0.0250"}
+  commission_rate: "0.2500"
+  driver_share_rate: "0.8000"
+  delivery_fee_base: "4.99"
+  delivery_fee_per_km: "1.00"
+  tip_min: "1.00"
+  tip_max: "100.00"
+stock:
+  restock_target_days: 2       # repõe até cobrir N dias de consumo médio
+timing:                        # L4 (valores das regras são fixos)
+  incident_window_h: 24
+  rating_tip_window_min: 20
+  auto_confirm_delay_min: 10
+  analysis_timeout_min: 5
+  prep_tolerance: 0.5
+  max_restaurants_per_order: 2
+  max_driver_give_ups: 3
+  average_speed_kmh: 25
+  promise_slack_min: 10
+  route_detour_factor: 1.3
+  profile_cache_refresh_min: 15
+text:
+  rating_comment_by_band: shared/gen/reference/rating_comments.yaml
+```
+
+Ordem de grandeza: cerca de 900 pedidos por dia (5 cidades × média de 15 por hora × 12 h de janela), uns 27 mil no
+histórico de 30 dias e perto de 700 mil linhas no Postgres. Folgado para a D:, para o slot de 4 GB e para o Oracle (só
+cadastros).
+
+### F5.9 Testes T1 a T19
+
+Cada invariante vira uma consulta que **devolve as linhas que o violam**: passa com 0 linhas. As do Postgres ficam em
+`shared/gen/checks/tNN_*.sql`; `shared/gen/tests/test_invariants.py` roda uma por uma e falha com a amostra das violadoras
+(contagem e chaves, sem dado de pessoa). Os testes que cruzam bancos rodam em Python.
+
+| # | Onde | Complementos em relação à L4 |
+|---|---|---|
+| T1 a T5 | SQL | T2 confere também a existência da entrega e os estados finais de pedido e entrega; T4 confere que todo produto tem ficha e que a baixa é ficha × quantidade; T5 confere que o motorista não volta a entrega de que desistiu e que não tem duas entregas ou dois turnos ao mesmo tempo |
+| T6 | SQL (saldo) e Python (janelas) | Saldo nunca negativo **ao longo do tempo**, não só no fim. Reposição fora das janelas: para cada `restock`, a hora de `occurred_at` não cai em nenhuma janela do perfil (lido no Mongo) |
+| T7 | SQL e `pytest` | A consulta confere presença e ausência de `promised_at` e que ele não é anterior ao último aceite. O congelamento é testado na unidade do simulador, contra a fórmula da RN-28 |
+| T8 a T11 | SQL | T8 confere também imposto do total, custo do meio, taxa de serviço e um só `delivery_fee` (F5.7); T10, os valores dos repasses; T11, que todo atendimento retirado e toda entrega devida têm repasse |
+| T9 (ordem) | `pytest` | "Não depende da ordem dos cancelamentos": teste de propriedade com todas as permutações de cancelamento e de incidentes sobre compras sorteadas |
+| T12 a T16 | SQL | Janelas da regra (24 h e 20 min, fixas na L4) |
+| T17 | Python | Lê os ids de cliente e motorista no Oracle e confere todo `ext → Oracle.*` do Postgres (`orders`, `checkouts`, `incidents`, avaliações, `shifts`, atribuições, repasses, gorjetas); compara `cities` linha a linha; `orders.city_id` = `customers.city_id` e `shifts.city_id` = `drivers.city_id` (válido porque o ShadowTraffic não muda cidade, F5.5) |
+| T18 | Python | Todo `menu_items[].product_id` existe e é do restaurante do `_id`; todo restaurante tem perfil; nenhum produto repetido no mesmo perfil |
+| **T19** | Python | **Novo (F3.2):** em cada perfil, `end_time` > `start_time` e janelas sem sobreposição |
+
+<details>
+<summary>Consultas T1 a T16 (Postgres, schema <code>ubereats</code>)</summary>
+
+```sql
+-- Cada consulta devolve as linhas que VIOLAM o invariante. Passa = 0 linhas.
+SET search_path TO ubereats;
+
+-- t01a_atendimentos_por_pedido
+SELECT o.order_id, count(ro.restaurant_order_id) AS n
+FROM orders o LEFT JOIN restaurant_orders ro ON ro.order_id = o.order_id
+GROUP BY o.order_id
+HAVING count(ro.restaurant_order_id) NOT BETWEEN 1 AND 2;
+
+-- t01b_restaurante_da_cidade
+SELECT ro.restaurant_order_id
+FROM restaurant_orders ro
+JOIN orders o ON o.order_id = ro.order_id
+LEFT JOIN restaurants r ON r.restaurant_id = ro.restaurant_id
+WHERE r.restaurant_id IS NULL OR r.city_id <> o.city_id;
+
+-- t02a_derivacao_rn16
+WITH a AS (
+  SELECT order_id,
+         count(*) FILTER (WHERE status NOT IN ('cancelled', 'rejected')) AS ativos,
+         count(*) FILTER (WHERE status = 'picked_up')                    AS retirados,
+         count(*) FILTER (WHERE status = 'ready_for_pickup')             AS prontos,
+         count(*) FILTER (WHERE status = 'in_analysis')                  AS em_analise
+  FROM restaurant_orders GROUP BY order_id
+), d AS (
+  SELECT o.order_id, o.status,
+         CASE WHEN a.ativos = 0                THEN 'cancelled'
+              WHEN a.retirados = a.ativos      THEN 'out_for_delivery'
+              WHEN a.retirados > 0             THEN 'partially_picked_up'
+              WHEN a.prontos = a.ativos        THEN 'ready_for_pickup'
+              WHEN a.prontos > 0               THEN 'partially_ready'
+              WHEN a.em_analise > 0            THEN 'in_analysis'
+              ELSE 'preparing' END AS derivado
+  FROM orders o JOIN a ON a.order_id = o.order_id
+)
+SELECT * FROM d
+WHERE (status NOT IN ('delivered', 'completed', 'undelivered') AND status <> derivado)
+   OR (status IN ('delivered', 'completed', 'undelivered') AND derivado <> 'out_for_delivery');
+
+-- t02b_entrega_do_pedido
+SELECT o.order_id, o.status, d.status AS delivery_status
+FROM orders o LEFT JOIN deliveries d ON d.order_id = o.order_id
+WHERE d.delivery_id IS NULL
+   OR (o.status = 'out_for_delivery') <> (d.status = 'in_transit')
+   OR (o.status = 'cancelled') <> (d.status = 'cancelled')
+   OR (o.status IN ('delivered', 'completed')) <> (d.status = 'delivered')
+   OR (o.status = 'undelivered') <> (d.status = 'undelivered');
+
+-- t03a_encadeamento_pedido
+SELECT t.order_id, t.sequence_number
+FROM order_status_transitions t
+LEFT JOIN order_status_transitions p
+  ON p.order_id = t.order_id AND p.sequence_number = t.sequence_number - 1
+WHERE t.sequence_number > 1
+  AND (p.order_id IS NULL OR t.from_status IS DISTINCT FROM p.to_status OR t.occurred_at < p.occurred_at);
+
+-- t03b_encadeamento_atendimento
+SELECT t.restaurant_order_id, t.sequence_number
+FROM restaurant_order_status_transitions t
+LEFT JOIN restaurant_order_status_transitions p
+  ON p.restaurant_order_id = t.restaurant_order_id AND p.sequence_number = t.sequence_number - 1
+WHERE t.sequence_number > 1
+  AND (p.restaurant_order_id IS NULL OR t.from_status IS DISTINCT FROM p.to_status OR t.occurred_at < p.occurred_at);
+
+-- t03c_transicoes_permitidas_atendimento
+SELECT t.restaurant_order_id, t.sequence_number, t.from_status, t.to_status
+FROM restaurant_order_status_transitions t
+WHERE t.from_status IS NOT NULL
+  AND (t.from_status, t.to_status) NOT IN (VALUES
+    ('in_analysis', 'accepted'), ('in_analysis', 'rejected'), ('in_analysis', 'cancelled'),
+    ('accepted', 'preparing'), ('accepted', 'cancelled'), ('preparing', 'cancelled'),
+    ('preparing', 'ready_for_pickup'), ('ready_for_pickup', 'picked_up'));
+
+-- t03d_transicoes_permitidas_pedido
+SELECT t.order_id, t.sequence_number, t.from_status, t.to_status
+FROM order_status_transitions t
+WHERE t.from_status IS NOT NULL
+  AND NOT (
+       (t.from_status IN ('in_analysis', 'preparing', 'partially_ready', 'ready_for_pickup', 'partially_picked_up')
+        AND t.to_status IN ('in_analysis', 'preparing', 'partially_ready', 'ready_for_pickup', 'partially_picked_up',
+                            'out_for_delivery', 'cancelled')
+        AND t.to_status <> t.from_status)
+    OR (t.from_status = 'out_for_delivery' AND t.to_status IN ('delivered', 'undelivered'))
+    OR (t.from_status = 'delivered' AND t.to_status = 'completed'));
+
+-- t03e_status_igual_ultima_transicao
+SELECT o.order_id, o.status, l.to_status
+FROM orders o
+LEFT JOIN LATERAL (SELECT t.to_status FROM order_status_transitions t
+                   WHERE t.order_id = o.order_id ORDER BY t.sequence_number DESC LIMIT 1) l ON true
+WHERE l.to_status IS DISTINCT FROM o.status
+UNION ALL
+SELECT ro.restaurant_order_id, ro.status, l.to_status
+FROM restaurant_orders ro
+LEFT JOIN LATERAL (SELECT t.to_status FROM restaurant_order_status_transitions t
+                   WHERE t.restaurant_order_id = ro.restaurant_order_id ORDER BY t.sequence_number DESC LIMIT 1) l ON true
+WHERE l.to_status IS DISTINCT FROM ro.status;
+
+-- t04a_produto_do_restaurante
+SELECT oi.restaurant_order_id, oi.line_number
+FROM order_items oi
+JOIN restaurant_orders ro ON ro.restaurant_order_id = oi.restaurant_order_id
+LEFT JOIN products p ON p.product_id = oi.product_id
+WHERE p.product_id IS NULL OR p.restaurant_id <> ro.restaurant_id;
+
+-- t04b_ficha_do_mesmo_restaurante
+SELECT pr.product_id, pr.stock_item_id
+FROM product_recipes pr
+LEFT JOIN products p ON p.product_id = pr.product_id
+LEFT JOIN stock_items s ON s.stock_item_id = pr.stock_item_id
+WHERE p.product_id IS NULL OR s.stock_item_id IS NULL OR s.restaurant_id <> p.restaurant_id
+UNION ALL
+SELECT p.product_id, NULL FROM products p                                  -- todo produto tem ficha (RN-37)
+WHERE NOT EXISTS (SELECT 1 FROM product_recipes pr WHERE pr.product_id = p.product_id);
+
+-- t04c_baixa_do_mesmo_restaurante
+SELECT m.stock_movement_id
+FROM stock_movements m
+JOIN stock_items s ON s.stock_item_id = m.stock_item_id
+JOIN restaurant_orders ro ON ro.restaurant_order_id = m.restaurant_order_id
+WHERE s.restaurant_id <> ro.restaurant_id;
+
+-- t04d_baixa_igual_ficha_vezes_quantidade
+WITH esperado AS (
+  SELECT oi.restaurant_order_id, pr.stock_item_id, sum(pr.quantity * oi.quantity) AS qtd
+  FROM order_items oi JOIN product_recipes pr ON pr.product_id = oi.product_id
+  WHERE EXISTS (SELECT 1 FROM restaurant_order_status_transitions t
+                WHERE t.restaurant_order_id = oi.restaurant_order_id AND t.to_status = 'preparing')
+  GROUP BY oi.restaurant_order_id, pr.stock_item_id
+), gravado AS (
+  SELECT restaurant_order_id, stock_item_id, quantity AS qtd
+  FROM stock_movements WHERE movement_type = 'consumption'
+)
+SELECT coalesce(e.restaurant_order_id, g.restaurant_order_id) AS restaurant_order_id,
+       coalesce(e.stock_item_id, g.stock_item_id) AS stock_item_id, e.qtd AS esperado, g.qtd AS gravado
+FROM esperado e FULL JOIN gravado g
+  ON g.restaurant_order_id = e.restaurant_order_id AND g.stock_item_id = e.stock_item_id
+WHERE e.qtd IS DISTINCT FROM g.qtd;
+
+-- t05a_turno_da_atribuicao
+SELECT a.delivery_id, a.assignment_number
+FROM driver_assignments a
+JOIN deliveries d ON d.delivery_id = a.delivery_id
+JOIN orders o ON o.order_id = d.order_id
+LEFT JOIN shifts s ON s.shift_id = a.shift_id
+WHERE s.shift_id IS NULL OR s.driver_id <> a.driver_id OR s.city_id <> o.city_id
+   OR a.assigned_at < s.opened_at OR a.assigned_at > coalesce(s.closed_at, 'infinity');
+
+-- t05b_desistencia
+SELECT a.delivery_id, a.assignment_number
+FROM driver_assignments a
+JOIN deliveries d ON d.delivery_id = a.delivery_id
+LEFT JOIN LATERAL (SELECT min(ro.picked_up_at) AS primeira_retirada
+                   FROM restaurant_orders ro WHERE ro.order_id = d.order_id) f ON true
+WHERE a.release_reason = 'driver_gave_up'
+  AND (a.assignment_number >= 4 OR a.released_at > f.primeira_retirada);
+
+-- t05c_motorista_nao_volta
+SELECT delivery_id, driver_id FROM driver_assignments
+GROUP BY delivery_id, driver_id HAVING count(*) > 1;
+
+-- t05d_turnos_e_entregas_sem_sobreposicao
+SELECT 'shift' AS tipo, s1.shift_id AS a, s2.shift_id AS b
+FROM shifts s1 JOIN shifts s2 ON s2.driver_id = s1.driver_id AND s2.shift_id > s1.shift_id
+WHERE tsrange(s1.opened_at, coalesce(s1.closed_at, 'infinity'), '[)')
+   && tsrange(s2.opened_at, coalesce(s2.closed_at, 'infinity'), '[)')
+UNION ALL
+SELECT 'assignment', a1.delivery_id, a2.delivery_id
+FROM driver_assignments a1 JOIN driver_assignments a2
+  ON a2.driver_id = a1.driver_id AND (a2.delivery_id, a2.assignment_number) > (a1.delivery_id, a1.assignment_number)
+WHERE tsrange(a1.assigned_at, coalesce(a1.released_at, 'infinity'), '[)')
+   && tsrange(a2.assigned_at, coalesce(a2.released_at, 'infinity'), '[)');
+
+-- t06a_saldo_igual_movimentos
+SELECT s.stock_item_id, s.quantity_on_hand, coalesce(m.saldo, 0) AS saldo
+FROM stock_items s
+LEFT JOIN (SELECT stock_item_id,
+                  sum(CASE movement_type WHEN 'restock' THEN quantity ELSE -quantity END) AS saldo
+           FROM stock_movements GROUP BY stock_item_id) m ON m.stock_item_id = s.stock_item_id
+WHERE s.quantity_on_hand <> coalesce(m.saldo, 0);
+
+-- t06b_saldo_nunca_negativo_no_tempo
+SELECT stock_item_id, stock_movement_id, saldo FROM (
+  SELECT stock_item_id, stock_movement_id,
+         sum(CASE movement_type WHEN 'restock' THEN quantity ELSE -quantity END)
+           OVER (PARTITION BY stock_item_id ORDER BY occurred_at, stock_movement_id) AS saldo
+  FROM stock_movements) x
+WHERE saldo < 0;
+
+-- t07a_prazo_prometido
+WITH a AS (
+  SELECT order_id,
+         count(*) FILTER (WHERE status NOT IN ('cancelled', 'rejected')) AS ativos,
+         count(*) FILTER (WHERE status = 'in_analysis')                  AS em_analise,
+         max(accepted_at) FILTER (WHERE status NOT IN ('cancelled', 'rejected')) AS ultimo_aceite
+  FROM restaurant_orders GROUP BY order_id
+)
+SELECT d.delivery_id, d.promised_at, a.ativos, a.em_analise
+FROM deliveries d JOIN a ON a.order_id = d.order_id
+WHERE (a.ativos > 0 AND a.em_analise = 0 AND d.promised_at IS NULL)
+   OR (a.em_analise > 0 AND d.promised_at IS NOT NULL)
+   OR (d.promised_at < a.ultimo_aceite);
+
+-- t07b_aceite_registrado_no_cancelado
+SELECT ro.restaurant_order_id
+FROM restaurant_orders ro
+WHERE ro.accepted_at IS NULL
+  AND EXISTS (SELECT 1 FROM restaurant_order_status_transitions t
+              WHERE t.restaurant_order_id = ro.restaurant_order_id AND t.to_status = 'accepted');
+
+-- t08a_pagamento
+SELECT p.payment_id
+FROM payments p
+JOIN orders o ON o.order_id = p.order_id
+LEFT JOIN (SELECT payment_id, sum(gross_amount) AS bruto, sum(tax_amount) AS imposto
+           FROM payment_components GROUP BY payment_id) c ON c.payment_id = p.payment_id
+LEFT JOIN payment_attempts a ON a.checkout_id = p.checkout_id AND a.attempt_number = p.attempt_number
+LEFT JOIN checkouts k ON k.checkout_id = p.checkout_id
+WHERE c.bruto IS DISTINCT FROM p.total_amount
+   OR c.imposto IS DISTINCT FROM round(p.total_amount * p.tax_rate, 2)
+   OR p.payment_fee_amount <> round(p.total_amount * p.payment_fee_rate, 2)
+   OR p.paid_at <> o.placed_at
+   OR o.checkout_id <> p.checkout_id
+   OR a.result IS DISTINCT FROM 'approved' OR a.amount <> p.total_amount
+   OR k.amount IS DISTINCT FROM p.total_amount;
+
+-- t08b_componentes_por_item
+WITH itens AS (
+  SELECT ro.order_id, oi.restaurant_order_id, oi.line_number, oi.total_amount
+  FROM order_items oi JOIN restaurant_orders ro ON ro.restaurant_order_id = oi.restaurant_order_id
+)
+SELECT p.payment_id, i.restaurant_order_id, i.line_number
+FROM payments p JOIN itens i ON i.order_id = p.order_id
+LEFT JOIN payment_components ci ON ci.payment_id = p.payment_id AND ci.component_type = 'item'
+  AND ci.restaurant_order_id = i.restaurant_order_id AND ci.line_number = i.line_number
+LEFT JOIN payment_components cs ON cs.payment_id = p.payment_id AND cs.component_type = 'service_fee'
+  AND cs.restaurant_order_id = i.restaurant_order_id AND cs.line_number = i.line_number
+WHERE ci.gross_amount IS DISTINCT FROM i.total_amount OR cs.payment_id IS NULL;
+
+-- t08c_taxas_do_pagamento
+SELECT p.payment_id
+FROM payments p
+LEFT JOIN (SELECT payment_id,
+                  sum(gross_amount) FILTER (WHERE component_type = 'item')         AS itens,
+                  sum(gross_amount) FILTER (WHERE component_type = 'service_fee')  AS servico,
+                  count(*)          FILTER (WHERE component_type = 'delivery_fee') AS entregas
+           FROM payment_components GROUP BY payment_id) c ON c.payment_id = p.payment_id
+WHERE c.entregas IS DISTINCT FROM 1
+   OR c.servico IS DISTINCT FROM round(c.itens * p.service_fee_rate, 2);
+
+-- t09a_reembolsado_por_componente
+SELECT r.payment_id, rc.component_number
+FROM refund_components rc
+JOIN refunds r ON r.refund_id = rc.refund_id
+LEFT JOIN payment_components pc ON pc.payment_id = r.payment_id AND pc.component_number = rc.component_number
+GROUP BY r.payment_id, rc.component_number, pc.gross_amount, pc.tax_amount
+HAVING pc.gross_amount IS NULL OR sum(rc.gross_amount) > pc.gross_amount OR sum(rc.tax_amount) > pc.tax_amount;
+
+-- t09b_soma_dos_reembolsos
+SELECT 'refund' AS nivel, r.refund_id AS id
+FROM refunds r
+LEFT JOIN (SELECT refund_id, sum(gross_amount) AS bruto FROM refund_components GROUP BY refund_id) c
+  ON c.refund_id = r.refund_id
+WHERE c.bruto IS DISTINCT FROM r.total_amount
+UNION ALL
+SELECT 'payment', p.payment_id
+FROM payments p JOIN refunds r ON r.payment_id = p.payment_id
+GROUP BY p.payment_id, p.total_amount HAVING sum(r.total_amount) > p.total_amount;
+
+-- t09c_estorno_total
+SELECT p.payment_id, o.status
+FROM orders o
+JOIN payments p ON p.order_id = o.order_id
+JOIN deliveries d ON d.order_id = o.order_id
+LEFT JOIN (SELECT payment_id, sum(total_amount) AS devolvido FROM refunds GROUP BY payment_id) r
+  ON r.payment_id = p.payment_id
+WHERE (o.status = 'cancelled' OR (o.status = 'undelivered' AND d.failure_reason = 'driver_unable'))
+  AND r.devolvido IS DISTINCT FROM p.total_amount;
+
+-- t10_copias_e_valores_dos_repasses
+SELECT 'restaurant_payout' AS tabela, rp.restaurant_order_id AS id
+FROM restaurant_payouts rp
+LEFT JOIN restaurant_orders ro ON ro.restaurant_order_id = rp.restaurant_order_id
+LEFT JOIN (SELECT restaurant_order_id, sum(total_amount) AS itens FROM order_items GROUP BY restaurant_order_id) i
+  ON i.restaurant_order_id = rp.restaurant_order_id
+WHERE ro.restaurant_id IS DISTINCT FROM rp.restaurant_id
+   OR i.itens IS DISTINCT FROM rp.items_amount
+   OR rp.commission_amount <> round(rp.items_amount * rp.commission_rate, 2)
+UNION ALL
+SELECT 'driver_payout', dp.delivery_id
+FROM driver_payouts dp
+JOIN deliveries d ON d.delivery_id = dp.delivery_id
+JOIN payments p ON p.order_id = d.order_id
+LEFT JOIN payment_components pc ON pc.payment_id = p.payment_id AND pc.component_type = 'delivery_fee'
+LEFT JOIN driver_assignments a ON a.delivery_id = dp.delivery_id AND a.release_reason = 'delivery_finished'
+WHERE a.driver_id IS DISTINCT FROM dp.driver_id OR a.shift_id IS DISTINCT FROM dp.shift_id
+   OR pc.gross_amount IS DISTINCT FROM dp.delivery_fee_amount
+   OR dp.payout_amount <> round(dp.delivery_fee_amount * dp.driver_share_rate, 2)
+UNION ALL
+SELECT 'tip', t.delivery_id
+FROM tips t
+LEFT JOIN driver_assignments a ON a.delivery_id = t.delivery_id AND a.release_reason = 'delivery_finished'
+WHERE a.driver_id IS DISTINCT FROM t.driver_id;
+
+-- t11_repasse_so_quando_devido
+SELECT 'restaurant_payout_indevido' AS caso, rp.restaurant_order_id AS id
+FROM restaurant_payouts rp JOIN restaurant_orders ro ON ro.restaurant_order_id = rp.restaurant_order_id
+WHERE ro.status <> 'picked_up'
+UNION ALL
+SELECT 'restaurant_payout_faltando', ro.restaurant_order_id
+FROM restaurant_orders ro
+WHERE ro.status = 'picked_up'
+  AND NOT EXISTS (SELECT 1 FROM restaurant_payouts rp WHERE rp.restaurant_order_id = ro.restaurant_order_id)
+UNION ALL
+SELECT CASE WHEN dp.delivery_id IS NULL THEN 'driver_payout_faltando' ELSE 'driver_payout_indevido' END,
+       coalesce(dp.delivery_id, d.delivery_id)
+FROM deliveries d FULL JOIN driver_payouts dp ON dp.delivery_id = d.delivery_id
+WHERE (dp.delivery_id IS NOT NULL)
+   <> (d.status = 'delivered' OR (d.status = 'undelivered' AND d.failure_reason = 'customer_absent'))
+UNION ALL
+SELECT 'tip_indevida', t.delivery_id
+FROM tips t JOIN deliveries d ON d.delivery_id = t.delivery_id
+WHERE d.status <> 'delivered';
+
+-- t12_janelas_pos_entrega
+SELECT 'incident' AS origem, i.incident_id AS id
+FROM incidents i JOIN deliveries d ON d.order_id = i.order_id
+WHERE d.status <> 'delivered' OR i.opened_at NOT BETWEEN d.finished_at AND d.finished_at + interval '24 hours'
+UNION ALL
+SELECT 'driver_rating', r.delivery_id
+FROM driver_ratings r JOIN deliveries d ON d.delivery_id = r.delivery_id
+WHERE d.status <> 'delivered' OR r.rated_at NOT BETWEEN d.finished_at AND d.finished_at + interval '20 minutes'
+UNION ALL
+SELECT 'restaurant_rating', rr.restaurant_order_id
+FROM restaurant_ratings rr
+JOIN restaurant_orders ro ON ro.restaurant_order_id = rr.restaurant_order_id
+JOIN deliveries d ON d.order_id = ro.order_id
+WHERE d.status <> 'delivered' OR rr.rated_at NOT BETWEEN d.finished_at AND d.finished_at + interval '20 minutes'
+UNION ALL
+SELECT 'tip', t.delivery_id
+FROM tips t JOIN deliveries d ON d.delivery_id = t.delivery_id
+WHERE d.status <> 'delivered' OR t.paid_at NOT BETWEEN d.finished_at AND d.finished_at + interval '20 minutes';
+
+-- t13a_item_do_incidente
+SELECT ii.incident_id, ii.restaurant_order_id, ii.line_number
+FROM incident_items ii
+JOIN incidents i ON i.incident_id = ii.incident_id
+LEFT JOIN restaurant_orders ro ON ro.restaurant_order_id = ii.restaurant_order_id
+LEFT JOIN order_items oi ON oi.restaurant_order_id = ii.restaurant_order_id AND oi.line_number = ii.line_number
+WHERE oi.restaurant_order_id IS NULL OR ro.order_id <> i.order_id OR ro.status <> 'picked_up';
+
+-- t13b_teto_da_quantidade
+SELECT ii.restaurant_order_id, ii.line_number, oi.quantity, sum(ii.quantity) AS reclamado
+FROM incident_items ii
+JOIN incidents i ON i.incident_id = ii.incident_id
+JOIN order_items oi ON oi.restaurant_order_id = ii.restaurant_order_id AND oi.line_number = ii.line_number
+WHERE i.status <> 'dismissed'
+GROUP BY ii.restaurant_order_id, ii.line_number, oi.quantity
+HAVING sum(ii.quantity) > oi.quantity;
+
+-- t14a_reembolso_do_incidente
+SELECT i.incident_id, i.status
+FROM incidents i LEFT JOIN refunds r ON r.incident_id = i.incident_id
+WHERE (i.status = 'upheld') <> (r.refund_id IS NOT NULL)
+   OR r.refunded_at <> i.decided_at;
+
+-- t14b_quantidade_reembolsada
+SELECT r.refund_id, rc.component_number
+FROM refunds r
+JOIN refund_components rc ON rc.refund_id = r.refund_id
+JOIN payment_components pc ON pc.payment_id = r.payment_id AND pc.component_number = rc.component_number
+LEFT JOIN incident_items ii ON ii.incident_id = r.incident_id
+  AND ii.restaurant_order_id = pc.restaurant_order_id AND ii.line_number = pc.line_number
+WHERE r.origin_type = 'incident' AND pc.component_type = 'item'
+  AND rc.quantity IS DISTINCT FROM ii.quantity;
+
+-- t15_atraso_procedente
+SELECT i.incident_id
+FROM incidents i JOIN deliveries d ON d.order_id = i.order_id
+WHERE i.reason = 'late_delivery' AND i.status = 'upheld'
+  AND (d.promised_at IS NULL OR d.finished_at <= d.promised_at);
+
+-- t16_gorjeta_e_copias
+SELECT 'tip_depois_de_nota_baixa' AS caso, t.delivery_id AS id
+FROM tips t JOIN driver_ratings r ON r.delivery_id = t.delivery_id
+WHERE r.rating <= 3 AND t.paid_at >= r.rated_at
+UNION ALL
+SELECT 'driver_rating_copia', r.delivery_id
+FROM driver_ratings r
+JOIN deliveries d ON d.delivery_id = r.delivery_id
+JOIN orders o ON o.order_id = d.order_id
+LEFT JOIN driver_assignments a ON a.delivery_id = r.delivery_id AND a.release_reason = 'delivery_finished'
+WHERE a.driver_id IS DISTINCT FROM r.driver_id OR o.customer_id <> r.customer_id
+UNION ALL
+SELECT 'restaurant_rating_copia', rr.restaurant_order_id
+FROM restaurant_ratings rr
+JOIN restaurant_orders ro ON ro.restaurant_order_id = rr.restaurant_order_id
+JOIN orders o ON o.order_id = ro.order_id
+WHERE ro.restaurant_id <> rr.restaurant_id OR o.customer_id <> rr.customer_id
+UNION ALL
+SELECT 'incident_copia', i.incident_id
+FROM incidents i JOIN orders o ON o.order_id = i.order_id
+WHERE o.customer_id <> i.customer_id;
+```
+
+</details>
+
+**Validação** (2026-11-04). Contêiner descartável `postgres:15` com `TZ=America/Sao_Paulo`, sem volume nomeado e sem porta
+no host, removido ao final com `docker rm -v`; DDL da F1 extraído deste documento (28 tabelas e os 11 triggers).
+
+| Teste | Resultado |
+|---|---|
+| As 36 consultas no banco vazio | Sem erro; 0 linhas |
+| Uma compra válida da ADR 009 (2 tentativas, a 1ª recusada; 3 itens; componentes do exemplo da F5.7) mais catálogo, fichas e `restock` inicial | 0 linhas em todas |
+| Violações plantadas: restaurante de outra cidade, componente com bruto errado, lacuna na sequência de transições, reembolso acima do bruto do componente, saldo diferente dos movimentos | Falharam exatamente T1b, T8a, T3a e T3e, T9a e T6a; nenhuma outra |
+| Exemplo da F5.7 em `Decimal` com `ROUND_HALF_UP` | Fecha em 41,08 e 3,29; reembolso parcial 3,33 + 3,34 + 3,33 |
+
+O ciclo completo (aceite, preparo, atribuição, entrega e pós-entrega) só ganha dado positivo quando o simulador existir: a
+validação de T5 e T10 a T16 contra dado real fica para os testes do simulador e para o gate da regeração (passo 11).
+
+### F5.10 Riscos
+
+| Risco | Mitigação |
+|---|---|
+| Área de recuperação do Oracle (`db_recovery_file_dest_size = 10G`) enche de archivelog e o banco para | O Oracle só recebe cadastros (pouca mudança). Conferir o uso da área de recuperação no gate (passo 11) e, se crescer, apagar archivelog já lido pelo Debezium com RMAN (operação com confirmação) |
+| Rajada do histórico pesa no HDD da D: | Uma transação por compra; o ritmo do histórico é limitado pelo banco, não pelo relógio |
+| Slot do Postgres retém WAL com o conector parado | `max_slot_wal_keep_size=4GB` (F4.2); acima disso o slot é invalidado e o conector refaz o snapshot |
+| Licença do ShadowTraffic vence antes da execução | Passo 0; a carga em lote leva minutos, e o contínuo é opcional |
+| Simulador parado = nenhum pedido novo (ADR 009) | Skill de operação, parada limpa e retomada pelo estado do banco (o relógio retoma do último evento gravado) |
+
+### Decisões da revisão da F5 (2026-11-04)
+
+| # | Tema | Decisão |
+|---|---|---|
+| 1 | Estratégia dos contêineres | **Recriar os volumes** `postgres_data`, `oracle_data` e `mongo_data` e os contêineres dos três bancos, do Redpanda e do `kafka-connect`, com confirmação por volume na execução. Os scripts de init são a fonte única do schema; o Oracle passa a montar os scripts em `/container-entrypoint-initdb.d`. `minio_data` intocado |
+| 2 | Catálogo e cidades | **ShadowTraffic** com `customers`, `drivers` e `restaurants`; **seed em Python** com `cities` (dois bancos, de `shared/gen/reference/cities.csv`), `products`, `stock_items`, `product_recipes`, o `restock` inicial e os perfis do MongoDB. Segundo adendo da [ADR 009](../../../docs/adr/009-simulador-cria-a-compra-numa-transacao.md) |
+| 3 | Relógio do simulador | **Histórico simulado de 30 dias** (`backfill_days`) e depois tempo real, com relógio injetado; `*_at` de negócio no tempo simulado e `created_at`/`updated_at` com a hora real. No mesmo adendo da ADR 009 |
+| 4 | Dinheiro | **`ROUND_HALF_UP`**; ordem dos componentes item → `service_fee` por linha e `delivery_fee` por último; a última parcela absorve a diferença; reembolso parcial por diferença de acumulados. **Taxa de entrega** = `delivery_fee_base` + `delivery_fee_per_km` × distância da menor rota (linha reta × `route_detour_factor`), congelada na compra; completa os parâmetros da L4 |
+
+Valem como propostas aceitas o resto da F5: a ordem da F5.3 (conectores registrados antes de qualquer carga, gate depois
+da carga e gate final com T1 a T19), as mudanças de arquivo da F5.2, a divisão da F5.5 (um processo e um escritor no
+simulador; o ShadowTraffic nunca muda cidade nem endereço), os parâmetros iniciais da F5.8, as consultas da F5.9 e o T19
+novo. O `register-postgres-connector.ps1` foi criado nesta fase, sem registrar nada.
+
+**Para a execução da regeração:** implementar a F5.2 numa branch própria (simulador, seeds, checks, init, compose,
+template), com `pytest` e `ruff` verdes, e só então rodar a F5.3 a partir do passo 0. A licença do ShadowTraffic vence por
+volta de 2026-11-07.

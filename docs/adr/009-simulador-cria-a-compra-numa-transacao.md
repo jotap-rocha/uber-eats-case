@@ -1,6 +1,6 @@
 # 009 — O simulador de operação cria a compra numa transação
 
-**Status:** Aceita; o MinIO (`kafka/gps`, decisão 2) saiu do escopo pela [ADR 010](010-minio-fora-do-escopo-da-geracao.md); o MongoDB passa ao seed em Python (adendo de 2026-11-04)  
+**Status:** Aceita; o MinIO (`kafka/gps`, decisão 2) saiu do escopo pela [ADR 010](010-minio-fora-do-escopo-da-geracao.md); o MongoDB passa ao seed em Python (adendo de 2026-11-04); cidades e catálogo passam ao seed e o simulador ganha histórico simulado (segundo adendo, F5)  
 **Data:** 2026-11-03  
 **Autores:** time  
 **Revisa:** a fronteira do gerador híbrido da [ADR 007](007-estoque-por-movimentos-e-gerador-hibrido.md) (decisão 3 e adendo)
@@ -90,3 +90,20 @@ A decisão 2 errou num ponto: **o ShadowTraffic não tem conexão para MongoDB**
 cadastros: ele lê `restaurants` e `products` no Postgres e grava um perfil por restaurante com todos os produtos dele
 (RN-23, T18), de forma idempotente. O ShadowTraffic fica só com os cadastros do Oracle e do Postgres (o MinIO já tinha saído
 pela [ADR 010](010-minio-fora-do-escopo-da-geracao.md)). Detalhe na F3 do [modelo físico](../../shared/docs/modelagem/04-modelo-fisico.md).
+
+## Segundo adendo (2026-11-04, F5 do modelo físico)
+
+A decisão 2 muda de novo, agora para o catálogo e as cidades:
+
+- **Cidades** (`cities` no Oracle e no Postgres) passam a ser carregadas por um **seed** a partir de um CSV único
+  (`shared/gen/reference/cities.csv`). As duas cópias ficam idênticas por construção (T17); o ShadowTraffic recebe a mesma
+  lista no template, só para sortear a cidade dos cadastros.
+- **Catálogo** (`products`, `stock_items`, `product_recipes`) e o **estoque inicial** (um `restock` por item) passam ao
+  **seed de catálogo**, no pacote do simulador: os `lookup` do ShadowTraffic não garantem ficha técnica com itens do mesmo
+  restaurante nem o produto pronto apontando para um item com o próprio nome (RN-37, T4).
+- O **ShadowTraffic** fica só com `customers` e `drivers` (Oracle) e `restaurants` (Postgres). Ele não muda cidade nem
+  endereço de cadastro (o T17 compara a cidade do pedido com a cidade atual do cliente).
+- O simulador recebe o **relógio por injeção** e roda primeiro um **histórico simulado** (30 dias, parâmetro
+  `backfill_days`), com os `*_at` de negócio no tempo simulado, e depois segue em tempo real.
+
+Detalhe na F5 do [modelo físico](../../shared/docs/modelagem/04-modelo-fisico.md) (F5.4 a F5.6).
