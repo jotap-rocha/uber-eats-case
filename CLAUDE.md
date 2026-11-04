@@ -26,9 +26,9 @@ Pipeline completo de engenharia de dados construido como portfolio profissional,
 
 | Camada | Tecnologia |
 |--------|------------|
-| Fontes (Docker local) | Postgres, Oracle Free 23ai (`gvenzl/oracle-free`), MongoDB, MinIO |
+| Fontes (Docker local) | Postgres, Oracle Free 23ai (`gvenzl/oracle-free`), MongoDB. MinIO fora do escopo ([ADR 010](docs/adr/010-minio-fora-do-escopo-da-geracao.md)); contêiner e volume mantidos |
 | Geração de dados | ShadowTraffic (`gen-unified`, `shared/gen/unified/uber-eats.json.template`) |
-| Ingestão / CDC | Debezium + Kafka Connect (Postgres e Oracle, ADR 006), Airbyte OSS (MongoDB, MinIO) |
+| Ingestão / CDC | Debezium + Kafka Connect (Postgres e Oracle, ADR 006), Airbyte OSS (MongoDB) |
 | Lakehouse | Databricks (Lakeflow/DLT, Unity Catalog), Bronze -> Silver -> Gold em `shared/pipeline/` |
 | Clouds (fases) | Azure (Fase 1), AWS (Fase 2), GCP (Fase 3), cada uma com Warehouse, Lakehouse e Kappa |
 | IaC | Terraform (`{aws,azure,gcp}/infra/`); DAB só para jobs Databricks |
@@ -73,7 +73,7 @@ Regras do projeto que não se quebram sem decisão explícita do usuário. Valid
 
 - O Kappa lê só do barramento (Event Hub, Kinesis, Pub/Sub) e nunca do storage batch.
 - Azure: Synapse é **Dedicated SQL Pool** (Serverless não suporta `MERGE`).
-- **(revisável)** Azure: uma captura CDC por fonte; o trilho batch vem de um Kafka Connect Sink sobre o mesmo tópico (ADLS Sink é o maior risco técnico da Fase 1).
+- **(revisável)** Azure: warehouse e lakehouse recebem pelo Debezium e pelo Airbyte locais, que gravam no storage; o Kappa tem um conector Debezium dedicado, só com as tabelas do problema de negócio, dentro do Event Hubs Standard (10 event hubs por namespace, 7 dias de retenção), registrado só na fase do Kappa ([ADR 012](docs/adr/012-captura-dedicada-ao-kappa-na-fase-1.md)).
 - **(revisável)** Azure: o `kafka-connect-azure` (porta 8084) é separado do `kafka-connect` local. Não repontar o local para a nuvem.
 - **(revisável)** Conta cloud só é aberta no início da fase correspondente (créditos têm validade curta).
 - AWS e GCP não usam Databricks: têm stack própria (Fase 2 e 3). Terraform é a única ferramenta de provisionamento.

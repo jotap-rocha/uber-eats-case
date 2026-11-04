@@ -1,0 +1,29 @@
+{
+  "name": "postgres-ubereats-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+    "database.hostname": "postgres-ubereats",
+    "database.port": "5432",
+    "database.user": "dbz_ubereats",
+    "database.password": "REPLACE_POSTGRES_DEBEZIUM_PASSWORD",
+    "database.dbname": "REPLACE_POSTGRES_DB",
+    "topic.prefix": "postgres",
+    "plugin.name": "pgoutput",
+    "publication.name": "dbz_ubereats",
+    "publication.autocreate.mode": "disabled",
+    "slot.name": "dbz_ubereats",
+    "schema.include.list": "ubereats",
+    "snapshot.mode": "initial",
+    "decimal.handling.mode": "string",
+    "heartbeat.interval.ms": "60000",
+    "topic.creation.default.replication.factor": "1",
+    "topic.creation.default.partitions": "1",
+    "topic.creation.default.cleanup.policy": "delete",
+    "topic.creation.default.retention.ms": "604800000",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter.schemas.enable": "false"
+  }
+}

@@ -1,6 +1,6 @@
 # 006 — Inversão de domínios entre Oracle e Postgres (pedido e catálogo no Postgres)
 
-**Status:** Aceita  
+**Status:** Aceita; a decisão 5 (captura única com o trilho batch no mesmo tópico) foi revista pela [ADR 012](012-captura-dedicada-ao-kappa-na-fase-1.md)  
 **Data:** 2026-10-18  
 **Autores:** time
 

@@ -1,6 +1,6 @@
 # 007 — Estoque por ficha técnica e movimentos, com gerador híbrido
 
-**Status:** Aceita  
+**Status:** Aceita; fronteira do gerador (decisão 3 e adendo) revista pela [ADR 009](009-simulador-cria-a-compra-numa-transacao.md)  
 **Data:** 2026-11-02  
 **Autores:** time
 
