@@ -4,10 +4,10 @@
 
 ## Estado atual
 
-Modelagem de dados: regras (RN-01 a RN-42), conceitual e **modelo logico L0 a L4 aprovados**, em `shared/docs/modelagem/`. Branch `feat/modelo-logico` com 12 commits a frente da `main`, **sem push**. ADRs 006 a 008 aceitas. Oracle atual ainda tratado como producao; gerador nao religado.
+Modelagem de dados: regras (RN-01 a RN-42), conceitual e **modelo logico L0 a L4 aprovados e mesclados na `main`** (PR #17, 2026-11-03), em `shared/docs/modelagem/`. ADRs 006 a 008 aceitas. Documentacao alinhada (links, avisos de obsoleto, roadmap 2.0). Oracle atual ainda tratado como producao; gerador nao religado. Branch de trabalho: `feat/modelo-fisico`.
 
-## Próximos passos
+## Proximos passos
 
-1. Abrir a PR da `feat/modelo-logico` (com acordo do usuario).
-2. Modelo fisico: DDL Postgres, Oracle e MongoDB; decimal e fuso no Debezium; onde calcular o codigo de rastreio; local do arquivo de parametros; guarda do simulador contra atendimento sem itens.
-3. Regeracao dos dados (ADR 006/007): ShadowTraffic + simulador de operacao. A licenca trial vence por volta de 2026-11-07.
+1. **Modelo fisico** (`shared/docs/modelagem/04-modelo-fisico.md`), em fases com revisao por perguntas. **F0 aprovada** (2026-11-03; ADR 009: o simulador cria a compra numa transacao). Proxima: F1, DDL Postgres; depois F2 Oracle, F3 MongoDB/MinIO, F4 CDC, F5 plano da regeracao.
+2. **Regeracao dos dados do zero** (ADR 006/007/009): ShadowTraffic (cadastros, MongoDB, GPS) + simulador de operacao (compra e ciclo). Renovar a licenca do ShadowTraffic antes (vence por volta de 2026-11-07).
+3. **Pipeline** (`shared/pipeline/`, hoje no modelo antigo): so depois do fisico e da regeracao.

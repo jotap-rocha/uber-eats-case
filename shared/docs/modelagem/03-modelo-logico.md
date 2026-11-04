@@ -12,6 +12,10 @@ Terceira etapa do fluxo (regras → adversarial → conceitual → **lógico** �
 | L3 | Pós-entrega (diagrama 2.3) | aprovada |
 | L4 | Visão integrada: restrições entre tabelas, parâmetros, ADR do histórico de status | aprovada |
 
+> **Revisado depois da aprovação** pela [F0 do físico](04-modelo-fisico.md#f0-decisões-transversais) e pela [ADR 009](../../../docs/adr/009-simulador-cria-a-compra-numa-transacao.md) (2026-11-03): chaves do Oracle em `NUMBER(18)`; o simulador
+> cria a compra inteira numa transação e o ShadowTraffic fica só com cadastros, MongoDB e `kafka/gps`. Os trechos
+> afetados estão marcados com "(F0)".
+
 ---
 
 ## L0. Convenções transversais
@@ -21,7 +25,7 @@ Decididas com o usuário em 2026-11-01.
 | # | Tema | Convenção |
 |---|---|---|
 | 1 | Nomes | Inglês em `snake_case` (tabelas e colunas), como as tabelas atuais (`orders`, `users`, `drivers`). O glossário em português fica no `CONTEXT.md`. |
-| 2 | Chaves | **Toda chave de identificação é inteira sequencial** (`BIGINT` no Postgres, `NUMBER(19)` no Oracle). **Sem UUID** em nenhuma tabela. O gerador já usa `sequentialInteger` (confirmado em `users`; as demais tabelas são conferidas na L1). Entidade fraca usa chave composta com a chave do pai. |
+| 2 | Chaves | **Toda chave de identificação é inteira sequencial** (`BIGINT` no Postgres, `NUMBER(18)` no Oracle, F0). **Sem UUID** em nenhuma tabela. O gerador já usa `sequentialInteger` (confirmado em `users`; as demais tabelas são conferidas na L1). Entidade fraca usa chave composta com a chave do pai. |
 | 2a | Código de rastreio | Única exceção ao inteiro: `pedido` e `pagamento` têm uma coluna extra com um **hash** para rastreio (código externo/visível ao cliente). É atributo, **não é chave**; as relações continuam pelo inteiro. Formato e tamanho do hash ficam para a L1/L2. |
 | 3 | Dinheiro | **Decimal com 2 casas** (`NUMERIC(12,2)` no Postgres, `NUMBER(12,2)` no Oracle). Nunca ponto flutuante. A regra "a última parcela absorve a diferença" (RN-33) é feita em decimal. |
 | 4 | Tempo | **Horário de Brasília** (`America/Sao_Paulo`), sem UTC. Coluna `TIMESTAMP` sem fuso, gravando a hora local; a sessão do banco e o gerador usam `America/Sao_Paulo`. Não há horário de verão desde 2019, então não há hora ambígua. |
@@ -68,7 +72,7 @@ O Turno é entidade fraca de Motorista no conceitual, mas fica no **Postgres**, 
 ## L1a. Pessoas, cidade e catálogo
 
 Banco de cada tabela: **Oracle** (Pessoas) · **Postgres** (pedido e catálogo) · **MongoDB** (perfil do restaurante).
-Tipos em notação Postgres; no Oracle, `varchar` → `VARCHAR2`, `numeric` → `NUMBER`, `bigint` → `NUMBER(19)`.
+Tipos em notação Postgres; no Oracle, `varchar` → `VARCHAR2`, `numeric` → `NUMBER`, `bigint` → `NUMBER(18)`, `integer` → `NUMBER(9)` (F0: só até 18 dígitos o Debezium entrega inteiro).
 Colunas de rastro (`created_at`, `updated_at`) em todas as tabelas, em horário de Brasília.
 
 ### cities (Oracle e Postgres, cópia idêntica)
@@ -216,7 +220,7 @@ Nome e preço **não** ficam no cardápio: vêm do produto.
 | `restaurant_profiles.menu_items` (Mongo) | `product_id` | `ext → Postgres.products` |
 
 O simulador (Postgres) lê as janelas do perfil (MongoDB) para agendar a reposição: é a única leitura entre bancos que a
-operação faz. Fica para o físico decidir se ele lê do MongoDB ou de uma cópia de configuração.
+operação faz. (F0) Ele lê direto do MongoDB, só leitura, com cache.
 
 ### Decisões da revisão da L1a (2026-11-02)
 
@@ -317,8 +321,7 @@ Valores (itens, taxas, total) ficam no pagamento (L2). O motivo de não entrega 
 
 **Código de rastreio (decisão 12).** 12 caracteres em base32 Crockford maiúsculo (sem `I`, `L`, `O`, `U`, fácil de ditar),
 tirados do SHA-256 de `order_id` com um sal fixo. É determinístico (a regeração produz o mesmo código), não deixa adivinhar
-o pedido vizinho e tem 60 bits (colisão desprezível na escala do projeto). Onde calcular fica para o físico, com uma
-restrição: **não** como coluna gerada do Postgres, porque o Postgres 15 do projeto não publica coluna gerada na replicação
+o pedido vizinho e tem 60 bits (colisão desprezível na escala do projeto). (F0) Calculado no simulador, em Python, antes do INSERT. A restrição que levou a isso: **não** como coluna gerada do Postgres, porque o Postgres 15 do projeto não publica coluna gerada na replicação
 lógica (só a partir do 18) e o Debezium não a veria.
 
 ### restaurant_orders (Postgres) — Atendimento
@@ -458,26 +461,23 @@ Restrições checadas pelo simulador e nos testes:
 - `delivery_finished` é gravado na finalização (`finished_at`), não na conclusão (RN-42).
 - Turno com atribuição vigente não fecha, salvo `driver_unable` (RN-42).
 
-### Quem escreve (gerador híbrido, ADR 007)
+### Quem escreve (gerador híbrido, ADR 007 e ADR 009)
 
 | Tabela | ShadowTraffic | Simulador |
 |---|---|---|
-| `orders` | INSERT (`in_analysis`) | UPDATE de `status` |
-| `restaurant_orders` | INSERT (`in_analysis`) | todo UPDATE: aceite, rejeição (inclusive `analysis_timeout` e `out_of_stock`), preparo, pronto, chegada do motorista, retirada, cancelamentos |
-| `order_items` | INSERT | — |
-| `order_status_transitions`, `restaurant_order_status_transitions` | INSERT da linha 1 | INSERT das demais |
-| `deliveries` | INSERT (`awaiting_assignment`) | UPDATE |
+| `orders` | — | INSERT na compra (`in_analysis`) e UPDATE de `status` |
+| `restaurant_orders` | — | INSERT na compra (`in_analysis`) e todo UPDATE: aceite, rejeição (inclusive `analysis_timeout` e `out_of_stock`), preparo, pronto, chegada do motorista, retirada, cancelamentos |
+| `order_items` | — | INSERT na compra |
+| `order_status_transitions`, `restaurant_order_status_transitions` | — | INSERT de todas (a linha 1 na compra) |
+| `deliveries` | — | INSERT na compra (`awaiting_assignment`) e UPDATE |
 | `shifts` | — | INSERT e UPDATE (decisão 11) |
 | `driver_assignments` | — | INSERT e UPDATE |
 | `stock_movements` (L1a) | — | INSERT |
 
-Regra simples: nestas tabelas o ShadowTraffic **só faz INSERT**; todo UPDATE é do simulador. O cancelamento do cliente em
-análise (RN-12) também fica com o simulador: ele concorre com o aceite (RN-27), e a fronteira da ADR 007 diz que, depois de
-"em análise", só o simulador escreve no atendimento.
-
-**Risco:** o ShadowTraffic grava pedido, atendimentos, itens e entrega em inserts separados, sem transação comum. O simulador
-não pode aceitar um atendimento cujos itens ainda não chegaram, porque a checagem de estoque sairia errada. O físico define a
-guarda (por exemplo, só processar atendimento que já tenha itens e alguns segundos de idade).
+(F0) O simulador grava a compra inteira (pedido, atendimentos, itens, entrega, linha 1 das transições e o dinheiro da L2)
+numa **única transação** ([ADR 009](../../../docs/adr/009-simulador-cria-a-compra-numa-transacao.md)); o ShadowTraffic não escreve nestas tabelas. Com isso some o risco que esta fase
+registrava (atendimento visível sem os itens, sem transação comum entre os inserts do ShadowTraffic) e a guarda deixa de
+ser necessária.
 
 **Verificações nos testes** (o conjunto completo vai para a L4): a consulta da RN-16 sobre `restaurant_orders` confere
 `orders.status` até `out_for_delivery`; `deliveries.status = in_transit` exatamente quando o pedido está `out_for_delivery`;
@@ -501,7 +501,8 @@ A L0 #2 pediu para conferir as chaves das demais tabelas. Estado do `uber-eats.j
 | `kafka/shift` (MinIO) | `uuid` | **vira tabela** `shifts` (decisão 13) |
 | `kafka/route` (MinIO) | `uuid` | **vira tabela** `deliveries` (decisão 13) |
 
-Nada disso é editado agora: o gerador muda na regeração.
+Nada disso é editado agora: o gerador muda na regeração. (F0) Com a ADR 009, as tabelas do simulador usam identidade do
+Postgres (`GENERATED BY DEFAULT AS IDENTITY`); só os cadastros continuam com `sequentialInteger` no ShadowTraffic.
 
 ### Referências externas da L1b
 
@@ -740,7 +741,7 @@ Documento único da compra; reembolsos não o alteram (conceitual, decisão 5). 
 
 | Tabela | ShadowTraffic | Simulador |
 |---|---|---|
-| `checkouts`, `payment_attempts`, `payments`, `payment_components`, `receipts` | INSERT na compra (decisão 10) | — |
+| `checkouts`, `payment_attempts`, `payments`, `payment_components`, `receipts` | — | INSERT na compra, na mesma transação do pedido (F0, ADR 009) |
 | `refunds`, `refund_components` | — | INSERT no cancelamento, na rejeição e em `driver_unable`; incidente fica para a L3 |
 | `restaurant_payouts` | — | INSERT na retirada |
 | `driver_payouts` | — | INSERT na finalização |
@@ -768,7 +769,7 @@ Todas as tabelas da L2 são **só INSERT**: nenhuma linha de dinheiro é atualiz
 | 7 | Chaves 1:1 | **Chave do pai + cópia** para consulta direta: `restaurant_id` no repasse ao restaurante; `driver_id` e `shift_id` no repasse ao motorista; `driver_id` na gorjeta. Testes conferem a cópia contra a origem |
 | 8 | Percentuais | **Congelados na linha** (pagamento e repasses) |
 | 9 | Recibo | **Tabela mínima** `receipts(payment_id, issued_at)` |
-| 10 | Geração do dinheiro da compra | **Só invariantes no lógico**; na regeração se decide se o ShadowTraffic dá conta ou se a compra vai para o simulador |
+| 10 | Geração do dinheiro da compra | **Só invariantes no lógico**; na regeração se decide se o ShadowTraffic dá conta ou se a compra vai para o simulador. **(F0) Resolvida:** a compra é do simulador (ADR 009) |
 
 ---
 
@@ -1049,7 +1050,7 @@ transição gravadas na mesma transação; **B**, só CDC, com a Silver reconstr
 
 | # | Tema | Decisão |
 |---|---|---|
-| 1 | Parâmetros | **Arquivo único versionado**, lido por simulador, gerador e testes; sem tabela. O local fica para o físico |
+| 1 | Parâmetros | **Arquivo único versionado**, lido por simulador, gerador e testes; sem tabela. (F0) Local: `shared/gen/parameters.yaml`, lido pelo simulador e pelos testes |
 | 2 | Ordem dos restaurantes na rota | **Menor rota total** (testa as duas ordens), desempate pelo menor `restaurant_id` |
 | 3 | Gorjeta antes da confirmação | **Pedido `delivered` ou `completed`**. RN-22, conceitual (3.3) e `tips` ajustados: "concluída" vira "finalizada com sucesso" |
 | 4 | Histórico de status | **Alternativa A** (tabelas de transição); registrada na [ADR 008](../../../docs/adr/008-historico-de-status-em-tabelas-de-transicao.md) |
