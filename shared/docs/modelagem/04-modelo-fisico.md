@@ -2031,6 +2031,7 @@ no host, removido ao final com `docker rm -v`; DDL da F1 extraído deste documen
 | Uma compra válida da ADR 009 (2 tentativas, a 1ª recusada; 3 itens; componentes do exemplo da F5.7) mais catálogo, fichas e `restock` inicial | 0 linhas em todas |
 | Violações plantadas: restaurante de outra cidade, componente com bruto errado, lacuna na sequência de transições, reembolso acima do bruto do componente, saldo diferente dos movimentos | Falharam exatamente T1b, T8a, T3a e T3e, T9a e T6a; nenhuma outra |
 | Exemplo da F5.7 em `Decimal` com `ROUND_HALF_UP` | Fecha em 41,08 e 3,29; reembolso parcial 3,33 + 3,34 + 3,33 |
+| **Depois (F5.2):** as consultas viraram `shared/gen/checks/*.sql`, rodadas pelo `test_invariants_no_postgres` (só leitura, com `UBEREATS_CHECKS_DSN`) contra um Postgres criado pelo init novo (`shared/sql/postgres/`) | Compra válida: passa. Com as mesmas violações: falha listando exatamente T1b, T3a, T3e, T6a, T8a e T9a. T6c, T17, T18 e T19 têm testes de unidade em Python |
 
 O ciclo completo (aceite, preparo, atribuição, entrega e pós-entrega) só ganha dado positivo quando o simulador existir: a
 validação de T5 e T10 a T16 contra dado real fica para os testes do simulador e para o gate da regeração (passo 11).

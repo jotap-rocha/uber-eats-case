@@ -1,6 +1,8 @@
 # Simulador e seeds da regeração (shared/gen/simulator, F5 do modelo físico).
-# Entram aqui os drivers dos bancos (psycopg, oracledb, pymongo) quando os seeds e o laço chegarem.
+# Entram aqui oracledb e pymongo quando os seeds e o laço chegarem.
 PyYAML>=6.0
+psycopg[binary]>=3.2
 pytest>=8.0
 ruff>=0.6
 mypy>=1.10
+types-PyYAML>=6.0
