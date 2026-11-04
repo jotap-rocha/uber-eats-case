@@ -76,3 +76,15 @@ migrar. É o momento de menor custo para as duas mudanças.
 
 Nenhum. Todo dado do projeto é sintético (ShadowTraffic e seed). As mudanças são de infraestrutura de captura e valem
 na regeração; nenhuma operação destrutiva nos bancos atuais é concedida por esta ADR.
+
+## Adendo (2026-11-04, implementação da F5.2)
+
+O teste do init em contêiner descartável corrigiu dois pontos da decisão 2:
+
+- A opção do oplog é **`--oplogSize 1024`** (MB). `--oplogSizeMB` não existe no `mongod` e impede o contêiner de subir.
+- O entrypoint da imagem `mongo:7` só tira o `--replSet` do `mongod` temporário do init quando há usuário root
+  (autenticação). Sem autenticação, o init roda em replica set não iniciado e nenhuma escrita passa. O `rs.initiate` vai
+  para o próprio init (`shared/mongo/init/00_replica_set.js`, antes da coleção), com o membro **`localhost:27017`**, e o
+  healthcheck só confere o primário. Clientes fora do compose continuam com `directConnection=true`.
+
+Detalhe na F4.4 do [modelo físico](../../shared/docs/modelagem/04-modelo-fisico.md).

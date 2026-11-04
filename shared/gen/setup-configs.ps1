@@ -31,14 +31,6 @@ Write-Host "   -> Gerando $configFileUnified..."
 
 Write-Host "✅ Arquivo .json unificado (Postgres + MinIO) gerado com sucesso!"
 
-# 3. Gera o seed do satelite MongoDB "Perfil de Restaurante" (Onda 3, Etapa 2)
-$mongoTemplate = "$scriptFolder\..\mongo\init\01_perfil_restaurante.js.template"
-$mongoOutput = "$scriptFolder\..\mongo\init\01_perfil_restaurante.js"
+# 3. O seed do MongoDB saiu daqui: os perfis sao gravados pelo seed em Python do simulador
+#    (F3, decisao 1, do modelo fisico); o init so cria a colecao (shared/mongo/init/).
 
-if (Test-Path $mongoTemplate) {
-    Write-Host "   -> Gerando $mongoOutput..."
-    (Get-Content $mongoTemplate) `
-        -replace "REPLACE_RESTAURANT_COUNT", $envVars.RESTAURANT_COUNT |
-        Set-Content $mongoOutput
-    Write-Host "✅ Seed do Mongo (Perfil de Restaurante) gerado com sucesso!"
-}

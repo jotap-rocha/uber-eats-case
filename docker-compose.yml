@@ -102,7 +102,8 @@ services:
       - APP_USER_PASSWORD=${ORACLE_APP_PASSWORD}
     volumes:
       - oracle_data:/opt/oracle/oradata
-      - ./shared/sql/oracle:/container-entrypoint-startdb.d
+      # initdb.d roda uma vez, na criacao do banco; startdb.d rodaria a cada start (F5.1).
+      - ./shared/sql/oracle:/container-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "healthcheck.sh"]
       interval: 20s

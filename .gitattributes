@@ -1,0 +1,2 @@
+# Scripts que rodam dentro dos contêineres (init dos bancos) precisam de LF, mesmo com core.autocrlf=true.
+*.sh text eol=lf

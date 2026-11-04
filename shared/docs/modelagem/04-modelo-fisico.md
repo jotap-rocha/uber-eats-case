@@ -1208,11 +1208,10 @@ nó único serve para desenvolvimento). O `mongo-ubereats` roda sozinho, então 
 ```yaml
   mongo-ubereats:
     image: mongo:7
-    command: ["--replSet", "rs0", "--bind_ip_all", "--oplogSizeMB", "1024"]
+    command: ["--replSet", "rs0", "--bind_ip_all", "--oplogSize", "1024"]
     healthcheck:
-      # O entrypoint roda os scripts de init sem --replSet; o rs.initiate fica no healthcheck (idempotente).
-      test: ["CMD", "mongosh", "--quiet", "--eval",
-             "try { rs.status().ok } catch (e) { rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'mongo-ubereats:27017'}]}).ok }"]
+      # O rs.initiate fica no init (shared/mongo/init/00_replica_set.js); o healthcheck só confere o primário.
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.hello().isWritablePrimary ? 0 : 1"]
       interval: 10s
       retries: 20
       start_period: 10s
@@ -1220,8 +1219,9 @@ nó único serve para desenvolvimento). O `mongo-ubereats` roda sozinho, então 
 
 | Ponto | Proposta |
 |---|---|
-| Nome do membro | `mongo-ubereats:27017`. Quem está fora da rede do compose (Airbyte via `abctl`, seed e simulador no Windows) conecta com **`directConnection=true`**, sem descoberta do replica set (senão o driver tenta resolver `mongo-ubereats`) |
-| Oplog | `--oplogSizeMB 1024`: o padrão é 5% do disco, alto para a D: |
+| Nome do membro | `localhost:27017` (corrigido na F5.2; era `mongo-ubereats:27017`). Quem está fora da rede do compose (Airbyte via `abctl`, seed e simulador no Windows) conecta com **`directConnection=true`**, sem descoberta do replica set (senão o driver tenta resolver `mongo-ubereats`) |
+| Oplog | `--oplogSize 1024` (MB; corrigido na F5.2, a opção `--oplogSizeMB` não existe no `mongod`): o padrão é 5% do disco, alto para a D: |
+| **Depois (F5.2)** | O teste do init mostrou duas correções. (1) O entrypoint da imagem `mongo:7` só tira o `--replSet` do `mongod` temporário do init **quando há usuário root** (autenticação); sem autenticação, o init roda em replica set não iniciado e o `createCollection` falha com `not primary`. O `rs.initiate` passa para o init (`00_replica_set.js`, antes da coleção), com o membro `localhost:27017`, porque o `mongod` do init só escuta em 127.0.0.1. Todo cliente fora do compose já usa `directConnection=true`, e a partir do Windows `localhost:27017` é a porta publicada. (2) A opção do oplog é `--oplogSize` |
 | Autenticação | O Mongo roda **sem** autenticação hoje. Se for ligada, replica set exige `keyFile`; fica fora da F4 |
 | Captura no Airbyte | **Incremental por change stream** (CDC), modo de atualização *Lookup* (documento inteiro). O seed é idempotente e pode reescrever perfis (`replaceOne`); o CDC entrega essas mudanças e as exclusões, e o full refresh releria a coleção inteira a cada sync. Substitui a decisão antiga "MongoDB sem CDC" (`azure/docs/data-contract-cdc-azure.md`) |
 
@@ -1375,10 +1375,10 @@ Tudo nesta tabela é código versionado, feito e testado na branch antes de toca
 
 | Arquivo | Mudança |
 |---|---|
-| `docker-compose.yml` | `TZ=America/Sao_Paulo` no Postgres e no Oracle (F0, decisão 3); `-c max_slot_wal_keep_size=4GB` no Postgres (F4.2); Oracle montado em `/container-entrypoint-initdb.d` (F5.1); Mongo com `--replSet rs0` e o healthcheck da F4.4; `kafka-connect` e `kafka-connect-azure` em `quay.io/debezium/connect:3.7`, `debezium-server-*` em `quay.io/debezium/server:3.7` (ADR 011); `kafka-connect` depende do Postgres e do Oracle saudáveis; `gen-unified` sem `minio-setup` no `depends_on` |
+| `docker-compose.yml` | `TZ=America/Sao_Paulo` no Postgres e no Oracle (F0, decisão 3); `-c max_slot_wal_keep_size=4GB` no Postgres (F4.2); Oracle montado em `/container-entrypoint-initdb.d` (F5.1); Mongo com `--replSet rs0 --bind_ip_all --oplogSize 1024` e o healthcheck da F4.4 (corrigida); `kafka-connect` e `kafka-connect-azure` em `quay.io/debezium/connect:3.7`, `debezium-server-*` em `quay.io/debezium/server:3.7` (ADR 011); `kafka-connect` depende do Postgres e do Oracle saudáveis; `gen-unified` sem `minio-setup` no `depends_on` |
 | `shared/sql/postgres/` | Saem `create_users_table.sql` e `create_drivers_table.sql` (vão para `shared/sql/legacy/postgres/`). Entram `00_schema.sql` (schema, `search_path` do usuário da aplicação e `set_updated_at`), `01_catalogo.sql`, `02_operacao.sql`, `03_dinheiro.sql`, `04_pos_entrega.sql`, `05_indices_triggers.sql` (F1.1 a F1.5) e `06_cdc.sh` (usuário `dbz_ubereats` com a senha do `.env` e a publicação, F4.2) |
 | `shared/sql/oracle/` | Ficam `00_enable_archivelog.sql` e `01_create_user.sh`. `02_create_tables.sh` e `03_create_tables_pedido_pagamento.sh` vão para `shared/sql/legacy/oracle/`; entra um `02_create_tables.sh` novo com o DDL e o gatilho de logon da F2 |
-| `shared/mongo/init/` | `01_perfil_restaurante.js(.template)` vai para `shared/mongo/legacy/`; entra `01_restaurant_profiles.js` (validador e índice da F3.2). O `setup-configs.ps1` deixa de renderizar o seed do Mongo |
+| `shared/mongo/init/` | `01_perfil_restaurante.js(.template)` vai para `shared/mongo/legacy/`; entram `00_replica_set.js` (`rs.initiate` com o membro `localhost:27017` e espera do primário, F4.4 corrigida) e `01_restaurant_profiles.js` (validador e índice da F3.2). O `setup-configs.ps1` deixa de renderizar o seed do Mongo |
 | `shared/gen/unified/uber-eats.json.template` | Fica só com `customers` e `drivers` (Oracle) e `restaurants` (Postgres), nas colunas da F1 e da F2; sai a conexão `minio` e os 8 geradores dela (ADR 010). Edição pela skill `shadowtraffic-adicionar-generator-seguro` |
 | `shared/gen/reference/cities.csv` | **Novo** (F5.4): código do IBGE, nome, UF e centro (latitude, longitude) de cada cidade |
 | `shared/gen/parameters.yaml` | **Novo** (F5.8) |
@@ -2039,7 +2039,7 @@ validação de T5 e T10 a T16 contra dado real fica para os testes do simulador 
 
 | Risco | Mitigação |
 |---|---|
-| Área de recuperação do Oracle (`db_recovery_file_dest_size = 10G`) enche de archivelog e o banco para | O Oracle só recebe cadastros (pouca mudança). Conferir o uso da área de recuperação no gate (passo 11) e, se crescer, apagar archivelog já lido pelo Debezium com RMAN (operação com confirmação) |
+| Archivelog do Oracle acumula. O teste do init (F5.2) mostrou que ele vai para `$ORACLE_HOME/dbs/arch`, **na camada do contêiner, fora do volume `oracle_data`**: cresce no VHDX e some quando o contêiner é recriado | O Oracle só recebe cadastros (pouca mudança). Conferir o tamanho de `dbs/arch` no gate (passo 11); se crescer, apagar archivelog já lido pelo Debezium com RMAN (operação com confirmação). Recriar o contêiner com o conector parado no meio de um archivelog obriga a novo snapshot |
 | Rajada do histórico pesa no HDD da D: | Uma transação por compra; o ritmo do histórico é limitado pelo banco, não pelo relógio |
 | Slot do Postgres retém WAL com o conector parado | `max_slot_wal_keep_size=4GB` (F4.2); acima disso o slot é invalidado e o conector refaz o snapshot |
 | Licença do ShadowTraffic vence antes da execução | Passo 0; a carga em lote leva minutos, e o contínuo é opcional |
