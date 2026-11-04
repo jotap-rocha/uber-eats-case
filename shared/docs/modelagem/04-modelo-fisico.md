@@ -10,7 +10,7 @@ como produção).
 |---|---|---|
 | F0 | Decisões transversais adiadas pelo lógico | aprovada |
 | F1 | DDL Postgres: catálogo, operação, dinheiro, pós-entrega | aprovada |
-| F2 | DDL Oracle: `customers`, `drivers`, `cities` | pendente |
+| F2 | DDL Oracle: `customers`, `drivers`, `cities` | aprovada |
 | F3 | MongoDB (`restaurant_profiles`). O MinIO saiu do escopo ([ADR 010](../../../docs/adr/010-minio-fora-do-escopo-da-geracao.md); lógica guardada em [`minio/historico-geracao.md`](../minio/historico-geracao.md)) | pendente |
 | F4 | CDC: configuração do Debezium, tópicos, contrato `cdc_*` visto da fonte | pendente |
 | F5 | Plano da regeração: ordem de carga, divisão gerador × simulador, testes T1 a T18 como consultas | pendente |
@@ -755,3 +755,194 @@ Trigger `set_updated_at` (F1.0) em: `cities`, `restaurants`, `products`, `stock_
 
 Achado do teste: o contêiner sem `TZ` gravou `localtimestamp` em UTC. Confirma o `TZ=America/Sao_Paulo` da F0 (decisão 3)
 como passo obrigatório da regeração.
+
+---
+
+## F2. DDL Oracle
+
+Banco do domínio **Pessoas** (ADR 006): `cities` (cópia idêntica à do Postgres), `customers` e `drivers`. As três tabelas
+são cadastros do ShadowTraffic: ele faz o INSERT com a chave vinda de `sequentialInteger` (F0, decisão 8), e o simulador só
+lê (abertura de turno e montagem da compra, ADR 009).
+
+### F2.0 Convenções físicas
+
+Valem as da F1.0, com as traduções abaixo.
+
+| # | Tema | Proposta |
+|---|---|---|
+| 1 | Schema | O usuário de aplicação **`UBEREATS`** no PDB `FREEPDB1` (no Oracle, schema é usuário). Mesmo nome do schema do Postgres |
+| 2 | Tipos | `bigint` → `NUMBER(18)`, `integer` → `NUMBER(9)`, `numeric(p,s)` → `NUMBER(p,s)`, `varchar(n)` → **`VARCHAR2(n CHAR)`**, `char(n)` → `CHAR(n CHAR)`. A semântica `CHAR` conta caracteres, não bytes: "São Paulo" em UTF-8 tem mais bytes que letras |
+| 3 | Booleano | **`NUMBER(1)` + `CHECK (IN (0, 1))`**. O `BOOLEAN` nativo do Oracle 23 **não é suportado pelo Debezium** (doc 3.5: o conector pula a coluna e o dado se perde) |
+| 4 | Chaves | `NUMBER(18)` sem default nem identidade: quem fornece é o ShadowTraffic |
+| 5 | Rastro | `created_at`/`updated_at` com default **`CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP)`**: hora de Brasília calculada no banco, sem depender do fuso do contêiner nem da sessão. Trigger `BEFORE UPDATE` com a mesma regra da F1 (só preenche se o escritor não mudou) |
+| 6 | Data | `date_of_birth` em `DATE` com `CHECK (date_of_birth = TRUNC(date_of_birth))` (o `DATE` do Oracle tem hora). No Debezium, `DATE` do Oracle chega como `io.debezium.time.Timestamp` (ms); a Bronze converte para `DATE` (F4) |
+| 7 | Texto vazio | No Oracle, `''` é `NULL`. Coluna opcional tem de ser nula de verdade (`address_line2`); nas obrigatórias o `NOT NULL` recusa a string vazia |
+| 8 | Nomes | Os mesmos da F1 (`pk_`, `uq_`, `ck_`, `ix_`), mais `trg_<tabela>_updated_at`. Sem aspas: o Oracle guarda em maiúsculas |
+
+### F2.1 Datas vindas do ShadowTraffic
+
+**Problema.** O ShadowTraffic grava datas como texto (`formatDateTime`), e o Oracle converte texto em `TIMESTAMP` pelo
+`NLS_TIMESTAMP_FORMAT` da sessão, que por padrão é `DD-MON-RR HH.MI.SSXFF AM`. Foi por isso que as tabelas atuais guardam datas
+em `VARCHAR2` (comentário em `shared/sql/oracle/02_create_tables.sh`), o que fere a L0 #4. Reproduzido no teste: `ORA-01843`.
+
+**Proposta (recomendada): gatilho de logon no schema**, que fixa o formato ISO e o fuso de toda sessão do `UBEREATS`. O
+template grava `yyyy-MM-dd HH:mm:ss[.SSS]` e `yyyy-MM-dd` para datas.
+
+```sql
+CREATE OR REPLACE TRIGGER trg_ubereats_logon
+  AFTER LOGON ON ubereats.SCHEMA
+BEGIN
+  EXECUTE IMMEDIATE q'[ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD']';
+  EXECUTE IMMEDIATE q'[ALTER SESSION SET NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF']';
+  EXECUTE IMMEDIATE q'[ALTER SESSION SET TIME_ZONE = 'America/Sao_Paulo']';
+END;
+/
+```
+
+Alternativas: manter `VARCHAR2` (fere a L0 #4 e empurra a conversão para a Bronze); ou um usuário só para o gerador com o
+mesmo gatilho (mais um usuário sem ganho, porque o simulador só lê).
+
+### F2.2 DDL
+
+```sql
+-- Conectado como UBEREATS em FREEPDB1 (o schema é o próprio usuário).
+
+CREATE TABLE cities (
+  city_id     NUMBER(9)           NOT NULL,
+  name        VARCHAR2(100 CHAR)  NOT NULL,
+  state_code  CHAR(2 CHAR)        NOT NULL,
+  created_at  TIMESTAMP           DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP) NOT NULL,
+  updated_at  TIMESTAMP           DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP) NOT NULL,
+  CONSTRAINT pk_cities PRIMARY KEY (city_id),
+  CONSTRAINT ck_cities_city_id CHECK (city_id BETWEEN 1000000 AND 5999999),
+  CONSTRAINT ck_cities_state_code CHECK (REGEXP_LIKE(state_code, '^[A-Z]{2}$'))
+);
+
+CREATE TABLE customers (
+  customer_id     NUMBER(18)          NOT NULL,
+  first_name      VARCHAR2(60 CHAR)   NOT NULL,
+  last_name       VARCHAR2(80 CHAR)   NOT NULL,
+  email           VARCHAR2(150 CHAR)  NOT NULL,
+  email_verified  NUMBER(1)           NOT NULL,
+  phone_number    VARCHAR2(20 CHAR)   NOT NULL,
+  phone_verified  NUMBER(1)           NOT NULL,
+  address_line1   VARCHAR2(200 CHAR)  NOT NULL,
+  address_line2   VARCHAR2(100 CHAR),
+  postal_code     CHAR(8 CHAR)        NOT NULL,
+  latitude        NUMBER(9,6)         NOT NULL,
+  longitude       NUMBER(9,6)         NOT NULL,
+  city_id         NUMBER(9)           NOT NULL,
+  date_of_birth   DATE                NOT NULL,
+  gender          VARCHAR2(20 CHAR)   NOT NULL,
+  status          VARCHAR2(20 CHAR)   NOT NULL,
+  signup_date     TIMESTAMP           NOT NULL,
+  last_login      TIMESTAMP           NOT NULL,
+  created_at      TIMESTAMP           DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP) NOT NULL,
+  updated_at      TIMESTAMP           DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP) NOT NULL,
+  CONSTRAINT pk_customers PRIMARY KEY (customer_id),
+  CONSTRAINT uq_customers_email UNIQUE (email),
+  CONSTRAINT ck_customers_flags CHECK (email_verified IN (0, 1) AND phone_verified IN (0, 1)),
+  CONSTRAINT ck_customers_postal_code CHECK (REGEXP_LIKE(postal_code, '^[0-9]{8}$')),
+  CONSTRAINT ck_customers_coords CHECK (latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180),
+  CONSTRAINT ck_customers_birth CHECK (date_of_birth = TRUNC(date_of_birth)),
+  CONSTRAINT ck_customers_gender CHECK (gender IN ('female', 'male', 'other', 'not_informed')),
+  CONSTRAINT ck_customers_status CHECK (status IN ('active', 'suspended', 'inactive')),
+  CONSTRAINT ck_customers_login CHECK (last_login >= signup_date)
+);
+
+CREATE TABLE drivers (
+  driver_id          NUMBER(18)          NOT NULL,
+  first_name         VARCHAR2(60 CHAR)   NOT NULL,
+  last_name          VARCHAR2(80 CHAR)   NOT NULL,
+  email              VARCHAR2(150 CHAR)  NOT NULL,
+  phone_number       VARCHAR2(20 CHAR)   NOT NULL,
+  vehicle_type       VARCHAR2(20 CHAR)   NOT NULL,
+  vehicle_make       VARCHAR2(50 CHAR)   NOT NULL,
+  vehicle_model      VARCHAR2(50 CHAR)   NOT NULL,
+  vehicle_year       NUMBER(9)           NOT NULL,
+  license_plate      CHAR(7 CHAR)        NOT NULL,
+  license_number     CHAR(11 CHAR)       NOT NULL,
+  city_id            NUMBER(9)           NOT NULL,
+  status             VARCHAR2(20 CHAR)   NOT NULL,
+  registration_date  TIMESTAMP           NOT NULL,
+  last_login         TIMESTAMP           NOT NULL,
+  created_at         TIMESTAMP           DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP) NOT NULL,
+  updated_at         TIMESTAMP           DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP) NOT NULL,
+  CONSTRAINT pk_drivers PRIMARY KEY (driver_id),
+  CONSTRAINT uq_drivers_license_plate UNIQUE (license_plate),
+  CONSTRAINT uq_drivers_license_number UNIQUE (license_number),
+  CONSTRAINT ck_drivers_vehicle_type CHECK (vehicle_type IN ('car', 'motorcycle', 'scooter')),
+  CONSTRAINT ck_drivers_vehicle_year CHECK (vehicle_year BETWEEN 1990 AND 2100),
+  CONSTRAINT ck_drivers_license_plate CHECK (REGEXP_LIKE(license_plate, '^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$')),
+  CONSTRAINT ck_drivers_license_number CHECK (REGEXP_LIKE(license_number, '^[0-9]{11}$')),
+  CONSTRAINT ck_drivers_status CHECK (status IN ('active', 'suspended', 'inactive')),
+  CONSTRAINT ck_drivers_login CHECK (last_login >= registration_date)
+);
+
+CREATE INDEX ix_drivers_city_status ON drivers (city_id, status);
+
+CREATE OR REPLACE TRIGGER trg_cities_updated_at
+  BEFORE UPDATE ON cities FOR EACH ROW
+BEGIN
+  IF :NEW.updated_at = :OLD.updated_at THEN
+    :NEW.updated_at := CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP);
+  END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_customers_updated_at
+  BEFORE UPDATE ON customers FOR EACH ROW
+BEGIN
+  IF :NEW.updated_at = :OLD.updated_at THEN
+    :NEW.updated_at := CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP);
+  END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_drivers_updated_at
+  BEFORE UPDATE ON drivers FOR EACH ROW
+BEGIN
+  IF :NEW.updated_at = :OLD.updated_at THEN
+    :NEW.updated_at := CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP);
+  END IF;
+END;
+/
+```
+
+Índice não único: `ix_drivers_city_status`, para o simulador achar motoristas ativos da cidade ao abrir turno (RN-35, RN-42).
+
+### F2.3 Diferenças em relação ao lógico
+
+| Coluna | Lógico | Físico proposto | Motivo |
+|---|---|---|---|
+| `customers.address_line2` | obrigatória | **nula** | Complemento é opcional, e `''` é `NULL` no Oracle |
+| `customers.gender` | sem lista | `female`, `male`, `other`, `not_informed` | Domínio em minúsculas, como os demais |
+| `drivers.vehicle_type` | sem lista | `car`, `motorcycle`, `scooter` | O gerador atual sorteia também `Bicycle`, que não tem placa nem CNH |
+| `drivers.license_plate` | `varchar` | `CHAR(7)`, formato antigo ou Mercosul, **único** | `ABC1234` ou `ABC1D23` |
+| `drivers.license_number` | `varchar` | `CHAR(11)` só dígitos, **único** | CNH tem 11 dígitos |
+| `customers.last_login`, `drivers.last_login` | — | `CHECK` ≥ data de cadastro | Invariante de linha (F1.0 #4) |
+
+### F2.4 Validação
+
+DDL aplicado num contêiner descartável `gvenzl/oracle-free:23.4-full` (sem volume; o `oracle-ubereats` não foi tocado), em
+2026-11-04. Resultado: 3 tabelas, 15 `CHECK`, 4 triggers (3 de `updated_at` e o de logon), sem erro.
+
+| Teste | Resultado |
+|---|---|
+| Texto ISO num `TIMESTAMP` sem o gatilho de logon | `ORA-01843` (o problema de hoje) |
+| O mesmo texto, com e sem fração, e `date_of_birth` em `yyyy-MM-dd`, com o gatilho | Gravado |
+| Default de `created_at` com o contêiner em UTC | Hora de Brasília (08:41 com UTC 11:41) |
+| 8 `CHECK` testados e o único do e-mail | Todos recusaram o valor inválido |
+| `address_line1 = ''` | Recusado como `NULL` (`ORA-01407`) |
+| Trigger de `updated_at` | Manteve o valor informado; preencheu quando o escritor não mudou |
+
+### Decisões da revisão da F2 (2026-11-04)
+
+| # | Tema | Decisão |
+|---|---|---|
+| 1 | Datas vindas do ShadowTraffic | **Gatilho de logon** no schema `UBEREATS`: `NLS_DATE_FORMAT = 'YYYY-MM-DD'`, `NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF'` e `TIME_ZONE = 'America/Sao_Paulo'`. Datas em `TIMESTAMP`/`DATE`, nunca em `VARCHAR2` |
+| 2 | Booleano | **`NUMBER(1)` + `CHECK (0, 1)`**; na F4, o `NumberOneToBooleanConverter` entrega booleano no evento. Conferido na doc do Debezium 3.7 (estável mais recente): o `BOOLEAN` nativo do Oracle 23 segue sem suporte, então atualizar o Debezium não resolve isso (a atualização 3.0 → 3.7 é avaliada na F4 por outros motivos) |
+| 3 | Tipo de veículo | **Só motorizado**: `car`, `motorcycle`, `scooter`; placa e CNH obrigatórias e únicas. O `Bicycle` do gerador atual sai na regeração |
+| 4 | Diferenças em relação ao lógico | **Aceitas** as da F2.3: `address_line2` nula, lista de `gender`, placa `CHAR(7)` e CNH `CHAR(11)` únicas, `last_login` ≥ data de cadastro |
+
+**Para a F4:** `date_of_birth` (`DATE` do Oracle) chega como `io.debezium.time.Timestamp` em ms; a Bronze converte para `DATE`.
