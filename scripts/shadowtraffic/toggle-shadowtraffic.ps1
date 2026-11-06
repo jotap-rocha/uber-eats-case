@@ -1,9 +1,10 @@
 # ==============================================================================
 # Script: toggle-shadowtraffic.ps1
 # Descricao: Liga/desliga o gerador ShadowTraffic (gen-unified) manualmente,
-#            SEM reiniciar a numeracao dos IDs (users/drivers/orders/payments/
-#            restaurants). Cada "on" recalcula "startingFrom" a partir do
-#            MAX(id) real nas tabelas antes de subir o container. Tambem
+#            SEM reiniciar a numeracao dos IDs (customers/drivers no Oracle,
+#            restaurants no Postgres; F5.5 do modelo fisico). Cada "on"
+#            recalcula "startingFrom" a partir do MAX(id) real nas tabelas e o
+#            "maxEvents" que falta ate a meta antes de subir o container. Tambem
 #            liga/desliga junto dois loops em background:
 #              - loop de report horario (shadowtraffic-report-loop.ps1) em
 #                logs/shadowtraffic-report.log;
@@ -16,8 +17,8 @@
 #
 # Por que este script existe (nao usar apenas docker-compose stop/start):
 #   O config shared/gen/unified/uber-eats.json.template usa "startingFrom": N fixo
-#   para os campos sequenciais (user_id, driver_id, order_id, payment_id,
-#   restaurant_id). Se o container for religado do zero com o mesmo N fixo
+#   para os campos sequenciais (vars.id de customers, drivers e restaurants).
+#   Se o container for religado do zero com o mesmo N fixo
 #   e a tabela ja tiver linhas alem desse N, o INSERT bate em PK duplicada
 #   (ORA-00001 / "duplicate key value violates unique constraint"). Isso NAO
 #   afeta so aquele fork: ja foi observado o pipeline inteiro (17 streams)
@@ -45,7 +46,6 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot  = Get-RepoRoot
 $jsonPath  = "$repoRoot\shared\gen\unified\uber-eats.json"
-$RESTAURANT_TARGET = 500
 
 $logDir      = "$repoRoot\logs"
 $logFile     = "$logDir\shadowtraffic-report.log"
@@ -164,50 +164,47 @@ function Show-Status {
     Write-Host "Loop de restart:       $restartState  (log: $restartLogFile)"
 
     $snap = Get-GeneratorSnapshot -EnvVars $envVars
-    Write-Host "  users:       $($snap.users)"
-    Write-Host "  drivers:     $($snap.drivers)"
-    Write-Host "  orders:      $($snap.orders)"
-    Write-Host "  payments:    $($snap.payments)"
-    Write-Host "  restaurants: $($snap.restaurants) / $RESTAURANT_TARGET"
+    Write-Host "  customers:   $($snap.customers_count) linhas (max id $($snap.customers))"
+    Write-Host "  drivers:     $($snap.drivers_count) linhas (max id $($snap.drivers))"
+    Write-Host "  restaurants: $($snap.restaurants_count) linhas (max id $($snap.restaurants))"
 }
 
+# Retorna $true se sobrou algum gerador a rodar. Cada cadastro (F5.5 do modelo fisico) usa
+# vars.id = sequentialInteger; a meta e o maxEvents do template (alinhado ao parameters.yaml por
+# shared/gen/tests/test_template.py). Gerador que ja bateu a meta sai do config gerado.
 function Sync-StartingPoints {
-    Write-Host "[1/3] Calculando pontos de retomada (MAX id atual em cada tabela)..."
-
+    Write-Host "[1/3] Calculando pontos de retomada (MAX id e contagem em cada tabela)..."
     $snap = Get-GeneratorSnapshot -EnvVars $envVars
-    $maxUser    = $snap.users
-    $maxDriver  = $snap.drivers
-    $maxOrder   = $snap.orders
-    $maxPayment = $snap.payments
-    $restCount  = $snap.restaurants
-    $maxRest    = Get-OracleScalar -EnvVars $envVars -Sql "SELECT NVL(MAX(restaurant_id),0) FROM UBEREATS.RESTAURANTS;"
-
-    Write-Host "   users=$maxUser drivers=$maxDriver orders=$maxOrder payments=$maxPayment restaurants=$restCount/$RESTAURANT_TARGET"
+    Write-Host "   customers=$($snap.customers_count) drivers=$($snap.drivers_count) restaurants=$($snap.restaurants_count)"
 
     Write-Host "[2/3] Injetando segredos do .env (shared\gen\setup-configs.ps1)..."
     & "$repoRoot\shared\gen\setup-configs.ps1" | Out-Null
 
-    Write-Host "[3/3] Ajustando 'startingFrom' no uber-eats.json gerado (sem tocar no template)..."
+    Write-Host "[3/3] Ajustando 'startingFrom' e 'maxEvents' no uber-eats.json gerado (sem tocar no template)..."
     $config = Get-Content $jsonPath -Raw | ConvertFrom-Json -Depth 100
-
-    $usersGen = $config.generators | Where-Object { $_.table -eq "users" }
-    $usersGen.row.user_id.startingFrom = $maxUser + 1
-
-    $driversGen = $config.generators | Where-Object { $_.table -eq "drivers" }
-    $driversGen.fork.key.startingFrom = $maxDriver + 1
-
-    $ordersGen = $config.generators | Where-Object { $_.table -eq "orders" }
-    $ordersGen.fork.key.startingFrom = $maxOrder + 1
-
-    $paymentsGen = $config.generators | Where-Object { $_.table -eq "payments" }
-    $paymentsGen.fork.key.startingFrom = $maxPayment + 1
-
-    $restGen = $config.generators | Where-Object { $_.table -eq "restaurants" }
-    $restGen.row.restaurant_id.startingFrom = $maxRest + 1
-    $restGen.localConfigs.maxEvents = [Math]::Max(1, $RESTAURANT_TARGET - $restCount)
+    $remaining = @()
+    foreach ($gen in $config.generators) {
+        $maxId = $snap[$gen.table]
+        $count = $snap["$($gen.table)_count"]
+        $left  = [int]$gen.localConfigs.maxEvents - [int]$count
+        if ($left -le 0) {
+            Write-Host "   $($gen.table): meta de $($gen.localConfigs.maxEvents) atingida, fica de fora"
+            continue
+        }
+        $gen.vars.id.startingFrom = [int]$maxId + 1
+        $gen.localConfigs.maxEvents = $left
+        Write-Host "   $($gen.table): faltam $left a partir do id $([int]$maxId + 1)"
+        $remaining += $gen
+    }
+    $config.generators = $remaining
 
     ($config | ConvertTo-Json -Depth 100) | Set-Content -Path $jsonPath -Encoding utf8
+    if ($remaining.Count -eq 0) {
+        Write-Host "[OK] Todas as metas de cadastro atingidas. Nada a gerar."
+        return $false
+    }
     Write-Host "[OK] uber-eats.json atualizado. Nenhum ID sera reaproveitado ao religar."
+    return $true
 }
 
 # ------------------------------------------------------------------------------
@@ -223,7 +220,8 @@ switch ($Action) {
     }
 
     "on" {
-        foreach ($c in @("postgres-ubereats", "oracle-ubereats", "minio-ubereats", "mongo-ubereats")) {
+        # MinIO fora do escopo (ADR 010); o ShadowTraffic so grava no Oracle e no Postgres.
+        foreach ($c in @("postgres-ubereats", "oracle-ubereats")) {
             if (-not (Test-ContainerRunning -Name $c)) {
                 Write-Host "[ERRO] $c nao esta rodando. Rode primeiro: .\scripts\start-infra.ps1" -ForegroundColor Red
                 exit 1
@@ -235,7 +233,7 @@ switch ($Action) {
         # logo apos start-infra.ps1 (ex.: via start-all.ps1) da ORA-12514 aqui
         # ou no Show-Status abaixo.
         Write-Host "[INFO] Aguardando bancos ficarem prontos (healthcheck)..." -ForegroundColor Cyan
-        foreach ($c in @("postgres-ubereats", "oracle-ubereats", "minio-ubereats")) {
+        foreach ($c in @("postgres-ubereats", "oracle-ubereats")) {
             if (-not (Wait-ContainerHealthy -Name $c)) {
                 Write-Host "[ERRO] $c nao ficou pronto a tempo. Verifique: docker logs $c" -ForegroundColor Red
                 exit 1
@@ -250,7 +248,10 @@ switch ($Action) {
             exit 0
         }
 
-        Sync-StartingPoints
+        if (-not (Sync-StartingPoints)) {
+            Show-Status
+            exit 0
+        }
 
         Write-Host "[INFO] Subindo gen-unified..."
         docker-compose up -d gen-unified | Out-Null

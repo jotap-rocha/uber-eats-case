@@ -11,9 +11,16 @@ if (-not (Test-Path $envFile)) {
 }
 $envVars = Get-Content $envFile | Where-Object { $_ -match '=' -and $_ -notmatch '^\s*#' } | ConvertFrom-StringData
 
-# 2. Configura o gerador unificado (Postgres real + MinIO no mesmo processo)
+# 2. Configura o gerador unificado (cadastros no Oracle e no Postgres, F5.4 do modelo fisico)
 $templateUnified = "$scriptFolder\unified\uber-eats.json.template"
 $configFileUnified = "$scriptFolder\unified\uber-eats.json"
+
+# Lista de cidades para os cadastros sortearem cidade e coordenada perto do centro. Mesma fonte do
+# seed que grava cities nos dois bancos (shared/gen/reference/cities.csv), entao as listas batem.
+$citiesJson = (Import-Csv "$scriptFolder\reference\cities.csv" -Encoding UTF8 | ForEach-Object {
+    '{"city_id": ' + $_.city_id + ', "lat": ' + $_.center_latitude + ', "lon": ' + $_.center_longitude + '}'
+}) -join ', '
+$citiesJson = "[$citiesJson]"
 
 Write-Host "   -> Gerando $configFileUnified..."
 (Get-Content $templateUnified) `
@@ -26,10 +33,11 @@ Write-Host "   -> Gerando $configFileUnified..."
     -replace "REPLACE_ORACLE_PORT", $envVars.ORACLE_PORT `
     -replace "REPLACE_ORACLE_SERVICE", $envVars.ORACLE_SERVICE `
     -replace "REPLACE_ORACLE_USER", $envVars.ORACLE_APP_USERNAME `
-    -replace "REPLACE_ORACLE_PASSWORD", $envVars.ORACLE_APP_PASSWORD |
+    -replace "REPLACE_ORACLE_PASSWORD", $envVars.ORACLE_APP_PASSWORD `
+    -replace "REPLACE_CITIES_JSON", $citiesJson |
     Set-Content $configFileUnified
 
-Write-Host "✅ Arquivo .json unificado (Postgres + MinIO) gerado com sucesso!"
+Write-Host "✅ Arquivo .json unificado (cadastros Oracle + Postgres) gerado com sucesso!"
 
 # 3. O seed do MongoDB saiu daqui: os perfis sao gravados pelo seed em Python do simulador
 #    (F3, decisao 1, do modelo fisico); o init so cria a colecao (shared/mongo/init/).

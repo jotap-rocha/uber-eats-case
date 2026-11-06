@@ -1211,7 +1211,7 @@ nó único serve para desenvolvimento). O `mongo-ubereats` roda sozinho, então 
     command: ["--replSet", "rs0", "--bind_ip_all", "--oplogSize", "1024"]
     healthcheck:
       # O rs.initiate fica no init (shared/mongo/init/00_replica_set.js); o healthcheck só confere o primário.
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.hello().isWritablePrimary ? 0 : 1"]
+      test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.hello().isWritablePrimary ? 0 : 1)"]
       interval: 10s
       retries: 20
       start_period: 10s
