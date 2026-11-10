@@ -9,9 +9,13 @@ Modelagem de dados: regras (RN-01 a RN-42), conceitual, **modelo logico L0 a L4*
 ## Proximos passos
 
 1. ~~Fechar o bloco 5 (parte 5)~~ **Feito** em 2026-11-10: prova ponta a ponta, gate verde, documentacao no fisico (F5.8) e no `CONTEXT.md`, contêineres `f5-*` removidos. Detalhes em "Parte 5 do simulador" abaixo.
-2. **Push e PR** da `feat/regeracao` quando o simulador estiver verde (titulo sugerido: `feat(regeracao): simulador, seeds, checks e init da F5.2`).
-3. **Executar a regeracao** pela F5.3 (passos 0 a 12), com confirmacao em cada passo destrutivo. Antes: adicionar ao `shared/gen/.env` `POSTGRES_DEBEZIUM_PASSWORD`, `TRACKING_SALT_ORDER` e `TRACKING_SALT_PAYMENT`; desativar a conexao antiga do Airbyte com o Postgres; o usuario renova a licenca do ShadowTraffic antes (so conferir no passo 0).
+2. ~~Push e PR~~ **Feito**: PR #19 mesclado.
+3. **Regeracao pela F5.3 em andamento (2026-11-10).** Ordem pela [ADR 013](docs/adr/013-snapshot-inicial-aceito-na-regeracao.md): 0, 1, 2, 3, 6, 7, 8, 10 (so historico), 11 (parte do banco), 4, 5, 10 (tempo real), 11 (parte do CDC), 9, 12. **Feitos:** passos 0 a 3 (contêineres e volumes antigos removidos com confirmacao; Postgres, Oracle e Mongo novos de pe e validados; sais e senha do Debezium no `.env`). Passos 6 a 8 tambem feitos: cidades (5 em cada banco), ShadowTraffic (250 restaurantes, 20.000 clientes, 1.500 motoristas), catalogo e perfis (2.850 produtos, 3.870 itens de estoque, 250 perfis), gate da carga 47/47 com 0 linha. O `gen-unified` antigo do projeto `uber-eats-case` foi removido (MinIO antigo mantido, ADR 010). **Proximo:** passo 10, so o historico (30 dias, ~2 h), sem conectores. Redpanda e Kafka Connect **nao sobem ainda** (memoria da maquina; so no passo 4). Pendente: desativar a conexao antiga do Airbyte com o Postgres (Airbyte parado de proposito, a pedido do usuario).
 4. **Pipeline** (`shared/pipeline/`, hoje no modelo antigo): so depois da regeracao. A Bronze segue o contrato da F4.6.
+
+## Workflow do agent-harness (adotado em 2026-11-10)
+
+O projeto entrou no harness de forma retroativa: `.claude/projetos/regeracao-f5/` (STATUS e artefatos 00 a 04), `tasks/regeracao-f5/` (18 tasks, 1 a 12 feitas e 13 a 18 em rascunho) e `metrics/entregas.jsonl` so com entregas deste projeto (o legado do harness canonico foi para `metrics/legacy-harness/`). Waivers das tasks 2, 3, 9, 11 e 12 aguardam aprovacao do usuario. Proximos passos seguem a numeracao das tasks.
 
 ## O que ja esta na `feat/regeracao`
 
