@@ -15,11 +15,11 @@ Arquivos em [tasks/regeracao-f5/](../../../tasks/regeracao-f5/). Ordem de implem
 | 07 | Simulador: regras de estado, prazos e reembolsos | `f2cc486` | evidence-gate verde, em `entregas.jsonl` |
 | 08 | Simulador: cache de referência e escritas comuns | `c80c3f1` | evidence-gate verde, em `entregas.jsonl` |
 | 09 | Simulador: compra, ciclo, frota e pós-entrega | `81ef6f6` | waiver aprovado em 2026-11-10, em `entregas.jsonl` |
-| 10 | Simulador: opção `--days` e script de execução | `5ce189b` | evidence-gate verde, em `entregas.jsonl` |
-| 13 | Corrigir o início do histórico (`--days` ignorado) | `5ce189b` | evidence-gate verde, revisor aprovado com ressalvas tratadas |
+| 10 | Simulador: opção `--days` e script de execução | `82f107d` | evidence-gate verde, em `entregas.jsonl` |
+| 13 | Corrigir o início do histórico (`--days` ignorado) | `82f107d` | evidence-gate verde, revisor aprovado com ressalvas tratadas |
 | 14 | Limpar a operação e refazer o restock em 2025-11-10 | sem commit | feita em 2026-11-10; gate do banco 47/47; waiver aprovado em 2026-11-10 (operação destrutiva rodada pelo usuário), em `entregas.jsonl` |
 | 11 | Regeração F5.3: passos 0 a 3 e 6 a 8 | sem commit | waiver aprovado em 2026-11-10, em `entregas.jsonl` |
-| 12 | ADR 013: snapshot inicial aceito | `19134f8` | waiver aprovado em 2026-11-10, em `entregas.jsonl` |
+| 12 | ADR 013: snapshot inicial aceito | `fc12aec` | waiver aprovado em 2026-11-10, em `entregas.jsonl` |
 
 ## A fazer (quebra aprovada em 2026-11-10; a 15 está em execução pelo usuário)
 
