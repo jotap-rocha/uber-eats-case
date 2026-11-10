@@ -1,6 +1,6 @@
 # Regeração F5.3: passos 0 a 3 e 6 a 8
 
-**Status:** done (retroativo, aguarda aprovação de waiver)  
+**Status:** done (retroativo, waiver aprovado em 2026-11-10)  
 **Blocked by:** tasks/regeracao-f5/10-simulador-days-e-script.md
 
 ## What to build

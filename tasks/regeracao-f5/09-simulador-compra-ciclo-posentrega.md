@@ -1,6 +1,6 @@
 # Simulador: compra, ciclo do atendimento, frota e pós-entrega
 
-**Status:** done (retroativo, aguarda aprovação de waiver)  
+**Status:** done (retroativo, waiver aprovado em 2026-11-10)  
 **Blocked by:** tasks/regeracao-f5/08-simulador-referencia-escritas.md
 
 **Commit:** `81ef6f6`

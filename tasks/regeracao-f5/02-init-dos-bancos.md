@@ -1,6 +1,6 @@
 # Init dos bancos a partir do DDL aprovado
 
-**Status:** done (retroativo, aguarda aprovação de waiver)  
+**Status:** done (retroativo, waiver aprovado em 2026-11-10)  
 **Blocked by:** none
 
 **Commit:** `25822d7`

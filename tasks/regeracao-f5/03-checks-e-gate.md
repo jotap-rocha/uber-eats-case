@@ -1,6 +1,6 @@
 # Consultas de invariante e gate de verificação
 
-**Status:** done (retroativo, aguarda aprovação de waiver)  
+**Status:** done (retroativo, waiver aprovado em 2026-11-10)  
 **Blocked by:** none
 
 **Commit:** `136d2a2`

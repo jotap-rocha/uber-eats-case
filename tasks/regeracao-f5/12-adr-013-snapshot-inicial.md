@@ -1,6 +1,6 @@
 # ADR 013: snapshot inicial aceito na regeração
 
-**Status:** done (aguarda commit)  
+**Status:** done  
 **Blocked by:** none
 
 ## What to build

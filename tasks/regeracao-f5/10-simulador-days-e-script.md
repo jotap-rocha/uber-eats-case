@@ -1,6 +1,6 @@
 # Simulador: opção --days e script de execução
 
-**Status:** done (aguarda commit)  
+**Status:** done  
 **Blocked by:** tasks/regeracao-f5/09-simulador-compra-ciclo-posentrega.md
 
 ## What to build
