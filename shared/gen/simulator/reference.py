@@ -13,6 +13,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
+from functools import cached_property
 from typing import Any, Protocol
 
 from simulator.checks import windows_of
@@ -75,10 +76,25 @@ class Reference:
     drivers: Mapping[int, DriverRef]
     restaurants: Mapping[int, RestaurantRef]
 
-    def by_city(self) -> dict[int, list[RestaurantRef]]:
+    @cached_property
+    def restaurants_by_city(self) -> dict[int, list[RestaurantRef]]:
         cities: dict[int, list[RestaurantRef]] = {}
         for r in self.restaurants.values():
             cities.setdefault(r.city_id, []).append(r)
+        return cities
+
+    @cached_property
+    def customers_by_city(self) -> dict[int, list[CustomerRef]]:
+        cities: dict[int, list[CustomerRef]] = {}
+        for c in self.customers.values():
+            cities.setdefault(c.city_id, []).append(c)
+        return cities
+
+    @cached_property
+    def drivers_by_city(self) -> dict[int, list[DriverRef]]:
+        cities: dict[int, list[DriverRef]] = {}
+        for d in self.drivers.values():
+            cities.setdefault(d.city_id, []).append(d)
         return cities
 
 

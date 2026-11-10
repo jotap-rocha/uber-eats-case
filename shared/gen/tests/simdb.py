@@ -43,6 +43,7 @@ def fresh_database() -> Iterator[Any]:  # Any: psycopg.Connection
         admin.execute(f'CREATE DATABASE "{clone}" TEMPLATE "{template}"')
     options = "-c timezone=America/Sao_Paulo -c search_path=ubereats"
     with psycopg.connect(**{**info, "dbname": clone}, autocommit=True, options=options) as conn:
+        conn.execute("SET synchronous_commit = off")  # como o simulador: o fsync no HDD pesa metade
         yield conn
 
 

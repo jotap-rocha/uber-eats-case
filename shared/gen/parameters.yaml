@@ -23,7 +23,8 @@ demand:
   second_restaurant_share: 0.08          # pedidos com 2 atendimentos (RN-03)
   items_per_restaurant_order: [1, 4]
   quantity_per_item: [1, 3]
-  drivers_per_hourly_order: 0.6          # turnos abertos por pedido/hora esperado na cidade (simulador)
+  drivers_per_hourly_order: 1.0          # turnos abertos por pedido/hora esperado na cidade (simulador);
+                                         # uma entrega dura ~40 min, então 1,0 deixa a frota a ~70%
 
 behavior:                                # probabilidades por oportunidade
   attempt_declined: 0.08

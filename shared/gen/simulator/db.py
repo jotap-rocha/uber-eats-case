@@ -79,6 +79,10 @@ class Settings:
             "tcp_connect_timeout": 10,
         }
 
+    def tracking_salts(self) -> tuple[str, str]:
+        """Sais do código de rastreio (F0.3): pedido e pagamento. Nunca vão a log."""
+        return self._get("TRACKING_SALT_ORDER"), self._get("TRACKING_SALT_PAYMENT")
+
     def mongo_uri(self) -> str:
         host, port = self._host_port("MONGO", "MONGO_PORT")
         return f"mongodb://{host}:{port}/?directConnection=true"  # F4.4
