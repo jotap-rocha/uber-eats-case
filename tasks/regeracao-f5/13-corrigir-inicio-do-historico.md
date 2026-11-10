@@ -1,6 +1,6 @@
 # Corrigir o início do histórico (--days ignorado)
 
-**Status:** done (aguarda commit)  
+**Status:** done  
 **Blocked by:** tasks/regeracao-f5/12-adr-013-snapshot-inicial.md
 
 ## What to build
