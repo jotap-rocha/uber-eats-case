@@ -1,0 +1,17 @@
+# Descrições sintéticas dos incidentes, por motivo (L3: "texto sintético por motivo").
+
+missing_item:
+  - Faltou um item do pedido.
+  - O refrigerante não veio.
+wrong_item:
+  - Veio um prato diferente do que pedi.
+  - Recebi o sabor errado.
+food_quality:
+  - A comida chegou fria.
+  - O prato estava cru no meio.
+late_delivery:
+  - O pedido chegou bem depois do prazo prometido.
+not_received:
+  - O app mostra entregue, mas não recebi nada.
+driver_unable:
+  - Parte do pedido não chegou; o entregador disse que caiu no trajeto.
