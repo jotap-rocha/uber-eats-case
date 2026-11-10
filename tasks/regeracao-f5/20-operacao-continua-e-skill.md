@@ -1,6 +1,6 @@
 # Operação contínua e skill de operação do simulador
 
-**Status:** not started (rascunho a aprovar)  
+**Status:** not started (aprovada em 2026-11-10)  
 **Blocked by:** tasks/regeracao-f5/19-airbyte-mongodb.md
 
 ## What to build

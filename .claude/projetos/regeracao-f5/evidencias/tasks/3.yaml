@@ -1,0 +1,11 @@
+task_id: "3"
+criteria:
+  ac1:
+    id: ac1
+    command: "echo waiver humano aprovado em 2026-11-10"
+    test_paths:
+    exit_code: 0
+    log_path: "logs/3/ac1.log"
+    waiver:
+      human: true
+      reason: "O gate (simulator.gate) é a própria prova: 47 de 47 após a carga (task 11) e após a limpeza (task 14). Waiver aprovado pelo usuário em 2026-11-10."

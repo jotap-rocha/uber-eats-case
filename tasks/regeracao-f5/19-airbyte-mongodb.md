@@ -1,6 +1,6 @@
 # Airbyte: fonte MongoDB por change stream
 
-**Status:** not started (rascunho a aprovar)  
+**Status:** not started (aprovada em 2026-11-10)  
 **Blocked by:** tasks/regeracao-f5/18-tempo-real-e-gate-cdc.md
 
 ## What to build

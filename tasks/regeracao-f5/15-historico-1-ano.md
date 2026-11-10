@@ -1,6 +1,6 @@
 # Histórico de 1 ano de operação simulada
 
-**Status:** not started (rascunho a aprovar)  
+**Status:** in progress (usuário rodando o simulador; aprovada em 2026-11-10)  
 **Blocked by:** tasks/regeracao-f5/14-limpar-operacao-e-refazer-restock.md
 
 ## What to build

@@ -1,6 +1,6 @@
 # Conectores Debezium e snapshot inicial (ADR 013)
 
-**Status:** not started (rascunho a aprovar)  
+**Status:** not started (aprovada em 2026-11-10)  
 **Blocked by:** tasks/regeracao-f5/16-gate-do-banco-pos-historico.md
 
 ## What to build

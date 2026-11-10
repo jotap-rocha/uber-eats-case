@@ -1,0 +1,11 @@
+task_id: "11"
+criteria:
+  ac1:
+    id: ac1
+    command: "echo waiver humano aprovado em 2026-11-10"
+    test_paths:
+    exit_code: 0
+    log_path: "logs/11/ac1.log"
+    waiver:
+      human: true
+      reason: "Operação sobre os bancos locais conferida em leitura (contagens iguais aos parâmetros, gate 47 de 47). Sem commit de código. Waiver aprovado pelo usuário em 2026-11-10."

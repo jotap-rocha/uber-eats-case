@@ -1,6 +1,6 @@
 # Simulador em tempo real e gate do CDC
 
-**Status:** not started (rascunho a aprovar)  
+**Status:** not started (aprovada em 2026-11-10)  
 **Blocked by:** tasks/regeracao-f5/17-conectores-e-snapshot.md
 
 ## What to build

@@ -20,7 +20,7 @@ nos invariantes do `CLAUDE.md`.
 | 1 | [01-grill.md](01-grill.md) | ok (aponta para o grill de 2026-10-17 e a revisão adversarial) |
 | 2 | [02-prd.md](02-prd.md) | ok (os modelos conceitual, lógico e físico fazem o papel de PRD) |
 | 3 | [03-harness.md](03-harness.md) | ok (invariantes do `CLAUDE.md` e rules) |
-| 4 | [04-tasks-index.md](04-tasks-index.md) | ok; tasks 15 a 20 são rascunho a aprovar |
+| 4 | [04-tasks-index.md](04-tasks-index.md) | ok; tasks 15 a 20 aprovadas em 2026-11-10 |
 | 5 | build | em andamento: 14 tasks feitas, 6 por fazer |
 | 6 | 05-retro.md | ao fim (`harness-ship`) |
 

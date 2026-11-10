@@ -1,6 +1,6 @@
 # Gate do banco depois do histórico
 
-**Status:** not started (rascunho a aprovar)  
+**Status:** not started (aprovada em 2026-11-10)  
 **Blocked by:** tasks/regeracao-f5/15-historico-1-ano.md
 
 ## What to build

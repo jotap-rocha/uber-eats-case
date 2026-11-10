@@ -1,0 +1,11 @@
+task_id: "12"
+criteria:
+  ac1:
+    id: ac1
+    command: "echo waiver humano aprovado em 2026-11-10"
+    test_paths:
+    exit_code: 0
+    log_path: "logs/12/ac1.log"
+    waiver:
+      human: true
+      reason: "Entrega documental (ADR 013, índice e modelo físico); sem teste possível. Waiver aprovado pelo usuário em 2026-11-10."
