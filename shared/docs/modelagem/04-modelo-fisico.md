@@ -1595,6 +1595,28 @@ Ordem de grandeza: cerca de 900 pedidos por dia (5 cidades × média de 15 por h
 histórico de 30 dias e perto de 700 mil linhas no Postgres. Folgado para a D:, para o slot de 4 GB e para o Oracle (só
 cadastros).
 
+**Parâmetros acrescentados pelo simulador (bloco 5 da F5.2).** O `parameters.yaml` real tem, além do bloco acima:
+
+| Seção | Chave | Uso |
+|---|---|---|
+| `demand` | `default_hourly_factor` (0,2) | Fator das horas fora de `hourly_factor`; só restaurante com janela aberta recebe. |
+| `demand` | `drivers_per_hourly_order` (1,0) | Turnos abertos por pedido/hora esperado na cidade. Uma entrega dura ~40 min; 0,6 saturava a frota. |
+| `behavior` | `payment_method_share`, `customer_cancels_late`, `customer_cancels_other_after_drop`, `rating_weights`, `rating_comment`, `max_incidents_per_order`, `incident_reason_share` | Sorteios sem regra própria nas RN (forma de pagamento, cancelamento tardio e pós-entrega, nota e comentário, incidentes por pedido e por motivo). |
+| `simulation` | `payment_retry_s`, `restaurant_response_min`, `prep_start_delay_min`, `driver_to_restaurant_min`, `pickup_handover_min`, `travel_lognormal_sigma`, `customer_absent_wait_min`, `incident_review_delay_min`, `incident_decision_delay_min`, `late_cancel_delay_min`, `shift_open_jitter_min` | Tempos operacionais entre passos; não são regra. |
+| `stock` | `restock_trigger` (0,5), `consumption_window_days` (7) | Só repõe o item abaixo dessa fração do alvo; média de consumo sobre a janela. |
+| `text` | `incident_description_by_reason` | Textos de descrição de incidente (`reference/incident_descriptions.yaml`). |
+
+**Decisões do simulador que não estão nas RN:**
+
+- `promised_at` conta a partir do **último aceite ativo** (`max(accepted_at)` dos atendimentos ativos) + maior tempo estimado + rota/velocidade + folga; é recalculável só com colunas gravadas (T7).
+- `driver_unable` só é sorteado com o pedido **a caminho**. A RN-07 diz "depois da primeira retirada", mas a tabela de transições e os T2a/T3d só aceitam "não entregue" a partir de "a caminho"; "em coleta" fica fora da v1.
+- O motivo `delivery_cancelled` da atribuição **não ocorre** nas regras atuais (o motorista só é atribuído com um atendimento pronto, e pronto não cancela, RN-13). O `CHECK` continua aceitando o valor.
+- O simulador usa `SET synchronous_commit = off` na própria sessão (42 → 18 ms por ação no HDD da D:); a transação continua atômica.
+- Retomada: o relógio volta ao último evento gravado e as entidades vivas ganham passos novos com sorteio novo; avaliações e gorjetas pendentes na hora da parada se perdem.
+- Carga: ~13,5 ações por pedido e ~18 ms por ação, ou seja, ~3,6 min por dia simulado na escala de 900 pedidos/dia e ~2 h para os 30 dias de `backfill_days`.
+
+**Prova ponta a ponta (2026-11-10).** Três contêineres descartáveis (`f5-postgres` 15, `f5-oracle` `gvenzl/oracle-free:23.4-full`, `f5-mongo` 7 com `rs0`), inits de `shared/sql/` e `shared/mongo/init/`, cadastros pelo ShadowTraffic com o template aprovado (300 clientes, 60 motoristas, 20 restaurantes), `seed all` e `python -m simulator run --until 2026-10-13T00:00:00 --seed 1` (3 dias): 2.049 compras (1.800 entregues, 200 cancelados, 29 não entregues), 138 incidentes e 318 reembolsos. O `DatabaseLoader` leu o Oracle e o Mongo reais sem ajuste (coordenadas e datas do `oracledb` e do `pymongo` entraram como esperado). `python -m simulator.gate`: **47 de 47 verificações com 0 linha** (T1 a T19 nos três bancos).
+
 ### F5.9 Testes T1 a T19
 
 Cada invariante vira uma consulta que **devolve as linhas que o violam**: passa com 0 linhas. As do Postgres ficam em

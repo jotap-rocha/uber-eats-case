@@ -4,11 +4,11 @@
 
 ## Estado atual
 
-Modelagem de dados: regras (RN-01 a RN-42), conceitual, **modelo logico L0 a L4** (PR #17) e **modelo fisico F0 a F5** (PR #18, 2026-11-04) aprovados e mesclados na `main`, em `shared/docs/modelagem/`. ADRs 006 a 012 aceitas (009 e 011 com adendos). **Implementacao da F5.2 em andamento na branch `feat/regeracao`** (simulador implementado em 4 commits, falta a prova ponta a ponta e a documentacao; sem push). Bancos atuais intocados: Oracle atual ainda tratado como producao; gerador nao religado.
+Modelagem de dados: regras (RN-01 a RN-42), conceitual, **modelo logico L0 a L4** (PR #17) e **modelo fisico F0 a F5** (PR #18, 2026-11-04) aprovados e mesclados na `main`, em `shared/docs/modelagem/`. ADRs 006 a 012 aceitas (009 e 011 com adendos). **Implementacao da F5.2 na branch `feat/regeracao`** (simulador implementado e provado ponta a ponta nos tres bancos descartaveis em 2026-11-10, `python -m simulator.gate` com 47 de 47 verificacoes em 0 linha; sem push). Bancos atuais intocados: Oracle atual ainda tratado como producao; gerador nao religado.
 
 ## Proximos passos
 
-1. **Fechar o bloco 5 (parte 5)**: prova ponta a ponta com os tres bancos descartaveis e `python -m simulator.gate`, mais a documentacao. Detalhes em "Parte 5 do simulador" abaixo.
+1. ~~Fechar o bloco 5 (parte 5)~~ **Feito** em 2026-11-10: prova ponta a ponta, gate verde, documentacao no fisico (F5.8) e no `CONTEXT.md`, contêineres `f5-*` removidos. Detalhes em "Parte 5 do simulador" abaixo.
 2. **Push e PR** da `feat/regeracao` quando o simulador estiver verde (titulo sugerido: `feat(regeracao): simulador, seeds, checks e init da F5.2`).
 3. **Executar a regeracao** pela F5.3 (passos 0 a 12), com confirmacao em cada passo destrutivo. Antes: adicionar ao `shared/gen/.env` `POSTGRES_DEBEZIUM_PASSWORD`, `TRACKING_SALT_ORDER` e `TRACKING_SALT_PAYMENT`; desativar a conexao antiga do Airbyte com o Postgres; o usuario renova a licenca do ShadowTraffic antes (so conferir no passo 0).
 4. **Pipeline** (`shared/pipeline/`, hoje no modelo antigo): so depois da regeracao. A Bronze segue o contrato da F4.6.
@@ -32,7 +32,9 @@ Gate local: `cd shared/gen && .venv/Scripts/python -m pytest -q` (99 passam e 1 
 
 **Feito e provado:** 4 commits (`e8c8508`, `f2cc486`, `c80c3f1`, `81ef6f6`). Testes de integracao em Postgres descartavel: 2 dias de historico + parada/retomada passam T1 a T16 e T6c com 0 violacao; mesma semente = mesmo resultado. Em 1 dia: ~92 compras, 19 desistencias, 9 nao entregues, estornos, incidentes procedentes e improcedentes.
 
-**Falta:**
+**Resultado da parte 5 (2026-11-10):** os tres itens abaixo foram feitos. Licenca do ShadowTraffic renovada (vale ate 2026-12-10). Cadastros populados pelo ShadowTraffic descartavel (300/60/20), `seed all`, 3 dias simulados (2.049 compras), gate 47/47 com 0 linha; `DatabaseLoader` leu Oracle e Mongo reais sem ajuste. Sais de rastreio passados por variavel de ambiente (continuam fora do `.env`). Contagem dos testes locais sem DSN: 96 passam e 4 pulam (o total 100 bate com a contagem com DSN).
+
+**Era o que faltava (historico):**
 1. **Prova ponta a ponta com os tres bancos descartaveis** (`f5-postgres`, `f5-oracle`, `f5-mongo`; sem volume nomeado, portas `127.0.0.1:15xxx`, `docker rm -v` no fim). Subir com os inits de `shared/sql/` e `shared/mongo/init/`, popular `customers`/`drivers` no Oracle e `restaurants` no Postgres (ShadowTraffic exige licenca valida; sem ela, um script descartavel fora do projeto), rodar `python -m simulator.seed all` e `python -m simulator run --until ... --seed N`, e fechar com **`python -m simulator.gate`** (T1 a T19, os tres bancos). Variaveis: `SIMULATOR_<FONTE>_HOST/_PORT`, `TRACKING_SALT_ORDER` e `TRACKING_SALT_PAYMENT` (o `.env` ainda nao as tem).
 2. **Documentacao:** registrar no fisico (F5.8) os parametros novos do simulador e as decisoes abaixo; atualizar `CONTEXT.md`/`shared/docs/00-INDEX.md` se o fluxo de uso mudou; este HANDOFF.
 3. **Limpeza:** `docker rm -v` dos `f5-*` (hoje `f5-postgres` segue de pe, porta 15432, init do Postgres aplicado) e conferir que nao sobrou contêiner nem volume.

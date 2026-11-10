@@ -17,6 +17,7 @@ Pipeline completo de engenharia de dados construido como portfolio profissional,
 | `azure/` | Trilha de ingestao Azure (Fase 1) | `azure/src/`, `azure/infra/`, `azure/tests/`, `azure/docs/` |
 | `gcp/` | Trilha de ingestao GCP (Fase 3) | `gcp/src/`, `gcp/infra/`, `gcp/tests/`, `gcp/docs/`, `gcp/requirements.txt` |
 | `shared/` | Comum as 3 nuvens | `shared/pipeline/` (Bronze/Silver/Gold Databricks), `shared/gen/` (ShadowTraffic), `shared/mongo/`, `shared/sql/`, `shared/docs/` |
+| `shared/gen/simulator/` | Simulador de pedidos da F5.2 (ADR 009) | Um processo, um escritor: cria compra, ciclo do atendimento, entrega, repasses, avaliacoes, incidentes e reembolsos no Postgres. Le `customers`/`drivers` (Oracle) e janelas (Mongo). Roda no Windows com `shared/gen/.venv`; detalhes em "Simulador" abaixo |
 | `config/` | Dado de conexao/ambiente por nuvem | `config/{aws,azure,gcp,shared}/` — templates de connector Debezium, hadoop-conf, deploy |
 | `scripts/` | Scripts auxiliares | Subpastas por assunto: `infra/`, `shadowtraffic/`, `all/`, `ingestion/`, `tooling/`, `lib/` |
 | `docs/` | *(nao existe mais na raiz)* | Documentacao movida para `shared/docs/` (comum) e `{cloud}/docs/` (especifica); indice em `shared/docs/00-INDEX.md` |
@@ -31,6 +32,18 @@ Pipeline completo de engenharia de dados construido como portfolio profissional,
 # Validar o projeto
 python3 scripts/tooling/validate-agent-router.py
 ```
+
+## Simulador (F5.2)
+
+```bash
+cd shared/gen
+.venv/Scripts/python -m pytest -q                       # testes locais (integracao so com UBEREATS_SIM_DSN num Postgres f5-*)
+.venv/Scripts/python -m simulator.seed all              # cidades, catalogo, estoque inicial e perfis (idempotente)
+.venv/Scripts/python -m simulator run --until 2026-10-13T00:00:00 --seed 1   # historico; sem --until segue em tempo real
+.venv/Scripts/python -m simulator.gate                  # T1 a T19 nos tres bancos, so leitura
+```
+
+Variaveis: as do `shared/gen/.env` mais `TRACKING_SALT_ORDER` e `TRACKING_SALT_PAYMENT` (sais do codigo de rastreio, nunca em log) e, para apontar outro host/porta, `SIMULATOR_{POSTGRES,ORACLE,MONGO}_{HOST,PORT}`. Prova ponta a ponta sempre em conteineres descartaveis `f5-*` (sem volume nomeado, portas `127.0.0.1:15xxx`, `docker rm -v` no fim). Parametros e decisoes: `shared/docs/modelagem/04-modelo-fisico.md` (F5.8).
 
 ## Ambientes
 
