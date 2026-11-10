@@ -1115,7 +1115,7 @@ regeração (F5). Nada foi registrado nem aplicado em `postgres-ubereats`, `orac
 | 2 | Formato da mensagem | **JSON sem schema** (`schemas.enable=false`) e **envelope completo** (`before`, `after`, `source`, `op`), sem o SMT `ExtractNewRecordState`. A Bronze lê o envelope e grava as colunas `cdc_*`; a Silver nunca lê o formato nativo |
 | 3 | Decimal | `decimal.handling.mode=string` nos dois conectores (F0, decisão 2) |
 | 4 | Tempo | Sem transform (F0, decisão 3). `time.precision.mode` no padrão: `timestamp` vira `MicroTimestamp` (µs); `DATE` do Oracle vira `Timestamp` (ms) |
-| 5 | Snapshot | `snapshot.mode=initial`, com o conector **registrado depois do DDL e antes da carga**: todo evento da regeração chega como `c`, com `ts_ms` e posição de log reais. Um `r` (snapshot de recuperação) é tratado como `c` |
+| 5 | Snapshot | `snapshot.mode=initial`, com o conector **registrado depois da carga e do histórico** ([ADR 013](../../../docs/adr/013-snapshot-inicial-aceito-na-regeracao.md), que revisa o desenho original "antes da carga"): o que já está no banco chega como `r` (todos com o `ts_ms` do snapshot) e o que o simulador gera depois chega como `c`, com `ts_ms` e posição de log reais. Um `r` é tratado como `c` |
 | 6 | Tópicos | `<prefixo>.<schema>.<tabela>`, criados pelo próprio conector (`topic.creation.default.*`): 1 partição, `cleanup.policy=delete`, retenção de 7 dias (F4.5) |
 | 7 | Exclusão | Tombstone ligado (padrão): depois do `d` vem uma mensagem de valor nulo com a mesma chave. A Bronze descarta valor nulo |
 | 8 | Segredos | Templates com `REPLACE_*`; as senhas ficam no `shared/gen/.env` (`POSTGRES_DEBEZIUM_USER`, `POSTGRES_DEBEZIUM_PASSWORD`, `ORACLE_DBZ_PASSWORD`) |
@@ -1403,15 +1403,18 @@ o comando e espera o "ok" do usuário.
 | 1 | **Parar** `gen-unified` (já parado), `kafka-connect`, `debezium-server-*` e os três bancos (`docker compose stop`) | `docker ps` sem esses contêineres |
 | 2 | **Remover** os contêineres `postgres-ubereats`, `oracle-ubereats`, `mongo-ubereats`, `redpanda` e `kafka-connect`, e os volumes `postgres_data`, `oracle_data` e `mongo_data`. **Confirmação por volume** | `docker volume ls` sem os três; `minio_data` intocado |
 | 3 | **Subir os bancos** (`docker compose up -d postgres-ubereats oracle-ubereats mongo-ubereats`); o init cria tudo | Postgres: 28 tabelas em `ubereats`, `SHOW timezone` = `America/Sao_Paulo`, `SHOW max_slot_wal_keep_size` = `4GB`, publicação `dbz_ubereats` existe. Oracle: 3 tabelas, `ARCHIVELOG`, gatilho de logon válido. Mongo: `rs.status()` com `PRIMARY`, coleção com validador |
-| 4 | **Subir** `redpanda` e `kafka-connect` (3.7) | `GET :8083/connector-plugins` lista os conectores Postgres e Oracle na versão 3.7 |
-| 5 | **Registrar os conectores** (`register-postgres-connector.ps1`, `register-oracle-connector.ps1`), com as tabelas ainda vazias (F4.0 #5) | Os dois `RUNNING`; slot `dbz_ubereats` ativo em `pg_replication_slots` |
+| 4 | **Subir** `redpanda` e `kafka-connect` (3.7). **Depois do passo 11, parte do banco (ADR 013)** | `GET :8083/connector-plugins` lista os conectores Postgres e Oracle na versão 3.7 |
+| 5 | **Registrar os conectores** (`register-postgres-connector.ps1`, `register-oracle-connector.ps1`), **depois da carga e do histórico**: o snapshot inicial traz o que já existe como `r` (ADR 013). Conferir antes o tamanho de `dbs/arch` do Oracle | Os dois `RUNNING`; snapshot concluído; slot `dbz_ubereats` ativo em `pg_replication_slots`; eventos `r` nos tópicos `postgres.ubereats.*` e `oracle.UBEREATS.*` |
 | 6 | **Seed de cidades** nos dois bancos, a partir do `cities.csv` (`python -m simulator.seed cities`, em `shared/gen`) | T17 (parte das cidades) passa; eventos `c` em `postgres.ubereats.cities` e `oracle.UBEREATS.CITIES` |
 | 7 | **ShadowTraffic, carga inicial** em lote (`maxEvents` da F5.8), pela skill `shadowtraffic-ajustar-geracao` (tabelas vazias: `startingFrom` = 1) | Contagens de `customers`, `drivers` e `restaurants` iguais aos parâmetros |
 | 8 | **Seed de catálogo e perfis** (F5.4): produtos, itens de estoque, fichas, estoque inicial e `restaurant_profiles` (`python -m simulator.seed catalog` e `profiles`; o conteúdo vem de `shared/gen/reference/catalog.yaml`) | `python -m simulator.gate` passa (gate da carga: T1 a T19 com as tabelas de operação ainda vazias) |
 | 9 | **Airbyte**: fonte MongoDB por change stream, modo *Lookup*, `directConnection=true`, com um destino de conferência (Local JSON). Na primeira sync, conferir os nomes `_ab_cdc_*` (risco da ADR 011) | Metadados conferidos; F4.6 corrigida se os nomes forem outros. O destino de verdade vem com a fase de cada nuvem |
-| 10 | **Simulador**: histórico (F5.6) e depois tempo real | Logs sem recusa do banco; eventos nos tópicos `postgres.ubereats.*` |
-| 11 | **Gate da regeração**: `python -m simulator.gate` (T1 a T19) com 0 linhas; contagens por status dentro do esperado pelas probabilidades (F5.8); compra no CDC com o mesmo `source.txId` em todos os tópicos | Regeração aprovada; `CLAUDE.md` e `HANDOFF.md` atualizados (o Oracle novo continua tratado como produção, como todos os bancos) |
+| 10 | **Simulador**: histórico (F5.6), **sem conectores**, e depois do passo 5 o tempo real | Logs sem recusa do banco; no tempo real, eventos `c` nos tópicos `postgres.ubereats.*` |
+| 11 | **Gate da regeração**, em duas partes (ADR 013). **Banco**, antes dos conectores: `python -m simulator.gate` (T1 a T19) com 0 linhas; contagens por status dentro do esperado pelas probabilidades (F5.8). **CDC**, depois do tempo real: compra com o mesmo `source.txId` em todos os tópicos, sobre uma janela ao vivo | Regeração aprovada; `CLAUDE.md` e `HANDOFF.md` atualizados (o Oracle novo continua tratado como produção, como todos os bancos) |
 | 12 | **Operação contínua**: ShadowTraffic em ritmo lento (cadastros novos e `last_login`) e simulador ligados; no fim da sessão, os dois param | Skill de operação do simulador (consequência da ADR 007) |
+
+**Ordem de execução (ADR 013):** 0, 1, 2, 3, 6, 7, 8, 10 (só o histórico), 11 (parte do banco), 4, 5, 10 (tempo real), 11
+(parte do CDC), 9, 12. Os números dos passos não mudam; os conectores entram depois da carga, com snapshot inicial.
 
 Não há volta de dado: tudo é sintético. Se um passo de 3 a 8 falhar, corrige-se o código e a regeração recomeça no passo 2
 (de novo com confirmação).
