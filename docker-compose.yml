@@ -115,7 +115,7 @@ services:
 
   # --- 5. REDPANDA (broker Kafka-compativel, leve — sem Zookeeper) ---
   redpanda:
-    image: redpandadata/redpanda:latest
+    image: redpandadata/redpanda:v26.2.6
     container_name: redpanda
     command:
       - redpanda
@@ -132,7 +132,7 @@ services:
   # --- 6. KAFKA CONNECT + DEBEZIUM 3.7 (CDC do Postgres e do Oracle -> topicos no
   #        Redpanda; ADR 006 e ADR 011) ---
   kafka-connect:
-    image: quay.io/debezium/connect:3.7
+    image: quay.io/debezium/connect:3.7.1.Final
     container_name: kafka-connect
     depends_on:
       redpanda:

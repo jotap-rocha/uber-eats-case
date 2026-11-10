@@ -3,9 +3,10 @@
 # Descricao: Injeta a senha do usuario do CDC (dbz_ubereats) e o nome do banco
 #            (shared/gen/.env) no template do conector Postgres e registra no
 #            Kafka Connect via REST API.
-# Uso: rodar na regeracao (F5 do modelo fisico), depois que postgres-ubereats
-#      (com o usuario e a publicacao do CDC criados no init) e kafka-connect
-#      estiverem saudaveis, e ANTES da carga dos dados (F4.0 #5).
+# Uso: rodar na regeracao (F5.3 do modelo fisico), depois da carga e do historico
+#      (ADR 013): o conector faz o snapshot inicial dos dados que ja existem e
+#      segue o WAL. Precisa de postgres-ubereats (com o usuario e a publicacao do
+#      CDC criados no init) e kafka-connect saudaveis.
 # ==============================================================================
 
 $scriptFolder = $PSScriptRoot
