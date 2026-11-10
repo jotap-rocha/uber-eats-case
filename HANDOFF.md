@@ -4,11 +4,11 @@
 
 ## Estado atual
 
-Modelagem de dados: regras (RN-01 a RN-42), conceitual, **modelo logico L0 a L4** (PR #17) e **modelo fisico F0 a F5** (PR #18, 2026-11-04) aprovados e mesclados na `main`, em `shared/docs/modelagem/`. ADRs 006 a 012 aceitas (009 e 011 com adendos). **Implementacao da F5.2 em andamento na branch `feat/regeracao`** (5 de 6 blocos feitos, sem push). Bancos atuais intocados: Oracle atual ainda tratado como producao; gerador nao religado.
+Modelagem de dados: regras (RN-01 a RN-42), conceitual, **modelo logico L0 a L4** (PR #17) e **modelo fisico F0 a F5** (PR #18, 2026-11-04) aprovados e mesclados na `main`, em `shared/docs/modelagem/`. ADRs 006 a 012 aceitas (009 e 011 com adendos). **Implementacao da F5.2 em andamento na branch `feat/regeracao`** (simulador implementado em 4 commits, falta a prova ponta a ponta e a documentacao; sem push). Bancos atuais intocados: Oracle atual ainda tratado como producao; gerador nao religado.
 
 ## Proximos passos
 
-1. **Implementar o simulador (bloco 5 da F5.2)**: o unico bloco que falta, e o maior. Brief abaixo.
+1. **Fechar o bloco 5 (parte 5)**: prova ponta a ponta com os tres bancos descartaveis e `python -m simulator.gate`, mais a documentacao. Detalhes em "Parte 5 do simulador" abaixo.
 2. **Push e PR** da `feat/regeracao` quando o simulador estiver verde (titulo sugerido: `feat(regeracao): simulador, seeds, checks e init da F5.2`).
 3. **Executar a regeracao** pela F5.3 (passos 0 a 12), com confirmacao em cada passo destrutivo. Antes: adicionar ao `shared/gen/.env` `POSTGRES_DEBEZIUM_PASSWORD`, `TRACKING_SALT_ORDER` e `TRACKING_SALT_PAYMENT`; desativar a conexao antiga do Airbyte com o Postgres; o usuario renova a licenca do ShadowTraffic antes (so conferir no passo 0).
 4. **Pipeline** (`shared/pipeline/`, hoje no modelo antigo): so depois da regeracao. A Bronze segue o contrato da F4.6.
@@ -21,13 +21,33 @@ Modelagem de dados: regras (RN-01 a RN-42), conceitual, **modelo logico L0 a L4*
 | 2 | `25822d7` | Init dos bancos gerado do DDL aprovado: `shared/sql/postgres/00..06` (inclui `06_cdc.sh`), `shared/sql/oracle/02_create_tables.sh`, `shared/mongo/init/00_replica_set.js` e `01_restaurant_profiles.js`; antigos em `legacy/`; `.gitattributes` (LF nos `.sh`); Oracle montado em `initdb.d` |
 | 3 | `136d2a2` | `shared/gen/checks/*.sql` (36 consultas, T1 a T16), `simulator/checks.py` (executor e T6c, T17, T18, T19 em Python), `tests/test_invariants.py` (gate com `UBEREATS_CHECKS_DSN`) |
 | 4 | `8a7e42a` | Seeds: `reference/catalog.yaml`, `simulator/seed/` (`python -m simulator.seed {cities,catalog,profiles,all}`, idempotente), `simulator/gate.py` (`python -m simulator.gate`, so leitura, T1 a T19 nos tres bancos), `simulator/db.py` |
+| 5 | `e8c8508`, `f2cc486`, `c80c3f1`, `81ef6f6` | Simulador em `shared/gen/simulator/`: fundacao (`tracking`, `clock`, `agenda`, `sim_params`), regras puras (`rules`, `refunds`), referencia e escritas (`reference`, `store`), compra e ciclo (`purchase`, `kitchen`, `fleet`, `aftersales`), laco e CLI (`engine`, `__main__`: `python -m simulator run [--until] [--max-events] [--seed]`). Parametros novos no `parameters.yaml` (secao `simulation`, `behavior`, `stock`) e textos em `reference/rating_comments.yaml` e `incident_descriptions.yaml` |
 | 6 | `8b28567` | Template do ShadowTraffic so com `customers`, `drivers` (Oracle) e `restaurants` (Postgres), sem MinIO; cidades injetadas do CSV pelo `setup-configs.ps1`; `toggle-shadowtraffic.ps1` com `startingFrom`/`maxEvents` dos tres cadastros; `tests/test_template.py`; `docker-compose.yml` da F5.2 (TZ, `max_slot_wal_keep_size`, Debezium 3.7 no `quay.io`, replica set e healthcheck do Mongo, `gen-unified` sem MinIO) |
 
-Gate local: `cd shared/gen && .venv/Scripts/python -m pytest -q` (49 passam, 1 pulado sem DSN), `ruff check .`, `mypy simulator`. O venv `shared/gen/.venv` e local (fora do git): `python -m venv shared/gen/.venv` e `pip install -r shared/gen/requirements.txt`.
+Gate local: `cd shared/gen && .venv/Scripts/python -m pytest -q` (99 passam e 1 pulado sem DSN; com `UBEREATS_SIM_DSN` apontando para um Postgres `f5-*` sao 100 e leva ~2 min), `ruff check .`, `mypy simulator`. O venv `shared/gen/.venv` e local (fora do git): `python -m venv shared/gen/.venv` e `pip install -r shared/gen/requirements.txt`.
 
 **Achados da implementacao (ja registrados no fisico e nas ADRs):** `--oplogSize` (nao `--oplogSizeMB`); o init do Mongo sem autenticacao roda em replica set nao iniciado, entao o `rs.initiate` foi para o init com membro `localhost:27017`; healthcheck do Mongo com `quit(...)`; archivelog do Oracle fica fora do volume (`$ORACLE_HOME/dbs/arch`); no Windows usar `127.0.0.1`, nao `localhost` (IPv6 pendura a conexao). O template foi validado gravando de verdade num Oracle e num Postgres descartaveis.
 
-## Brief do simulador (bloco 5), para a proxima sessao
+## Parte 5 do simulador (o que falta do bloco 5)
+
+**Feito e provado:** 4 commits (`e8c8508`, `f2cc486`, `c80c3f1`, `81ef6f6`). Testes de integracao em Postgres descartavel: 2 dias de historico + parada/retomada passam T1 a T16 e T6c com 0 violacao; mesma semente = mesmo resultado. Em 1 dia: ~92 compras, 19 desistencias, 9 nao entregues, estornos, incidentes procedentes e improcedentes.
+
+**Falta:**
+1. **Prova ponta a ponta com os tres bancos descartaveis** (`f5-postgres`, `f5-oracle`, `f5-mongo`; sem volume nomeado, portas `127.0.0.1:15xxx`, `docker rm -v` no fim). Subir com os inits de `shared/sql/` e `shared/mongo/init/`, popular `customers`/`drivers` no Oracle e `restaurants` no Postgres (ShadowTraffic exige licenca valida; sem ela, um script descartavel fora do projeto), rodar `python -m simulator.seed all` e `python -m simulator run --until ... --seed N`, e fechar com **`python -m simulator.gate`** (T1 a T19, os tres bancos). Variaveis: `SIMULATOR_<FONTE>_HOST/_PORT`, `TRACKING_SALT_ORDER` e `TRACKING_SALT_PAYMENT` (o `.env` ainda nao as tem).
+2. **Documentacao:** registrar no fisico (F5.8) os parametros novos do simulador e as decisoes abaixo; atualizar `CONTEXT.md`/`shared/docs/00-INDEX.md` se o fluxo de uso mudou; este HANDOFF.
+3. **Limpeza:** `docker rm -v` dos `f5-*` (hoje `f5-postgres` segue de pe, porta 15432, init do Postgres aplicado) e conferir que nao sobrou contêiner nem volume.
+
+**Decisoes tomadas no bloco 5 (nao estao nas RN; registrar no fisico):**
+- `promised_at` conta a partir do **ultimo aceite ativo** (`max(accepted_at)` dos ativos) + maior estimado + rota/velocidade + folga; recalculavel so com colunas gravadas.
+- `driver_unable` so e sorteado com o pedido **a caminho**. A RN-07 diz "depois da primeira retirada", mas a tabela de transicoes e os T2a/T3d so aceitam "nao entregue" a partir de "a caminho"; "em coleta" fica fora da v1.
+- O motivo `delivery_cancelled` da atribuicao **nao ocorre** nas regras atuais (motorista so e atribuido com um atendimento pronto, e pronto nao cancela, RN-13); o `CHECK` continua aceitando o valor.
+- Simulador usa `SET synchronous_commit = off` na propria sessao (42 -> 18 ms por acao no HDD da D:); transacao segue atomica.
+- `drivers_per_hourly_order = 1.0` (uma entrega dura ~40 min; 0,6 saturava a frota).
+- Retomada: relogio volta ao ultimo evento gravado e entidades vivas ganham passos novos com sorteio novo; avaliacoes/gorjetas pendentes na hora da parada se perdem.
+
+**Estimativa de carga:** ~13,5 acoes por pedido, ~900 pedidos/dia na escala da F5.8, ~18 ms por acao -> ~3,6 min por dia simulado, ~2 h para os 30 dias de `backfill_days`.
+
+## Brief do simulador (bloco 5), original (escopo ja implementado)
 
 Ler antes: `CLAUDE.md`, este arquivo, `shared/docs/modelagem/04-modelo-fisico.md` (F5.5 a F5.9, F1 para o DDL das 22 tabelas do simulador), `03-modelo-logico.md` (L1b vocabulario de status e transicoes, L2 reembolsos por origem, L3 pos-entrega, L4 parametros), `01-regras-de-negocio.md` (RN-01 a RN-42, tabela de transicoes), ADRs 007, 008 e 009. Reaproveitar `simulator/money.py`, `geo.py`, `params.py`, `db.py`, `checks.py` e o gate.
 
