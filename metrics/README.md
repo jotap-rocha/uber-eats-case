@@ -67,3 +67,15 @@ Não entram no `entregas.jsonl` automaticamente — registre manualmente quando 
 
 > Não persiga vaidade (linhas de código, nº de commits). O gate é alvo legítimo.
 > Métrica de humano (review, bug escapado) não entra no que o agente otimiza.
+
+## Neste projeto (uber-eats)
+
+- `entregas.jsonl` guarda **só** as entregas deste projeto. As 90 linhas herdadas do repositório canônico do
+  harness estão em `metrics/legacy-harness/entregas.jsonl` e não entram no `/scorecard` daqui.
+- **`evidencias_ref` é relativo à pasta do `entregas.jsonl`** (convenção do kernel `config.evidence_gate`),
+  por exemplo `../.claude/projetos/regeracao-f5/evidencias/tasks/1.yaml`.
+- **Registros retroativos** (task feita antes de adotar o harness) têm `"retroativo": true` e
+  `"registrado_em"`. O gate foi reexecutado na data do registro, então a evidência é real. Os campos que
+  não foram medidos na época ficam `null`: `gate.tentativas_ate_verde`, `revisor.bloqueantes`,
+  `revisor.ressalvas` e `intervencoes_humanas`; e `revisor.veredito` vale `"nao_revisado"`. O
+  `/scorecard` deve ignorar esses campos nas médias e declarar a lacuna.

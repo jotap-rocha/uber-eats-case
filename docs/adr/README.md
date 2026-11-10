@@ -21,3 +21,4 @@ revista não é editada — ganha uma ADR nova que a substitui.
 | [010](010-minio-fora-do-escopo-da-geracao.md) | MinIO fora do escopo da geração e do modelo | Aceita | 2026-11-04 |
 | [011](011-cdc-debezium-3-7-e-replica-set-no-mongodb.md) | CDC na regeração: Debezium 3.7 e MongoDB em replica set | Aceita | 2026-11-04 |
 | [012](012-captura-dedicada-ao-kappa-na-fase-1.md) | Captura dedicada ao Kappa na Fase 1 (Azure) | Aceita | 2026-11-04 |
+| [013](013-snapshot-inicial-aceito-na-regeracao.md) | Snapshot inicial aceito na regeração (conectores depois da carga) | Aceita | 2026-11-10 |

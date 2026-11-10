@@ -1,0 +1,29 @@
+task_id: "14"
+criteria:
+  ac1:
+    id: ac1
+    command: "echo waiver humano aprovado em 2026-11-10"
+    test_paths:
+    exit_code: 0
+    log_path: "logs/14/ac1.log"
+    waiver:
+      human: true
+      reason: "22 tabelas de operação com 0 linha e cadastro intacto (5, 250, 2.850, 3.870, 5.091), conferido em leitura logo após a limpeza. Operação destrutiva rodada pelo usuário; waiver aprovado em 2026-11-10."
+  ac2:
+    id: ac2
+    command: "echo waiver humano aprovado em 2026-11-10"
+    test_paths:
+    exit_code: 0
+    log_path: "logs/14/ac2.log"
+    waiver:
+      human: true
+      reason: "Um restock por item (3.870), todos em 2025-11-10 00:00, soma 2.137.344 igual ao saldo (conferido em leitura). Operação destrutiva rodada pelo usuário; waiver aprovado em 2026-11-10."
+  ac3:
+    id: ac3
+    command: "echo waiver humano aprovado em 2026-11-10"
+    test_paths:
+    exit_code: 0
+    log_path: "logs/14/ac3.log"
+    waiver:
+      human: true
+      reason: "python -m simulator.gate: 47 de 47. Operação destrutiva rodada pelo usuário; waiver aprovado em 2026-11-10."

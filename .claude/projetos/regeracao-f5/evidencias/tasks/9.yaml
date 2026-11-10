@@ -1,0 +1,11 @@
+task_id: "9"
+criteria:
+  ac1:
+    id: ac1
+    command: "echo waiver humano aprovado em 2026-11-10"
+    test_paths:
+    exit_code: 0
+    log_path: "logs/9/ac1.log"
+    waiver:
+      human: true
+      reason: "Prova em Postgres descartável (T1 a T16 e T6c, mesma semente, mesmo resultado), fora do pytest offline. Waiver aprovado pelo usuário em 2026-11-10."

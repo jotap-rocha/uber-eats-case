@@ -1,0 +1,11 @@
+task_id: "2"
+criteria:
+  ac1:
+    id: ac1
+    command: "echo waiver humano aprovado em 2026-11-10"
+    test_paths:
+    exit_code: 0
+    log_path: "logs/2/ac1.log"
+    waiver:
+      human: true
+      reason: "Verificado em banco novo na F5.3 (passos 0 a 3); prova por inspeção dos bancos, sem teste automatizado possível. Waiver aprovado pelo usuário em 2026-11-10."

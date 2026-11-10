@@ -62,9 +62,46 @@ def resume_point(pg: Any) -> datetime | None:  # Any: conexão psycopg
     return None if row is None else row[0]
 
 
-def default_start(params: Parameters, today: datetime) -> datetime:
-    days = int(params.section("clock")["backfill_days"])
+def default_start(params: Parameters, today: datetime, days: int | None = None) -> datetime:
+    """Meia-noite de `days` dias atrás; sem `days`, usa `clock.backfill_days`."""
+    if days is None:
+        days = int(params.section("clock")["backfill_days"])
     return datetime.combine((today - timedelta(days=days)).date(), time(0, 0))
+
+
+def initial_start(
+    params: Parameters,
+    today: datetime,
+    *,
+    days: int | None,
+    resumed: datetime | None,
+    has_orders: bool,
+) -> datetime:
+    """Retoma do último evento só se já há pedidos; antes disso o restock do seed não é histórico."""
+    if has_orders and resumed is not None:
+        return resumed
+    return default_start(params, today, days)
+
+
+def restock_coverage_error(start: datetime, first_restock: datetime | None) -> str | None:
+    """Mensagem de erro se o histórico começa antes do restock inicial (saldo negativo, T6)."""
+    if first_restock is None or first_restock.date() <= start.date():
+        return None
+    return (
+        f"o restock inicial ({first_restock:%Y-%m-%d}) é posterior ao início do histórico "
+        f"({start:%Y-%m-%d}); refazer o seed com --start-day {start:%Y-%m-%d} apaga a operação "
+        "gerada e pede confirmação (task 14 da regeração)"
+    )
+
+
+def partial_run_error(resumed: datetime | None, first_restock: datetime | None) -> str | None:
+    """Sem pedidos mas com eventos além do restock inicial: uma execução parou antes do 1º pedido."""
+    if resumed is None or first_restock is None or resumed <= first_restock:
+        return None
+    return (
+        f"há eventos de operação até {resumed:%Y-%m-%d %H:%M} mas nenhum pedido; "
+        "limpe a operação (task 14) antes de começar o histórico de novo"
+    )
 
 
 def build_context(

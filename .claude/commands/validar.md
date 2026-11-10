@@ -63,3 +63,15 @@ inclui perfis `databricks-*`, pacote D quando o perfil efetivo for cloud/multi, 
 pacote E quando vault aplica (marker `secret_store` ou auto-detect).
 
 Só considere a tarefa pronta quando o gate sair **verde**. Não comite vermelho.
+
+## Neste projeto (uber-eats)
+
+O código Python e os testes estão em `shared/gen`, com venv local (`shared/gen/.venv`). Rode:
+
+```bash
+cd shared/gen && .venv/Scripts/python -m ruff check . && .venv/Scripts/python -m mypy simulator && .venv/Scripts/python -m pytest -q
+```
+
+Sem `UBEREATS_SIM_DSN` os testes de integração com banco são pulados (4 pulos esperados); com o DSN de
+um Postgres `f5-*` descartável rodam todos (~2 min). Os checks de banco (`python -m simulator.gate`) são
+só leitura e ficam fora deste gate.
