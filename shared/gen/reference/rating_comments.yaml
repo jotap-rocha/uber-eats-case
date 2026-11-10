@@ -1,0 +1,29 @@
+# Comentários sintéticos das avaliações (RN-26; F5.8 text.rating_comment_by_band).
+# Frases genéricas, sem nome de pessoa: abrem espaço para classificação por ML/LLM no futuro.
+# Faixas: low = nota 1 e 2, mid = 3, high = 4 e 5.
+
+driver:
+  low:
+    - Demorou muito e não avisou do atraso.
+    - O pedido chegou revirado na bolsa.
+    - Não encontrou o endereço e não atendeu o telefone.
+  mid:
+    - Entrega ok, mas poderia ter sido mais rápida.
+    - Chegou no horário, pouco simpático.
+  high:
+    - Muito educado e rápido.
+    - Entrega no prazo e com cuidado.
+    - Avisou quando chegou, ótimo.
+
+restaurant:
+  low:
+    - Comida fria e sem sabor.
+    - Porção bem menor que a foto.
+    - Veio errado e faltou molho.
+  mid:
+    - Gostoso, mas veio pouco.
+    - Bom, embalagem poderia ser melhor.
+  high:
+    - Muito saboroso, vou pedir de novo.
+    - Chegou quentinho e bem embalado.
+    - Excelente custo-benefício.

@@ -1,69 +1,124 @@
 #!/bin/bash
-# Cria as tabelas de Restaurante, Produto e Estoque no schema UBEREATS
-# (Etapa 2 da Onda 3 -- insert-only por enquanto; mutacao real entra
-# quando o mesmo padrao fork+stateMachine da Etapa 1 for aplicado aqui).
-set -e
+# Tabelas do domínio Pessoas no schema UBEREATS (F2 do modelo físico; ADR 006).
+# Gerado a partir de shared/docs/modelagem/04-modelo-fisico.md (F2.1 e F2.2). Roda uma vez, no init
+# do banco (/container-entrypoint-initdb.d, F5.1), depois do 01_create_user.sh. O usuário UBEREATS
+# é criado pela imagem (APP_USER/APP_USER_PASSWORD do compose).
+set -euo pipefail
 
 sqlplus -s ubereats/"${ORACLE_APP_PASSWORD}"@FREEPDB1 <<'EOSQL'
+WHENEVER SQLERROR EXIT SQL.SQLCODE
+SET FEEDBACK OFF
 
-CREATE TABLE restaurants (
-    restaurant_id     NUMBER(10)     PRIMARY KEY,
-    uuid              VARCHAR2(36),
-    name              VARCHAR2(200),
-    address           VARCHAR2(400),
-    city              VARCHAR2(100),
-    country           VARCHAR2(5),
-    phone_number      VARCHAR2(30),
-    cuisine_type      VARCHAR2(50),
-    opening_time      VARCHAR2(20),
-    closing_time      VARCHAR2(20),
-    average_rating    NUMBER(3, 1),
-    num_reviews       NUMBER(10),
-    cnpj              VARCHAR2(30),
-    lat               NUMBER(10, 6),
-    lon               NUMBER(10, 6)
+
+CREATE TABLE cities (
+  city_id     NUMBER(9)           NOT NULL,
+  name        VARCHAR2(100 CHAR)  NOT NULL,
+  state_code  CHAR(2 CHAR)        NOT NULL,
+  created_at  TIMESTAMP           DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP) NOT NULL,
+  updated_at  TIMESTAMP           DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP) NOT NULL,
+  CONSTRAINT pk_cities PRIMARY KEY (city_id),
+  CONSTRAINT ck_cities_city_id CHECK (city_id BETWEEN 1000000 AND 5999999),
+  CONSTRAINT ck_cities_state_code CHECK (REGEXP_LIKE(state_code, '^[A-Z]{2}$'))
 );
 
-CREATE TABLE products (
-    product_id        VARCHAR2(20)   PRIMARY KEY,
-    restaurant_id     NUMBER(10),
-    name              VARCHAR2(200),
-    tags              VARCHAR2(400),
-    flavor_profile    VARCHAR2(100),
-    cuisine_type      VARCHAR2(50),
-    product_type      VARCHAR2(50),
-    price             NUMBER(18, 2),
-    unit_cost         NUMBER(18, 2),
-    calories          NUMBER(10),
-    prep_time_min     NUMBER(10),
-    is_vegetarian     NUMBER(1),
-    is_gluten_free    NUMBER(1),
-    created_at        VARCHAR2(30), -- Data/Hora como TEXTO (mesmo padrao de sql/create_users_table.sql -- evita ORA-01843 na conversao implicita do ShadowTraffic)
-    updated_at        VARCHAR2(30) -- Data/Hora como TEXTO
-    -- Sem FK pra restaurant_id: mesmo padrao do resto do projeto (users/drivers
-    -- tambem nao tem FK) -- integridade referencial e validada por join real
-    -- no Gold (Ondas 1/2), nao por constraint. FK real causou ORA-02291 real
-    -- testando este script: o ShadowTraffic faz lookup por valor JA GERADO
-    -- (logico), mas a escrita cross-connection em conexoes/tabelas diferentes
-    -- nao e sincronizada fisicamente -- o commit do pai pode nao ter
-    -- acontecido ainda quando o filho tenta inserir.
+CREATE TABLE customers (
+  customer_id     NUMBER(18)          NOT NULL,
+  first_name      VARCHAR2(60 CHAR)   NOT NULL,
+  last_name       VARCHAR2(80 CHAR)   NOT NULL,
+  email           VARCHAR2(150 CHAR)  NOT NULL,
+  email_verified  NUMBER(1)           NOT NULL,
+  phone_number    VARCHAR2(20 CHAR)   NOT NULL,
+  phone_verified  NUMBER(1)           NOT NULL,
+  address_line1   VARCHAR2(200 CHAR)  NOT NULL,
+  address_line2   VARCHAR2(100 CHAR),
+  postal_code     CHAR(8 CHAR)        NOT NULL,
+  latitude        NUMBER(9,6)         NOT NULL,
+  longitude       NUMBER(9,6)         NOT NULL,
+  city_id         NUMBER(9)           NOT NULL,
+  date_of_birth   DATE                NOT NULL,
+  gender          VARCHAR2(20 CHAR)   NOT NULL,
+  status          VARCHAR2(20 CHAR)   NOT NULL,
+  signup_date     TIMESTAMP           NOT NULL,
+  last_login      TIMESTAMP           NOT NULL,
+  created_at      TIMESTAMP           DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP) NOT NULL,
+  updated_at      TIMESTAMP           DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP) NOT NULL,
+  CONSTRAINT pk_customers PRIMARY KEY (customer_id),
+  CONSTRAINT uq_customers_email UNIQUE (email),
+  CONSTRAINT ck_customers_flags CHECK (email_verified IN (0, 1) AND phone_verified IN (0, 1)),
+  CONSTRAINT ck_customers_postal_code CHECK (REGEXP_LIKE(postal_code, '^[0-9]{8}$')),
+  CONSTRAINT ck_customers_coords CHECK (latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180),
+  CONSTRAINT ck_customers_birth CHECK (date_of_birth = TRUNC(date_of_birth)),
+  CONSTRAINT ck_customers_gender CHECK (gender IN ('female', 'male', 'other', 'not_informed')),
+  CONSTRAINT ck_customers_status CHECK (status IN ('active', 'suspended', 'inactive')),
+  CONSTRAINT ck_customers_login CHECK (last_login >= signup_date)
 );
 
-CREATE TABLE inventory (
-    stock_id          VARCHAR2(36)   PRIMARY KEY,
-    restaurant_id     NUMBER(10),
-    product_id        VARCHAR2(20),
-    quantity_available NUMBER(10),
-    last_updated      VARCHAR2(30) -- Data/Hora como TEXTO
-    -- Sem FK -- mesmo motivo do comentario em products acima.
+CREATE TABLE drivers (
+  driver_id          NUMBER(18)          NOT NULL,
+  first_name         VARCHAR2(60 CHAR)   NOT NULL,
+  last_name          VARCHAR2(80 CHAR)   NOT NULL,
+  email              VARCHAR2(150 CHAR)  NOT NULL,
+  phone_number       VARCHAR2(20 CHAR)   NOT NULL,
+  vehicle_type       VARCHAR2(20 CHAR)   NOT NULL,
+  vehicle_make       VARCHAR2(50 CHAR)   NOT NULL,
+  vehicle_model      VARCHAR2(50 CHAR)   NOT NULL,
+  vehicle_year       NUMBER(9)           NOT NULL,
+  license_plate      CHAR(7 CHAR)        NOT NULL,
+  license_number     CHAR(11 CHAR)       NOT NULL,
+  city_id            NUMBER(9)           NOT NULL,
+  status             VARCHAR2(20 CHAR)   NOT NULL,
+  registration_date  TIMESTAMP           NOT NULL,
+  last_login         TIMESTAMP           NOT NULL,
+  created_at         TIMESTAMP           DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP) NOT NULL,
+  updated_at         TIMESTAMP           DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP) NOT NULL,
+  CONSTRAINT pk_drivers PRIMARY KEY (driver_id),
+  CONSTRAINT uq_drivers_license_plate UNIQUE (license_plate),
+  CONSTRAINT uq_drivers_license_number UNIQUE (license_number),
+  CONSTRAINT ck_drivers_vehicle_type CHECK (vehicle_type IN ('car', 'motorcycle', 'scooter')),
+  CONSTRAINT ck_drivers_vehicle_year CHECK (vehicle_year BETWEEN 1990 AND 2100),
+  CONSTRAINT ck_drivers_license_plate CHECK (REGEXP_LIKE(license_plate, '^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$')),
+  CONSTRAINT ck_drivers_license_number CHECK (REGEXP_LIKE(license_number, '^[0-9]{11}$')),
+  CONSTRAINT ck_drivers_status CHECK (status IN ('active', 'suspended', 'inactive')),
+  CONSTRAINT ck_drivers_login CHECK (last_login >= registration_date)
 );
 
--- Supplemental logging por tabela, granularidade de coluna-chave --
--- redundante com o ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS de 00_enable_archivelog.sql,
--- mas documentado aqui por clareza (algumas versoes do Debezium preferem log a nivel de tabela).
-ALTER TABLE restaurants ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
-ALTER TABLE products ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
-ALTER TABLE inventory ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
+CREATE INDEX ix_drivers_city_status ON drivers (city_id, status);
+
+CREATE OR REPLACE TRIGGER trg_cities_updated_at
+  BEFORE UPDATE ON cities FOR EACH ROW
+BEGIN
+  IF :NEW.updated_at = :OLD.updated_at THEN
+    :NEW.updated_at := CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP);
+  END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_customers_updated_at
+  BEFORE UPDATE ON customers FOR EACH ROW
+BEGIN
+  IF :NEW.updated_at = :OLD.updated_at THEN
+    :NEW.updated_at := CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP);
+  END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_drivers_updated_at
+  BEFORE UPDATE ON drivers FOR EACH ROW
+BEGIN
+  IF :NEW.updated_at = :OLD.updated_at THEN
+    :NEW.updated_at := CAST(SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS TIMESTAMP);
+  END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_ubereats_logon
+  AFTER LOGON ON ubereats.SCHEMA
+BEGIN
+  EXECUTE IMMEDIATE q'[ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD']';
+  EXECUTE IMMEDIATE q'[ALTER SESSION SET NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF']';
+  EXECUTE IMMEDIATE q'[ALTER SESSION SET TIME_ZONE = 'America/Sao_Paulo']';
+END;
+/
 
 EXIT;
 EOSQL

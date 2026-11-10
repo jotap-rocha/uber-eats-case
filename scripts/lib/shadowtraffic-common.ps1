@@ -87,9 +87,10 @@ function Get-PgMax {
     param(
         [Parameter(Mandatory = $true)]$EnvVars,
         [Parameter(Mandatory = $true)][string]$Table,
-        [Parameter(Mandatory = $true)][string]$Column
+        [Parameter(Mandatory = $true)][string]$Column,
+        [switch]$Count
     )
-    $sql = "SELECT COALESCE(MAX($Column),0) FROM $Table;"
+    $sql = if ($Count) { "SELECT COUNT(*) FROM $Table;" } else { "SELECT COALESCE(MAX($Column),0) FROM $Table;" }
     $out = docker exec postgres-ubereats psql -U $EnvVars.POSTGRES_USERNAME -d $EnvVars.POSTGRES_DB -t -A -c $sql
     return [int]($out.Trim())
 }
@@ -142,12 +143,15 @@ function Get-OracleScalar {
 function Get-GeneratorSnapshot {
     param([Parameter(Mandatory = $true)]$EnvVars)
 
+    # Cadastros do ShadowTraffic depois da regeracao (F5.5 do modelo fisico): MAX(id) para o
+    # startingFrom e COUNT(*) para o que falta ate a meta (maxEvents do template).
     return [ordered]@{
-        users       = Get-PgMax -EnvVars $EnvVars -Table "users" -Column "user_id"
-        drivers     = Get-PgMax -EnvVars $EnvVars -Table "drivers" -Column "driver_id"
-        orders      = Get-OracleScalar -EnvVars $EnvVars -Sql "SELECT NVL(MAX(order_id),0) FROM UBEREATS.ORDERS;"
-        payments    = Get-OracleScalar -EnvVars $EnvVars -Sql "SELECT NVL(MAX(payment_id),0) FROM UBEREATS.PAYMENTS;"
-        restaurants = Get-OracleScalar -EnvVars $EnvVars -Sql "SELECT NVL(COUNT(*),0) FROM UBEREATS.RESTAURANTS;"
+        customers       = Get-OracleScalar -EnvVars $EnvVars -Sql "SELECT NVL(MAX(customer_id),0) FROM UBEREATS.CUSTOMERS;"
+        customers_count = Get-OracleScalar -EnvVars $EnvVars -Sql "SELECT COUNT(*) FROM UBEREATS.CUSTOMERS;"
+        drivers         = Get-OracleScalar -EnvVars $EnvVars -Sql "SELECT NVL(MAX(driver_id),0) FROM UBEREATS.DRIVERS;"
+        drivers_count   = Get-OracleScalar -EnvVars $EnvVars -Sql "SELECT COUNT(*) FROM UBEREATS.DRIVERS;"
+        restaurants     = Get-PgMax -EnvVars $EnvVars -Table "ubereats.restaurants" -Column "restaurant_id"
+        restaurants_count = Get-PgMax -EnvVars $EnvVars -Table "ubereats.restaurants" -Column "1" -Count
     }
 }
 

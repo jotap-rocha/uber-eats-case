@@ -12,14 +12,17 @@ services:
       - POSTGRES_USER=${POSTGRES_USERNAME}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+      - TZ=America/Sao_Paulo   # localtimestamp em hora de Brasilia (F0, decisao 3)
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # Monta nossos scripts SQL para dentro da pasta de inicialização do Postgres
       # Ele vai rodar CADA .sql nessa pasta AUTOMATICAMENTE na 1ª vez que o volume for criado.
       - ./shared/sql/postgres:/docker-entrypoint-initdb.d
+    # max_slot_wal_keep_size: teto do WAL retido por slot parado no HDD da D: (F4.2).
     command: >
       postgres
       -c wal_level=logical
+      -c max_slot_wal_keep_size=4GB
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -67,8 +70,8 @@ services:
       /usr/bin/mc policy set public local/uber-eats;
       "
   
-  # --- 3. GERADOR DE DADOS (unificado: Postgres real + Oracle real + MinIO no
-  #        mesmo processo, necessário para o lookup cruzado entre as conexões) ---
+  # --- 3. GERADOR DE DADOS (ShadowTraffic: cadastros customers/drivers no Oracle e
+  #        restaurants no Postgres, F5.4/F5.5 do modelo fisico; MinIO fora, ADR 010) ---
   gen-unified:
     image: shadowtraffic/shadowtraffic:latest
     container_name: gen-unified
@@ -77,8 +80,6 @@ services:
     depends_on:
       postgres-ubereats:
         condition: service_healthy
-      minio-setup:
-        condition: service_completed_successfully
       oracle-ubereats:
         condition: service_healthy
     volumes:
@@ -100,9 +101,11 @@ services:
       - ORACLE_PASSWORD=${ORACLE_PASSWORD}
       - APP_USER=${ORACLE_APP_USERNAME}
       - APP_USER_PASSWORD=${ORACLE_APP_PASSWORD}
+      - TZ=America/Sao_Paulo
     volumes:
       - oracle_data:/opt/oracle/oradata
-      - ./shared/sql/oracle:/container-entrypoint-startdb.d
+      # initdb.d roda uma vez, na criacao do banco; startdb.d rodaria a cada start (F5.1).
+      - ./shared/sql/oracle:/container-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "healthcheck.sh"]
       interval: 20s
@@ -126,13 +129,18 @@ services:
     ports:
       - "9092:9092"
 
-  # --- 6. KAFKA CONNECT + DEBEZIUM (CDC do Oracle -> topicos no Redpanda) ---
+  # --- 6. KAFKA CONNECT + DEBEZIUM 3.7 (CDC do Postgres e do Oracle -> topicos no
+  #        Redpanda; ADR 006 e ADR 011) ---
   kafka-connect:
-    image: quay.io/debezium/connect:3.0
+    image: quay.io/debezium/connect:3.7
     container_name: kafka-connect
     depends_on:
-      - redpanda
-      - oracle-ubereats
+      redpanda:
+        condition: service_started
+      postgres-ubereats:
+        condition: service_healthy
+      oracle-ubereats:
+        condition: service_healthy
     environment:
       - BOOTSTRAP_SERVERS=redpanda:9092
       - GROUP_ID=uber-eats-connect
@@ -142,7 +150,8 @@ services:
     ports:
       - "8083:8083"
 
-  # --- 7. MONGODB (satelite estatico "Perfil de Restaurante") ---
+  # --- 7. MONGODB (restaurant_profiles; replica set rs0 para o CDC por change
+  #        stream no Airbyte, ADR 011 e F4.4 do modelo fisico) ---
   mongo-ubereats:
     image: mongo:7
     container_name: mongo-ubereats
@@ -151,6 +160,13 @@ services:
     ports:
       - "27017:27017"
     env_file: ./shared/gen/.env
+    # O rs.initiate fica no init (shared/mongo/init/00_replica_set.js); oplog de 1 GB (F4.4).
+    command: ["--replSet", "rs0", "--bind_ip_all", "--oplogSize", "1024"]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.hello().isWritablePrimary ? 0 : 1)"]
+      interval: 10s
+      retries: 20
+      start_period: 30s
     volumes:
       - mongo_data:/data/db
       - ./shared/mongo/init:/docker-entrypoint-initdb.d:ro
@@ -159,7 +175,7 @@ services:
   #        Decisao 2 do DESIGN_INGESTAO_GCP_FASE3.md: uma instancia por fonte,
   #        ja que o Debezium Server so suporta 1 conector por processo. ---
   debezium-server-postgres:
-    image: debezium/server:3.0
+    image: quay.io/debezium/server:3.7
     container_name: debezium-server-postgres
     depends_on:
       postgres-ubereats:
@@ -171,7 +187,7 @@ services:
       - debezium_postgres_data:/debezium/data
 
   debezium-server-oracle:
-    image: debezium/server:3.0
+    image: quay.io/debezium/server:3.7
     container_name: debezium-server-oracle
     depends_on:
       oracle-ubereats:
@@ -206,7 +222,7 @@ services:
   #         Ver DESIGN_INGESTAO_AZURE_FASE1.md, Decisao 1/2, e
   #         BUILD_REPORT_INGESTAO_AZURE_FASE1.md, "Desvios do DESIGN". ---
   kafka-connect-azure:
-    image: quay.io/debezium/connect:3.0
+    image: quay.io/debezium/connect:3.7
     container_name: kafka-connect-azure
     depends_on:
       - oracle-ubereats

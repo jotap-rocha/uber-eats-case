@@ -1208,11 +1208,10 @@ nó único serve para desenvolvimento). O `mongo-ubereats` roda sozinho, então 
 ```yaml
   mongo-ubereats:
     image: mongo:7
-    command: ["--replSet", "rs0", "--bind_ip_all", "--oplogSizeMB", "1024"]
+    command: ["--replSet", "rs0", "--bind_ip_all", "--oplogSize", "1024"]
     healthcheck:
-      # O entrypoint roda os scripts de init sem --replSet; o rs.initiate fica no healthcheck (idempotente).
-      test: ["CMD", "mongosh", "--quiet", "--eval",
-             "try { rs.status().ok } catch (e) { rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'mongo-ubereats:27017'}]}).ok }"]
+      # O rs.initiate fica no init (shared/mongo/init/00_replica_set.js); o healthcheck só confere o primário.
+      test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.hello().isWritablePrimary ? 0 : 1)"]
       interval: 10s
       retries: 20
       start_period: 10s
@@ -1220,8 +1219,9 @@ nó único serve para desenvolvimento). O `mongo-ubereats` roda sozinho, então 
 
 | Ponto | Proposta |
 |---|---|
-| Nome do membro | `mongo-ubereats:27017`. Quem está fora da rede do compose (Airbyte via `abctl`, seed e simulador no Windows) conecta com **`directConnection=true`**, sem descoberta do replica set (senão o driver tenta resolver `mongo-ubereats`) |
-| Oplog | `--oplogSizeMB 1024`: o padrão é 5% do disco, alto para a D: |
+| Nome do membro | `localhost:27017` (corrigido na F5.2; era `mongo-ubereats:27017`). Quem está fora da rede do compose (Airbyte via `abctl`, seed e simulador no Windows) conecta com **`directConnection=true`**, sem descoberta do replica set (senão o driver tenta resolver `mongo-ubereats`) |
+| Oplog | `--oplogSize 1024` (MB; corrigido na F5.2, a opção `--oplogSizeMB` não existe no `mongod`): o padrão é 5% do disco, alto para a D: |
+| **Depois (F5.2)** | O teste do init mostrou duas correções. (1) O entrypoint da imagem `mongo:7` só tira o `--replSet` do `mongod` temporário do init **quando há usuário root** (autenticação); sem autenticação, o init roda em replica set não iniciado e o `createCollection` falha com `not primary`. O `rs.initiate` passa para o init (`00_replica_set.js`, antes da coleção), com o membro `localhost:27017`, porque o `mongod` do init só escuta em 127.0.0.1. Todo cliente fora do compose já usa `directConnection=true`, e a partir do Windows `localhost:27017` é a porta publicada. (2) A opção do oplog é `--oplogSize` |
 | Autenticação | O Mongo roda **sem** autenticação hoje. Se for ligada, replica set exige `keyFile`; fica fora da F4 |
 | Captura no Airbyte | **Incremental por change stream** (CDC), modo de atualização *Lookup* (documento inteiro). O seed é idempotente e pode reescrever perfis (`replaceOne`); o CDC entrega essas mudanças e as exclusões, e o full refresh releria a coleção inteira a cada sync. Substitui a decisão antiga "MongoDB sem CDC" (`azure/docs/data-contract-cdc-azure.md`) |
 
@@ -1375,10 +1375,10 @@ Tudo nesta tabela é código versionado, feito e testado na branch antes de toca
 
 | Arquivo | Mudança |
 |---|---|
-| `docker-compose.yml` | `TZ=America/Sao_Paulo` no Postgres e no Oracle (F0, decisão 3); `-c max_slot_wal_keep_size=4GB` no Postgres (F4.2); Oracle montado em `/container-entrypoint-initdb.d` (F5.1); Mongo com `--replSet rs0` e o healthcheck da F4.4; `kafka-connect` e `kafka-connect-azure` em `quay.io/debezium/connect:3.7`, `debezium-server-*` em `quay.io/debezium/server:3.7` (ADR 011); `kafka-connect` depende do Postgres e do Oracle saudáveis; `gen-unified` sem `minio-setup` no `depends_on` |
+| `docker-compose.yml` | `TZ=America/Sao_Paulo` no Postgres e no Oracle (F0, decisão 3); `-c max_slot_wal_keep_size=4GB` no Postgres (F4.2); Oracle montado em `/container-entrypoint-initdb.d` (F5.1); Mongo com `--replSet rs0 --bind_ip_all --oplogSize 1024` e o healthcheck da F4.4 (corrigida); `kafka-connect` e `kafka-connect-azure` em `quay.io/debezium/connect:3.7`, `debezium-server-*` em `quay.io/debezium/server:3.7` (ADR 011); `kafka-connect` depende do Postgres e do Oracle saudáveis; `gen-unified` sem `minio-setup` no `depends_on` |
 | `shared/sql/postgres/` | Saem `create_users_table.sql` e `create_drivers_table.sql` (vão para `shared/sql/legacy/postgres/`). Entram `00_schema.sql` (schema, `search_path` do usuário da aplicação e `set_updated_at`), `01_catalogo.sql`, `02_operacao.sql`, `03_dinheiro.sql`, `04_pos_entrega.sql`, `05_indices_triggers.sql` (F1.1 a F1.5) e `06_cdc.sh` (usuário `dbz_ubereats` com a senha do `.env` e a publicação, F4.2) |
 | `shared/sql/oracle/` | Ficam `00_enable_archivelog.sql` e `01_create_user.sh`. `02_create_tables.sh` e `03_create_tables_pedido_pagamento.sh` vão para `shared/sql/legacy/oracle/`; entra um `02_create_tables.sh` novo com o DDL e o gatilho de logon da F2 |
-| `shared/mongo/init/` | `01_perfil_restaurante.js(.template)` vai para `shared/mongo/legacy/`; entra `01_restaurant_profiles.js` (validador e índice da F3.2). O `setup-configs.ps1` deixa de renderizar o seed do Mongo |
+| `shared/mongo/init/` | `01_perfil_restaurante.js(.template)` vai para `shared/mongo/legacy/`; entram `00_replica_set.js` (`rs.initiate` com o membro `localhost:27017` e espera do primário, F4.4 corrigida) e `01_restaurant_profiles.js` (validador e índice da F3.2). O `setup-configs.ps1` deixa de renderizar o seed do Mongo |
 | `shared/gen/unified/uber-eats.json.template` | Fica só com `customers` e `drivers` (Oracle) e `restaurants` (Postgres), nas colunas da F1 e da F2; sai a conexão `minio` e os 8 geradores dela (ADR 010). Edição pela skill `shadowtraffic-adicionar-generator-seguro` |
 | `shared/gen/reference/cities.csv` | **Novo** (F5.4): código do IBGE, nome, UF e centro (latitude, longitude) de cada cidade |
 | `shared/gen/parameters.yaml` | **Novo** (F5.8) |
@@ -1387,8 +1387,10 @@ Tudo nesta tabela é código versionado, feito e testado na branch antes de toca
 | `scripts/ingestion/register-postgres-connector.ps1` | **Criado nesta fase** (sem registrar nada), igual ao do Oracle: injeta `POSTGRES_DEBEZIUM_PASSWORD` e `POSTGRES_DB` no template |
 | `shared/gen/.env` (fora do git) | Entram `POSTGRES_DEBEZIUM_PASSWORD`, `TRACKING_SALT_ORDER` e `TRACKING_SALT_PAYMENT`; sai `RESTAURANT_COUNT`. O usuário do CDC é fixo no template (`dbz_ubereats`), então `POSTGRES_DEBEZIUM_USER` (F4.0 #8) não é necessário |
 
-O simulador roda **no Windows** (ambiente virtual Python) na v1: conecta em `localhost` nas portas publicadas e no Mongo
-com `directConnection=true` (F4.4). Virar serviço do compose fica para depois, quando o laço estiver estável.
+O simulador roda **no Windows** (ambiente virtual Python em `shared/gen/.venv`) na v1: conecta em `127.0.0.1` nas portas
+publicadas e no Mongo com `directConnection=true` (F4.4). **Depois (F5.2):** `127.0.0.1`, não `localhost`: no Windows
+`localhost` resolve primeiro para `::1`, e a conexão com a porta publicada só em IPv4 ficava pendurada (visto no teste
+do seed). `SIMULATOR_<FONTE>_HOST`/`_PORT` mudam o destino sem tocar no `.env`. Virar serviço do compose fica para depois, quando o laço estiver estável.
 
 ### F5.3 Ordem da regeração
 
@@ -1403,12 +1405,12 @@ o comando e espera o "ok" do usuário.
 | 3 | **Subir os bancos** (`docker compose up -d postgres-ubereats oracle-ubereats mongo-ubereats`); o init cria tudo | Postgres: 28 tabelas em `ubereats`, `SHOW timezone` = `America/Sao_Paulo`, `SHOW max_slot_wal_keep_size` = `4GB`, publicação `dbz_ubereats` existe. Oracle: 3 tabelas, `ARCHIVELOG`, gatilho de logon válido. Mongo: `rs.status()` com `PRIMARY`, coleção com validador |
 | 4 | **Subir** `redpanda` e `kafka-connect` (3.7) | `GET :8083/connector-plugins` lista os conectores Postgres e Oracle na versão 3.7 |
 | 5 | **Registrar os conectores** (`register-postgres-connector.ps1`, `register-oracle-connector.ps1`), com as tabelas ainda vazias (F4.0 #5) | Os dois `RUNNING`; slot `dbz_ubereats` ativo em `pg_replication_slots` |
-| 6 | **Seed de cidades** nos dois bancos, a partir do `cities.csv` | T17 (parte das cidades) passa; eventos `c` em `postgres.ubereats.cities` e `oracle.UBEREATS.CITIES` |
+| 6 | **Seed de cidades** nos dois bancos, a partir do `cities.csv` (`python -m simulator.seed cities`, em `shared/gen`) | T17 (parte das cidades) passa; eventos `c` em `postgres.ubereats.cities` e `oracle.UBEREATS.CITIES` |
 | 7 | **ShadowTraffic, carga inicial** em lote (`maxEvents` da F5.8), pela skill `shadowtraffic-ajustar-geracao` (tabelas vazias: `startingFrom` = 1) | Contagens de `customers`, `drivers` e `restaurants` iguais aos parâmetros |
-| 8 | **Seed de catálogo e perfis** (F5.4): produtos, itens de estoque, fichas, estoque inicial e `restaurant_profiles` | T4b, T6, T18 e T19 passam (gate da carga) |
+| 8 | **Seed de catálogo e perfis** (F5.4): produtos, itens de estoque, fichas, estoque inicial e `restaurant_profiles` (`python -m simulator.seed catalog` e `profiles`; o conteúdo vem de `shared/gen/reference/catalog.yaml`) | `python -m simulator.gate` passa (gate da carga: T1 a T19 com as tabelas de operação ainda vazias) |
 | 9 | **Airbyte**: fonte MongoDB por change stream, modo *Lookup*, `directConnection=true`, com um destino de conferência (Local JSON). Na primeira sync, conferir os nomes `_ab_cdc_*` (risco da ADR 011) | Metadados conferidos; F4.6 corrigida se os nomes forem outros. O destino de verdade vem com a fase de cada nuvem |
 | 10 | **Simulador**: histórico (F5.6) e depois tempo real | Logs sem recusa do banco; eventos nos tópicos `postgres.ubereats.*` |
-| 11 | **Gate da regeração**: T1 a T19 com 0 linhas; contagens por status dentro do esperado pelas probabilidades (F5.8); compra no CDC com o mesmo `source.txId` em todos os tópicos | Regeração aprovada; `CLAUDE.md` e `HANDOFF.md` atualizados (o Oracle novo continua tratado como produção, como todos os bancos) |
+| 11 | **Gate da regeração**: `python -m simulator.gate` (T1 a T19) com 0 linhas; contagens por status dentro do esperado pelas probabilidades (F5.8); compra no CDC com o mesmo `source.txId` em todos os tópicos | Regeração aprovada; `CLAUDE.md` e `HANDOFF.md` atualizados (o Oracle novo continua tratado como produção, como todos os bancos) |
 | 12 | **Operação contínua**: ShadowTraffic em ritmo lento (cadastros novos e `last_login`) e simulador ligados; no fim da sessão, os dois param | Skill de operação do simulador (consequência da ADR 007) |
 
 Não há volta de dado: tudo é sintético. Se um passo de 3 a 8 falhar, corrige-se o código e a regeração recomeça no passo 2
@@ -1592,6 +1594,28 @@ text:
 Ordem de grandeza: cerca de 900 pedidos por dia (5 cidades × média de 15 por hora × 12 h de janela), uns 27 mil no
 histórico de 30 dias e perto de 700 mil linhas no Postgres. Folgado para a D:, para o slot de 4 GB e para o Oracle (só
 cadastros).
+
+**Parâmetros acrescentados pelo simulador (bloco 5 da F5.2).** O `parameters.yaml` real tem, além do bloco acima:
+
+| Seção | Chave | Uso |
+|---|---|---|
+| `demand` | `default_hourly_factor` (0,2) | Fator das horas fora de `hourly_factor`; só restaurante com janela aberta recebe. |
+| `demand` | `drivers_per_hourly_order` (1,0) | Turnos abertos por pedido/hora esperado na cidade. Uma entrega dura ~40 min; 0,6 saturava a frota. |
+| `behavior` | `payment_method_share`, `customer_cancels_late`, `customer_cancels_other_after_drop`, `rating_weights`, `rating_comment`, `max_incidents_per_order`, `incident_reason_share` | Sorteios sem regra própria nas RN (forma de pagamento, cancelamento tardio e pós-entrega, nota e comentário, incidentes por pedido e por motivo). |
+| `simulation` | `payment_retry_s`, `restaurant_response_min`, `prep_start_delay_min`, `driver_to_restaurant_min`, `pickup_handover_min`, `travel_lognormal_sigma`, `customer_absent_wait_min`, `incident_review_delay_min`, `incident_decision_delay_min`, `late_cancel_delay_min`, `shift_open_jitter_min` | Tempos operacionais entre passos; não são regra. |
+| `stock` | `restock_trigger` (0,5), `consumption_window_days` (7) | Só repõe o item abaixo dessa fração do alvo; média de consumo sobre a janela. |
+| `text` | `incident_description_by_reason` | Textos de descrição de incidente (`reference/incident_descriptions.yaml`). |
+
+**Decisões do simulador que não estão nas RN:**
+
+- `promised_at` conta a partir do **último aceite ativo** (`max(accepted_at)` dos atendimentos ativos) + maior tempo estimado + rota/velocidade + folga; é recalculável só com colunas gravadas (T7).
+- `driver_unable` só é sorteado com o pedido **a caminho**. A RN-07 diz "depois da primeira retirada", mas a tabela de transições e os T2a/T3d só aceitam "não entregue" a partir de "a caminho"; "em coleta" fica fora da v1.
+- O motivo `delivery_cancelled` da atribuição **não ocorre** nas regras atuais (o motorista só é atribuído com um atendimento pronto, e pronto não cancela, RN-13). O `CHECK` continua aceitando o valor.
+- O simulador usa `SET synchronous_commit = off` na própria sessão (42 → 18 ms por ação no HDD da D:); a transação continua atômica.
+- Retomada: o relógio volta ao último evento gravado e as entidades vivas ganham passos novos com sorteio novo; avaliações e gorjetas pendentes na hora da parada se perdem.
+- Carga: ~13,5 ações por pedido e ~18 ms por ação, ou seja, ~3,6 min por dia simulado na escala de 900 pedidos/dia e ~2 h para os 30 dias de `backfill_days`.
+
+**Prova ponta a ponta (2026-11-10).** Três contêineres descartáveis (`f5-postgres` 15, `f5-oracle` `gvenzl/oracle-free:23.4-full`, `f5-mongo` 7 com `rs0`), inits de `shared/sql/` e `shared/mongo/init/`, cadastros pelo ShadowTraffic com o template aprovado (300 clientes, 60 motoristas, 20 restaurantes), `seed all` e `python -m simulator run --until 2026-10-13T00:00:00 --seed 1` (3 dias): 2.049 compras (1.800 entregues, 200 cancelados, 29 não entregues), 138 incidentes e 318 reembolsos. O `DatabaseLoader` leu o Oracle e o Mongo reais sem ajuste (coordenadas e datas do `oracledb` e do `pymongo` entraram como esperado). `python -m simulator.gate`: **47 de 47 verificações com 0 linha** (T1 a T19 nos três bancos).
 
 ### F5.9 Testes T1 a T19
 
@@ -2031,6 +2055,7 @@ no host, removido ao final com `docker rm -v`; DDL da F1 extraído deste documen
 | Uma compra válida da ADR 009 (2 tentativas, a 1ª recusada; 3 itens; componentes do exemplo da F5.7) mais catálogo, fichas e `restock` inicial | 0 linhas em todas |
 | Violações plantadas: restaurante de outra cidade, componente com bruto errado, lacuna na sequência de transições, reembolso acima do bruto do componente, saldo diferente dos movimentos | Falharam exatamente T1b, T8a, T3a e T3e, T9a e T6a; nenhuma outra |
 | Exemplo da F5.7 em `Decimal` com `ROUND_HALF_UP` | Fecha em 41,08 e 3,29; reembolso parcial 3,33 + 3,34 + 3,33 |
+| **Depois (F5.2):** as consultas viraram `shared/gen/checks/*.sql`, rodadas pelo `test_invariants_no_postgres` (só leitura, com `UBEREATS_CHECKS_DSN`) contra um Postgres criado pelo init novo (`shared/sql/postgres/`) | Compra válida: passa. Com as mesmas violações: falha listando exatamente T1b, T3a, T3e, T6a, T8a e T9a. T6c, T17, T18 e T19 têm testes de unidade em Python |
 
 O ciclo completo (aceite, preparo, atribuição, entrega e pós-entrega) só ganha dado positivo quando o simulador existir: a
 validação de T5 e T10 a T16 contra dado real fica para os testes do simulador e para o gate da regeração (passo 11).
@@ -2039,7 +2064,7 @@ validação de T5 e T10 a T16 contra dado real fica para os testes do simulador 
 
 | Risco | Mitigação |
 |---|---|
-| Área de recuperação do Oracle (`db_recovery_file_dest_size = 10G`) enche de archivelog e o banco para | O Oracle só recebe cadastros (pouca mudança). Conferir o uso da área de recuperação no gate (passo 11) e, se crescer, apagar archivelog já lido pelo Debezium com RMAN (operação com confirmação) |
+| Archivelog do Oracle acumula. O teste do init (F5.2) mostrou que ele vai para `$ORACLE_HOME/dbs/arch`, **na camada do contêiner, fora do volume `oracle_data`**: cresce no VHDX e some quando o contêiner é recriado | O Oracle só recebe cadastros (pouca mudança). Conferir o tamanho de `dbs/arch` no gate (passo 11); se crescer, apagar archivelog já lido pelo Debezium com RMAN (operação com confirmação). Recriar o contêiner com o conector parado no meio de um archivelog obriga a novo snapshot |
 | Rajada do histórico pesa no HDD da D: | Uma transação por compra; o ritmo do histórico é limitado pelo banco, não pelo relógio |
 | Slot do Postgres retém WAL com o conector parado | `max_slot_wal_keep_size=4GB` (F4.2); acima disso o slot é invalidado e o conector refaz o snapshot |
 | Licença do ShadowTraffic vence antes da execução | Passo 0; a carga em lote leva minutos, e o contínuo é opcional |
