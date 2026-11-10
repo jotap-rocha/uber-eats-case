@@ -1,0 +1,44 @@
+task_id: "13"
+criteria:
+  ac1:
+    id: ac1
+    command: ".venv\\Scripts\\python -m pytest -q tests/test_default_start.py -k \"sem_pedidos_o_inicio or days_sobrepoe or backfill\""
+    test_paths:
+      - "shared/gen/tests/test_default_start.py"
+    exit_code: 0
+    log_path: "logs/13/ac1.log"
+  ac2:
+    id: ac2
+    command: ".venv\\Scripts\\python -m pytest -q tests/test_default_start.py -k com_pedidos"
+    test_paths:
+      - "shared/gen/tests/test_default_start.py"
+    exit_code: 0
+    log_path: "logs/13/ac2.log"
+  ac3:
+    id: ac3
+    command: ".venv\\Scripts\\python -m pytest -q tests/test_default_start.py -k \"restock_posterior or restock_no_inicio or sem_restock or restock_do_mesmo_dia\""
+    test_paths:
+      - "shared/gen/tests/test_default_start.py"
+    exit_code: 0
+    log_path: "logs/13/ac3.log"
+  ac4:
+    id: ac4
+    command: ".venv\\Scripts\\python -m ruff check . && .venv\\Scripts\\python -m mypy simulator && .venv\\Scripts\\python -m pytest -q"
+    test_paths:
+      - "shared/gen/tests/test_default_start.py"
+    exit_code: 0
+    log_path: "logs/13/ac4.log"
+  ac5:
+    id: ac5
+    command: ".venv\\Scripts\\python -m pytest -q tests/test_default_start.py -k \"execucao_parcial or so_o_restock\""
+    test_paths:
+      - "shared/gen/tests/test_default_start.py"
+    exit_code: 0
+    log_path: "logs/13/ac5.log"
+  ac6:
+    id: ac6
+    command: ".venv\\Scripts\\python -m pytest -q tests/test_default_start.py -k days_"
+    test_paths:
+      - "shared/gen/tests/test_default_start.py"
+    exit_code: 0
+    log_path: "logs/13/ac6.log"

@@ -1,0 +1,10 @@
+task_id: "1"
+criteria:
+  ac1:
+    id: ac1
+    command: ".venv\\Scripts\\python -m pytest -q tests/test_money.py tests/test_params_geo.py"
+    test_paths:
+      - "shared/gen/tests/test_money.py"
+      - "shared/gen/tests/test_params_geo.py"
+    exit_code: 0
+    log_path: "logs/1/ac1.log"

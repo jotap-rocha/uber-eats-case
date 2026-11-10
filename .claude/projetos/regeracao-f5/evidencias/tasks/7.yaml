@@ -1,0 +1,10 @@
+task_id: "7"
+criteria:
+  ac1:
+    id: ac1
+    command: ".venv\\Scripts\\python -m pytest -q tests/test_rules.py tests/test_refunds.py"
+    test_paths:
+      - "shared/gen/tests/test_rules.py"
+      - "shared/gen/tests/test_refunds.py"
+    exit_code: 0
+    log_path: "logs/7/ac1.log"

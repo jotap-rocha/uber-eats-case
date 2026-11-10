@@ -1,0 +1,9 @@
+task_id: "4"
+criteria:
+  ac1:
+    id: ac1
+    command: ".venv\\Scripts\\python -m pytest -q tests/test_seed.py"
+    test_paths:
+      - "shared/gen/tests/test_seed.py"
+    exit_code: 0
+    log_path: "logs/4/ac1.log"
