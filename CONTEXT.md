@@ -114,11 +114,14 @@ Variaveis: as do `shared/gen/.env` mais `TRACKING_SALT_ORDER` e `TRACKING_SALT_P
 | Trilho real-time | Caminho do CDC ate o barramento (Event Hub, Kinesis, Pub/Sub) que alimenta o Kappa | Trilho Kappa | Nao le o storage batch |
 | Trilho batch | Caminho ate o storage (ADLS, S3, GCS) que alimenta Warehouse e Lakehouse | Landing batch | Nao alimenta o Kappa |
 | Contrato canonico de CDC | Campos `cdc_operation`, `cdc_commit_ts`, `cdc_sequence`, `cdc_source_system` na Bronze, iguais para qualquer ferramenta de ingestao | Contrato CDC | Nao e o formato nativo (`_ab_cdc_*`, `op/before/after`) |
-| Captura dedicada ao Kappa | Na Azure, o trilho batch vem do Debezium/Airbyte locais ate o storage, e o Kappa tem um conector proprio so com as tabelas dele, publicando no Event Hubs (ADR 012) | | Substitui a antiga "captura unica"; cada conector do Postgres tem seu slot |
+| Captura dedicada ao Kappa | Na Azure, o trilho batch vem do Airbyte local ate o storage (Postgres por CDC, Oracle por cursor `UPDATED_AT`; ADR 014), e o Kappa tem um conector Debezium proprio so com as tabelas dele, publicando no Event Hubs (ADR 012) | | Substitui a antiga "captura unica"; cada captura do Postgres tem seu slot. O Debezium fica so no Kappa (ADR 014) |
 | Warehouse | Arquitetura dimensional (estrela, SCD2): Synapse, Redshift, BigQuery | DW | Nao e o Lakehouse |
 | Lakehouse | Arquitetura medalhao sobre storage aberto: Databricks (Azure), Glue/Iceberg/Athena (AWS), BigLake/Dataproc (GCP) | | |
 | Kappa | Arquitetura so de streaming: Event Hubs + Stream Analytics, Kinesis, Pub/Sub + Dataflow | | Nao e Lambda (nao mistura trilho batch) |
-| Bronze / Silver / Gold | Camadas do medalhao: dado bruto, limpo e deduplicado, agregado para consumo | | |
+| Bronze / Silver / Gold | Camadas do medalhao: dado bruto, limpo e deduplicado, agregado para consumo | | So existem no Lakehouse; o Warehouse nao tem medalhao |
+| Landing | Area do storage da nuvem onde os eventos de CDC chegam como a ferramenta de ingestao os emitiu, sem tratamento. Ponto de partida comum do Warehouse e do Lakehouse | Zona de pouso | Nao e a Bronze (que ja segue o contrato canonico de CDC) e nao alimenta o Kappa, exceto o perfil de restaurante como dado de referencia |
+| Staging (Warehouse) | Camada transitoria dentro do warehouse que recebe a landing, um registro por evento de CDC, e o prepara para o modelo dimensional | stg | Nao e camada do medalhao nem guarda historico proprio |
+| Data mart | Conjunto de dimensoes e fatos que atende um processo de negocio no Warehouse (na Fase 1, o fechamento financeiro) | Mart | Nao e a Gold do Lakehouse |
 | SCD2 | Dimensao com historico de versoes por linha | SCD tipo 2 | |
 | Teto do Oracle | Limite de 12 GB da edicao Free (`ORA-12954`), causado quase so por `ORDER_ITEMS`. A ADR 006 o resolve movendo pedido e catalogo para o Postgres | Cap de 12 GB | Nao e bug do gerador |
 | ShadowTraffic | Gerador de dados sinteticos (`gen-unified`) | gen-unified | |
