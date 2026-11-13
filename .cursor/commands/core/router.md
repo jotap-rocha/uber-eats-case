@@ -173,6 +173,7 @@ Para cada solicitação:
 
 ### Exploration
 - `.cursor/agents/exploration/agent-architect.md`
+- `.cursor/agents/exploration/agent-creator.md`
 - `.cursor/agents/exploration/codebase-explorer.md`
 - `.cursor/agents/exploration/kb-architect.md`
 
@@ -538,6 +539,12 @@ Usar para:
 - estruturar `.cursor/kb`
 - definir taxonomia de conhecimento
 - melhorar documentação de contexto para agentes
+
+### `.cursor/agents/exploration/agent-creator.md`
+Usar para:
+- criar um agente novo do zero quando o papel ainda não está claro (entrevista em grupos de perguntas)
+- checar redundância contra os agentes existentes antes de criar
+- usado pelo `/harness-architect` para gerar os agentes do Harness Plan
 
 ### `.cursor/agents/exploration/agent-architect.md`
 Usar para:

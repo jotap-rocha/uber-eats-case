@@ -341,6 +341,11 @@ agents:
   roster_group: exploration
   specialty_en: Especialista em projetar e implementar novos arquivos de agente Cursor (Markdown em `.claude/agents/`). Use
     PROATIVAMENTE quando o usuário quiser criar, clonar ou refatorar um agente; registrar no rou
+- id: agent-creator
+  file: .claude/agents/exploration/agent-creator.md
+  roster_group: exploration
+  specialty_en: Cria agente novo do zero via entrevista estruturada, com gate de redundância (nenhum agente cobre >60%,
+    ≥3 triggers, sem >80% de overlap) antes de gerar; registra no catálogo, no roteador e no espelho .cursor/.
 - id: codebase-explorer
   file: .claude/agents/exploration/codebase-explorer.md
   roster_group: exploration

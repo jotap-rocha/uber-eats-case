@@ -158,6 +158,7 @@ Para cada solicitação:
 
 ### Exploration
 - `.claude/agents/exploration/agent-architect.md`
+- `.claude/agents/exploration/agent-creator.md`
 - `.claude/agents/exploration/codebase-explorer.md`
 - `.claude/agents/exploration/kb-architect.md`
 
@@ -477,6 +478,12 @@ Usar para:
 - estruturar `.claude/kb`
 - definir taxonomia de conhecimento
 - melhorar documentação de contexto para agentes
+
+### `.claude/agents/exploration/agent-creator.md`
+Usar para:
+- criar um agente novo do zero quando o papel ainda não está claro (entrevista em grupos de perguntas)
+- checar redundância contra os agentes existentes antes de criar
+- usado pelo `/harness-architect` para gerar os agentes do Harness Plan
 
 ### `.claude/agents/exploration/agent-architect.md`
 Usar para:

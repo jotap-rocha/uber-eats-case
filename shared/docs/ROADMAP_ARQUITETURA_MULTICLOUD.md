@@ -2,7 +2,7 @@
 
 **Documento de planejamento**
 
-**Versão:** 2.2
+**Versão:** 2.3
 
 **Data:** Novembro/2026
 
@@ -102,8 +102,8 @@ Implementar as arquiteturas **Warehouse**, **Lakehouse** e **Kappa**, reaproveit
 
 | Trilho | Fonte | Ferramenta | Destino | Quando |
 |---|---|---|---|---|
-| Batch (Warehouse + Lakehouse) | Postgres (28 tabelas) | Debezium (Kafka Connect local, Redpanda local), snapshot inicial + log | ADLS Gen2 (Bronze), via sink a definir (ver pontos abertos) | Warehouse e Lakehouse |
-| Batch (Warehouse + Lakehouse) | Oracle (3 tabelas) | Debezium (LogMiner), idem | ADLS Gen2 (Bronze) | Warehouse e Lakehouse |
+| Batch (Warehouse + Lakehouse) | Postgres (28 tabelas) | **Airbyte** local, CDC por replicação lógica (slot próprio, só enquanto há sync previsto) — v2.3, [ADR 014](../../docs/adr/014-ingestao-batch-pelo-airbyte-e-debezium-so-no-kappa.md) | ADLS Gen2 (landing, JSONL) | Warehouse e Lakehouse |
+| Batch (Warehouse + Lakehouse) | Oracle (3 tabelas) | **Airbyte** local, incremental por cursor `UPDATED_AT` (sem CDC; SCD2 com granularidade por sync) — v2.3, ADR 014 | ADLS Gen2 (landing, JSONL) | Warehouse e Lakehouse |
 | Batch (Warehouse + Lakehouse) | MongoDB (`restaurant_profiles`) | Airbyte, change stream | ADLS Gen2 (Bronze), path particionado por data | Warehouse e Lakehouse |
 | Real-time (Kappa) | Só as tabelas do problema de negócio | **Conector Debezium dedicado** (slot `dbz_ubereats_kappa` no Postgres) | Event Hubs Standard (até 10 event hubs, contando os 3 internos do Connect e o heartbeat) | **Só na fase do Kappa**; o Event Hubs só existe nessa fase |
 
@@ -116,12 +116,12 @@ Implementar as arquiteturas **Warehouse**, **Lakehouse** e **Kappa**, reaproveit
 **Ordem da fase (Warehouse primeiro)**
 1. Pré-requisitos da conta, *budget alert* e estimativa de custo (antes de abrir a conta e antes de qualquer `apply`).
 2. Terraform: ADLS Gen2 e Synapse **Dedicated SQL Pool** (pausa ou destruição ao fim de cada sessão, com confirmação).
-3. Caminho Debezium local até o ADLS (spike abaixo).
+3. Airbyte local até o ADLS, com prova local obrigatória antes da conta (v2.3, ADR 014; substitui o caminho Debezium + sink).
 4. Synapse: `COPY INTO` a partir do ADLS e `MERGE` para o SCD2 do modelo dimensional.
 5. Lakehouse e, por último, Kappa (ver pontos abertos).
 
 **Pontos abertos (a resolver com spike no início da fase)**
-1. **Sink Kafka Connect → ADLS.** O conector da Confluent é comercial (30 dias de teste) e fica descartado. Candidato: o sink de Azure Data Lake Gen2 do *stream-reactor* da Lenses (código aberto), a confirmar licença, formato Parquet/JSON e leitura dos eventos Debezium. Alternativas: Redpanda Connect (`azure_data_lake_gen2`, Parquet a confirmar) ou um consumidor Python simples.
+1. **Resolvido na v2.3 ([ADR 014](../../docs/adr/014-ingestao-batch-pelo-airbyte-e-debezium-so-no-kappa.md)): o trilho batch não usa sink; o texto abaixo fica como histórico.** **Sink Kafka Connect → ADLS.** O conector da Confluent é comercial (30 dias de teste) e fica descartado. Candidato: o sink de Azure Data Lake Gen2 do *stream-reactor* da Lenses (código aberto), a confirmar licença, formato Parquet/JSON e leitura dos eventos Debezium. Alternativas: Redpanda Connect (`azure_data_lake_gen2`, Parquet a confirmar) ou um consumidor Python simples.
 2. **Databricks Free Edition lendo o ADLS.** O Free Edition restringe o acesso de saída a domínios confiáveis e não aceita rede privada; não há garantia documentada de acesso ao Azure Storage. Testar com a conta já aberta. Se falhar, o lakehouse Azure exige um workspace Azure Databricks (créditos), o que é decisão do usuário (`CLAUDE.md`). O Warehouse não depende disso.
 3. **Problema de negócio do Kappa.** Ainda não definido; ele fixa quais tabelas entram no conector dedicado.
 
@@ -278,3 +278,4 @@ Implementar as arquiteturas **Warehouse**, **Lakehouse** e **Kappa**, reaproveit
 | 2.0 | Novembro/2026 | **Modelagem de dados refeita** (regras RN-01 a RN-42, conceitual de 33 entidades e modelo lógico L0 a L4, em `shared/docs/modelagem/`). [ADR 006](../../docs/adr/006-inversao-de-dominios-entre-oracle-e-postgres.md): pedido e catálogo passam ao Postgres e pessoas ao Oracle (a tabela "Alocação final" da Seção 3, Fase 0, descreve a distribuição **anterior**); [ADR 007](../../docs/adr/007-estoque-por-movimentos-e-gerador-hibrido.md): estoque por movimentos e gerador híbrido (ShadowTraffic + simulador de operação); [ADR 008](../../docs/adr/008-historico-de-status-em-tabelas-de-transicao.md): histórico de status em tabelas de transição. `kafka/shift`, `kafka/route`, `mysql/ratings` e `mongodb/support` saem do MinIO (só `kafka/gps` fica). Próximos: modelo físico, regeração dos dados do zero e, depois, o pipeline. As fases de nuvem não mudam de escopo; a ingestão de cada uma passa a ler as tabelas novas |
 | 2.1 | Novembro/2026 | [ADR 009](../../docs/adr/009-simulador-cria-a-compra-numa-transacao.md): o simulador de operação cria a compra numa transação. [ADR 010](../../docs/adr/010-minio-fora-do-escopo-da-geracao.md): **o MinIO sai do escopo** da Fase 0 (nenhum arquivo do bucket tem regra que o use); fontes passam a ser Postgres, Oracle e MongoDB, e o Kappa lê só os tópicos de CDC. As linhas de MinIO das Fases 1 a 3 nesta página ficam como histórico; o código delas fica parado até cada fase ser retomada. Lógica guardada em `shared/docs/minio/historico-geracao.md` |
 | 2.2 | Novembro/2026 | **Redesenho após a regeração.** Decisões do usuário (2026-11-10): manter as **9 combinações** arquitetura × cloud; manter a **ingestão nativa** em AWS (DMS) e GCP (Datastream/Debezium Server); começar pela **Warehouse Azure**. A Fase 1 passa a seguir a [ADR 012](../../docs/adr/012-captura-dedicada-ao-kappa-na-fase-1.md): warehouse e lakehouse recebem do Debezium e do Airbyte locais direto no ADLS; o Kappa tem conector Debezium dedicado, registrado só na fase dele, no Event Hubs Standard. A "captura única com sink no Event Hubs" da v1.9 é superada. Alocação das fontes atualizada (ADR 006: pedido e catálogo no Postgres, pessoas no Oracle; ADR 010: MinIO fora; ADR 011: Debezium 3.7 e MongoDB em replica set; ADR 013: snapshot inicial aceito, 1 ano de histórico gerado pelo simulador). Pontos abertos na Fase 1: sink Kafka Connect → ADLS, acesso do Databricks Free Edition ao ADLS e o problema de negócio do Kappa. Estimativa de tempo reposta como referência, a reestimar ao fim do Warehouse Azure |
+| 2.3 | Novembro/2026 | Grill e revisão adversarial do projeto `azure-warehouse` (`.claude/projetos/azure-warehouse/01-grill.md`). [ADR 014](../../docs/adr/014-ingestao-batch-pelo-airbyte-e-debezium-so-no-kappa.md): Warehouse e Lakehouse ingerem por replicação em lote (Airbyte na Azure; Postgres por CDC, Oracle por cursor), o Debezium fica só no Kappa e o sink Kafka Connect → ADLS sai do desenho. [ADR 015](../../docs/adr/015-orquestrador-e-relogio-da-free-account-azure.md): o ADF liga e pausa o Synapse numa carga disparada pelo usuário; a conta Azure só abre com o código das três arquiteturas pronto; 25% do crédito em reserva. [ADR 016](../../docs/adr/016-promocao-dsv-prd-por-tag-e-aprovacao.md): prd por tag com aprovação, dsv com aprovação enquanto durar a free account, OIDC |

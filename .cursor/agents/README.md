@@ -100,6 +100,7 @@
 | Agente | Ficheiro | Finalidade (resumo) |
 |--------|----------|---------------------|
 | `agent-architect` | [`exploration/agent-architect.md`](exploration/agent-architect.md) | Especialista em projetar e implementar novos arquivos de agente Cursor (Markdown em `.cursor/agents/`). Use PROATIVAM… |
+| `agent-creator` | [`exploration/agent-creator.md`](exploration/agent-creator.md) | Cria agente novo do zero via entrevista, com gate de redundância antes; registra no catálogo, roteador e espelho `.cursor/`. Trazido do canônico do Agent Harness. |
 | `codebase-explorer` | [`exploration/codebase-explorer.md`](exploration/codebase-explorer.md) | Elite codebase analyst delivering Executive Summaries + Deep Dives. Use PROACTIVELY when exploring unfamiliar repos, … |
 | `kb-architect` | [`exploration/kb-architect.md`](exploration/kb-architect.md) | Creates complete KB sections from scratch using MCP validation. EXECUTION-FOCUSED. Use PROACTIVELY when creating KB d… |
 

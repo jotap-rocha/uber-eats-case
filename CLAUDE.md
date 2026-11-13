@@ -28,7 +28,7 @@ Pipeline completo de engenharia de dados construido como portfolio profissional,
 |--------|------------|
 | Fontes (Docker local) | Postgres, Oracle Free 23ai (`gvenzl/oracle-free`), MongoDB. MinIO fora do escopo ([ADR 010](docs/adr/010-minio-fora-do-escopo-da-geracao.md)); contêiner e volume mantidos |
 | Geração de dados | ShadowTraffic (`gen-unified`, `shared/gen/unified/uber-eats.json.template`) |
-| Ingestão / CDC | Debezium + Kafka Connect (Postgres e Oracle, ADR 006), Airbyte OSS (MongoDB) |
+| Ingestão / CDC | Airbyte OSS no batch de Warehouse e Lakehouse da Azure (Postgres por CDC, Oracle por cursor `UPDATED_AT`); Debezium + Kafka Connect só no Kappa ([ADR 014](docs/adr/014-ingestao-batch-pelo-airbyte-e-debezium-so-no-kappa.md), [ADR 012](docs/adr/012-captura-dedicada-ao-kappa-na-fase-1.md)) |
 | Lakehouse | Databricks (Lakeflow/DLT, Unity Catalog), Bronze -> Silver -> Gold em `shared/pipeline/` |
 | Clouds (fases) | Azure (Fase 1), AWS (Fase 2), GCP (Fase 3), cada uma com Warehouse, Lakehouse e Kappa |
 | IaC | Terraform (`{aws,azure,gcp}/infra/`); DAB só para jobs Databricks |
@@ -52,7 +52,7 @@ Regras do projeto que não se quebram sem decisão explícita do usuário. Valid
 - **DSV:** escrita livre pelo agente. **PRD:** o agente nunca escreve direto (nada de CLI/SDK/SQL com `--profile PRD` que altere algo). Só promove por pipeline de deploy, com o mesmo código já validado no DSV e confirmação do usuário a cada deploy. Leitura no PRD (consulta, `bundle validate`) é livre.
 - **PRD é criado por fase e sob decisão do usuário**, não em toda nuvem de antemão. Até o CI existir, o agente não aplica nada em PRD.
 - **Mecanismo de deploy por camada:** Terraform para recursos e definições declarativas (Event Hubs, ADLS, Kinesis, S3, Pub/Sub, query do Stream Analytics, jobs Glue); scripts SQL versionados e numerados em `{cloud}/sql/`, idempotentes, aplicados pela CLI da nuvem (`sqlcmd`, `bq`, `psql`) para o que roda dentro do serviço (Synapse, Redshift, BigQuery); DABs só para Databricks.
-- **Promoção por `main` única + GitHub Actions + Environments.** Merge na `main` faz deploy no dsv da nuvem afetada (`paths:`); o job de prd exige aprovação do usuário (required reviewer). Sem branches por ambiente. Esse CI é fase própria de trabalho e pode ser levado depois ao agent-harness. Agentes de apoio: `iac-engineer` (Terraform) e `cloud-data-engineer` (warehouse, streaming, storage, custo).
+- **Promoção por GitHub Actions + Environments `dsv`/`prd` ([ADR 016](docs/adr/016-promocao-dsv-prd-por-tag-e-aprovacao.md)).** Merge na `main` dispara o dsv da nuvem afetada (`paths:`), com aprovação do usuário enquanto durar a free account (o PR mostra `plan` e estimativa). O prd sai por tag `vX.Y.Z` de um commit da `main`, com aprovação do usuário; o agente nunca aprova. Autenticação por OIDC, sem segredo de longa duração. A esteira só aplica estrutura, nunca carrega dado. Plano B só no dsv: `apply` local com `plan`, estimativa e "ok", registrado como exceção. Sem branches por ambiente. Esse CI é fase própria de trabalho e pode ser levado depois ao agent-harness. Agentes de apoio: `iac-engineer` (Terraform) e `cloud-data-engineer` (warehouse, streaming, storage, custo).
 
 ### Dados e fontes
 
@@ -73,9 +73,9 @@ Regras do projeto que não se quebram sem decisão explícita do usuário. Valid
 
 - O Kappa lê só do barramento (Event Hub, Kinesis, Pub/Sub) e nunca do storage batch.
 - Azure: Synapse é **Dedicated SQL Pool** (Serverless não suporta `MERGE`).
-- **(revisável)** Azure: warehouse e lakehouse recebem pelo Debezium e pelo Airbyte locais, que gravam no storage; o Kappa tem um conector Debezium dedicado, só com as tabelas do problema de negócio, dentro do Event Hubs Standard (10 event hubs por namespace, 7 dias de retenção), registrado só na fase do Kappa ([ADR 012](docs/adr/012-captura-dedicada-ao-kappa-na-fase-1.md)).
+- **(revisável)** Azure: warehouse e lakehouse recebem pelo **Airbyte local**, que grava JSONL na landing do ADLS ([ADR 014](docs/adr/014-ingestao-batch-pelo-airbyte-e-debezium-so-no-kappa.md)); o Kappa tem um conector Debezium dedicado, só com as tabelas do problema de negócio, dentro do Event Hubs Standard (10 event hubs por namespace, 7 dias de retenção), registrado só na fase do Kappa ([ADR 012](docs/adr/012-captura-dedicada-ao-kappa-na-fase-1.md)).
 - **(revisável)** Azure: o `kafka-connect-azure` (porta 8084) é separado do `kafka-connect` local. Não repontar o local para a nuvem.
-- **(revisável)** Conta cloud só é aberta no início da fase correspondente (créditos têm validade curta).
+- **(revisável)** Conta cloud só é aberta no início da fase correspondente (créditos têm validade curta). Na Azure (free account única), a conta só abre quando o código das três arquiteturas (Warehouse, Lakehouse, Kappa) estiver pronto e validado sem conta, com 25% do crédito em reserva ([ADR 015](docs/adr/015-orquestrador-e-relogio-da-free-account-azure.md)).
 - AWS e GCP não usam Databricks: têm stack própria (Fase 2 e 3). Terraform é a única ferramenta de provisionamento.
 
 ### Custo
@@ -83,7 +83,7 @@ Regras do projeto que não se quebram sem decisão explícita do usuário. Valid
 - Antes de `terraform apply` que crie ou escale recurso pago, mostrar o `plan` e uma estimativa de custo por hora/dia dos recursos novos, e esperar o "ok". Sem estimativa, não aplica.
 - Todo recurso de custo contínuo (Synapse Dedicated, Event Hubs, clusters) nasce no Terraform com *budget alert* da conta. Teto de referência: cerca de R$ 200 (a confirmar pelo usuário ao abrir cada conta). Antes de abrir a conta, o agente conduz um planejamento de pré-requisitos; a conta só é aberta com todos os itens prontos e com o acompanhamento do agente.
 - Ao fim de uma sessão com recurso caro ligado, o agente lista o que está rodando e pergunta se pausa ou destrói. Nunca deixa passar em silêncio.
-- `terraform destroy` e pause nunca são automáticos: sempre com confirmação.
+- `terraform destroy` e pause nunca são automáticos: sempre com confirmação. Exceção única ([ADR 015](docs/adr/015-orquestrador-e-relogio-da-free-account-azure.md)): o ADF pausa o Synapse no fim de uma execução disparada pelo usuário. O agente nunca dispara a carga nem pausa o pool sozinho.
 - Priorizar serverless e on-demand.
 
 ### Segurança e versionamento
