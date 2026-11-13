@@ -251,6 +251,7 @@ Faça as perguntas necessárias e depois gere o arquivo completo.
 | Arquivo | Nome | Resumo |
 |---------|------|--------|
 | `agent-architect.md` | `agent-architect` | Criar/refatorar arquivos de agente (`.md`), frontmatter, registro no `router.md` e em `HOW_TO_USE_AGENTS.md` |
+| `agent-creator.md` | `agent-creator` | Criar agente novo via entrevista, com gate de redundância (trazido do canônico do Agent Harness) |
 | `codebase-explorer.md` | `codebase-explorer` | Onboarding, saúde do repo, resumos executivos |
 | `kb-architect.md` | `kb-architect` | Criar/auditar seções de knowledge base |
 
