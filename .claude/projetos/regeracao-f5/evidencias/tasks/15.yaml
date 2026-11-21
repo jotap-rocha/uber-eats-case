@@ -1,0 +1,20 @@
+task_id: "15"
+criteria:
+  ac1:
+    id: ac1
+    command: "echo waiver humano aprovado em 2026-11-14"
+    test_paths:
+    exit_code: 0
+    log_path: "logs/15/ac1.log"
+    waiver:
+      human: true
+      reason: "Faixa de 250 a 330 mil estava desatualizada. A simulação de 1 ano gerou 400.743 pedidos (orders = deliveries = payments), volume esperado segundo o usuário; último pedido em 2026-11-12 08:33. Waiver aprovado em 2026-11-14."
+  ac2:
+    id: ac2
+    command: "python -c \"import sys; sys.exit(1 if \\\"falha em\\\" in open(\\\"logs/simulator.log\\\",encoding=\\\"utf-8\\\",errors=\\\"replace\\\").read() else 0)\""
+    test_paths:
+    exit_code: 0
+    log_path: "logs/15/ac2.log"
+    waiver:
+      human: true
+      reason: "logs/simulator.log sem 'falha em' (0 ocorrências, conferido por script) e execução terminada em 2026-11-12 08:33:52 sem erro após a retomada. O traceback do topo do log é de tentativa de 10/11 (TRACKING_SALT_ORDER ausente), anterior à execução válida. O comando é verificação real (exit 0); o waiver existe porque o manifesto não tem caminho de teste e o evidence-gate exige um dos dois. Primeira tentativa (`! grep`) falhou por ambiente (`!` não é comando no cmd do Windows), não por conteúdo. Executar a partir da raiz do repo principal, onde está logs/simulator.log. Waiver aprovado pelo usuário em 2026-11-20."

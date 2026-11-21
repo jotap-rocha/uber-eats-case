@@ -1,6 +1,6 @@
 # Gate do banco depois do histórico
 
-**Status:** not started (aprovada em 2026-11-10)  
+**Status:** done (aprovada em 2026-11-10)  
 **Blocked by:** tasks/regeracao-f5/15-historico-1-ano.md
 
 ## What to build
@@ -9,5 +9,5 @@
 
 ## Acceptance criteria
 
-- [ ] `ac1` T1 a T19 com 0 linha.
-- [ ] `ac2` Contagens por status dentro do esperado pelas probabilidades.
+- [x] `ac1` T1 a T19 com 0 linha.
+- [x] `ac2` Contagens por status dentro do esperado pelas probabilidades.
