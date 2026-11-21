@@ -1,0 +1,20 @@
+task_id: "16"
+criteria:
+  ac1:
+    id: ac1
+    command: "echo waiver humano aprovado em 2026-11-20"
+    test_paths:
+    exit_code: 0
+    log_path: "logs/16/ac1.log"
+    waiver:
+      human: true
+      reason: "python -m simulator.gate: 47 de 47, T1 a T19 com 0 linha. Rodado com max_parallel_workers_per_gather=0 (DiskFull em /dev/shm do contêiner Postgres no modo paralelo). Waiver aprovado pelo usuário em 2026-11-20."
+  ac2:
+    id: ac2
+    command: "echo waiver humano aprovado em 2026-11-20"
+    test_paths:
+    exit_code: 0
+    log_path: "logs/16/ac2.log"
+    waiver:
+      human: true
+      reason: "Contagens por status aceitas pelo usuário: completed 364.786, cancelled 30.250, undelivered 5.665, em andamento 42. Waiver aprovado pelo usuário em 2026-11-20."
